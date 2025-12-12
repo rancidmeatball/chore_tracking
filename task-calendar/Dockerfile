@@ -29,6 +29,6 @@ RUN chmod a+x /app/run.sh
 # Expose port
 EXPOSE 3000
 
-# Don't override entrypoint - let Home Assistant base image handle s6-overlay
-# Start the application
+# Home Assistant base image handles s6-overlay entrypoint
+# Just specify the script - it will run as PID 1
 CMD [ "/app/run.sh" ]

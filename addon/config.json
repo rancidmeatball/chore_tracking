@@ -21,8 +21,7 @@
   },
   "schema": {
     "database_path": "str"
-  },
-  "image": "ghcr.io/rancidmeatball/chore_tracking-{arch}"
+  }
 }
 
 

@@ -6,13 +6,13 @@ import { format } from 'date-fns'
 
 interface TaskFormProps {
   task?: Task | null
-  children: Child[]
+  childrenList: Child[]
   onSave: () => void
   onCancel: () => void
   onDelete?: (taskId: string) => void
 }
 
-export default function TaskForm({ task, children, onSave, onCancel, onDelete }: TaskFormProps) {
+export default function TaskForm({ task, childrenList, onSave, onCancel, onDelete }: TaskFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -147,7 +147,7 @@ export default function TaskForm({ task, children, onSave, onCancel, onDelete }:
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a child</option>
-              {children.map((child) => (
+              {childrenList.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}
                 </option>

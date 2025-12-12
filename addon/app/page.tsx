@@ -115,7 +115,7 @@ export default function Home() {
           </p>
         </div>
 
-        <ChildManager children={children} onChildAdded={fetchChildren} />
+        <ChildManager childrenList={children} onChildAdded={fetchChildren} />
 
         <div className="mb-6 flex gap-4">
           <button
@@ -147,7 +147,7 @@ export default function Home() {
         {showTaskForm && (
           <TaskForm
             task={selectedTask}
-            children={children}
+            childrenList={children}
             onSave={handleTaskSaved}
             onCancel={() => {
               setShowTaskForm(false)

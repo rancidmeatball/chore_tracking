@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import { Child } from '@/types'
 
 interface ChildManagerProps {
-  children: Child[]
+  childrenList: Child[]
   onChildAdded: () => void
 }
 
-export default function ChildManager({ children, onChildAdded }: ChildManagerProps) {
+export default function ChildManager({ childrenList, onChildAdded }: ChildManagerProps) {
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
 
@@ -44,9 +44,9 @@ export default function ChildManager({ children, onChildAdded }: ChildManagerPro
         >
           Add Child
         </button>
-        {children.length > 0 && (
+        {childrenList.length > 0 && (
           <div className="mt-2 text-sm text-gray-600">
-            Children: {children.map(c => c.name).join(', ')}
+            Children: {childrenList.map(c => c.name).join(', ')}
           </div>
         )}
       </div>

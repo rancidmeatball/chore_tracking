@@ -7,11 +7,14 @@ RUN apk add --no-cache nodejs npm
 # Set working directory
 WORKDIR /app
 
-# Copy everything
-COPY . .
+# Copy package files first (for better Docker layer caching)
+COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
+
+# Copy rest of application
+COPY . .
 
 # Generate Prisma
 RUN npx prisma generate

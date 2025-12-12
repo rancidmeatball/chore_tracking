@@ -10,6 +10,9 @@ WORKDIR /app
 # Copy all files (Home Assistant builds from repo root)
 COPY . .
 
+# Debug: List files to verify package.json is there
+RUN ls -la /app/ | head -20
+
 # Install dependencies
 RUN npm install
 

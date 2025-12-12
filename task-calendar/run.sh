@@ -1,31 +1,14 @@
 #!/bin/sh
-set -e
+# Minimal script - just set env vars and exec node
+# This ensures we run as PID 1 (required by s6-overlay)
 
-# Get Home Assistant token from supervisor
 export HOME_ASSISTANT_URL="http://supervisor/core"
 export HOME_ASSISTANT_TOKEN="${SUPERVISOR_TOKEN:-}"
-
-# Use default database path (matches config.json default)
-DATABASE_PATH="/data/task-calendar.db"
+export DATABASE_PATH="/data/task-calendar.db"
 export DATABASE_URL="file:${DATABASE_PATH}"
 
-# Create data directory if needed
-mkdir -p "$(dirname "${DATABASE_PATH}")"
+# Create data directory
+mkdir -p /data
 
-# Initialize database if needed (use full path to avoid PATH issues)
-if [ ! -f "${DATABASE_PATH}" ]; then
-    cd /app
-    /usr/bin/npx prisma db push || true
-fi
-
-# Change to app directory
-cd /app
-
-# For standalone build - use exec to replace shell with node process (required for PID 1)
-if [ -d "/app/.next/standalone" ]; then
-    cd /app/.next/standalone
-    exec /usr/bin/node server.js
-else
-    # Fallback to regular start
-    exec /usr/bin/npm start
-fi
+# Use Node.js start script which handles everything
+exec /usr/bin/node /app/start.js

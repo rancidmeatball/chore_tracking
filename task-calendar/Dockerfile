@@ -23,12 +23,11 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Make run script executable (it's already in /app/run.sh from COPY . .)
-RUN chmod a+x /app/run.sh
+# Make scripts executable
+RUN chmod a+x /app/run.sh /app/init-db.js /app/start.js
 
 # Expose port
 EXPOSE 3000
 
-# Home Assistant base image handles s6-overlay entrypoint
-# Just specify the script - it will run as PID 1
+# Use shell script which execs node (required for s6-overlay PID 1)
 CMD [ "/app/run.sh" ]

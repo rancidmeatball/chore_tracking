@@ -1,21 +1,13 @@
 #!/bin/sh
 set -e
 
-# Load bashio if available (for Home Assistant integration)
-if [ -f /usr/bin/bashio ]; then
-    . /usr/bin/bashio
-fi
-
 # Get Home Assistant token from supervisor
 export HOME_ASSISTANT_URL="http://supervisor/core"
 export HOME_ASSISTANT_TOKEN="${SUPERVISOR_TOKEN:-}"
 
-# Get database path from Home Assistant config or use default
-if command -v bashio >/dev/null 2>&1; then
-    DATABASE_PATH=$(bashio config 'database_path' 2>/dev/null || echo "/data/task-calendar.db")
-else
-    DATABASE_PATH="${DATABASE_PATH:-/data/task-calendar.db}"
-fi
+# Use default database path (matches config.json default)
+# Home Assistant will mount /data, so use that
+DATABASE_PATH="/data/task-calendar.db"
 export DATABASE_URL="file:${DATABASE_PATH}"
 
 # Create data directory if needed

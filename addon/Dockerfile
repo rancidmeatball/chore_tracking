@@ -29,5 +29,6 @@ RUN chmod a+x /app/run.sh
 # Expose port
 EXPOSE 3000
 
-# Start the application
+# Start the application using with-contenv
+ENTRYPOINT [ "/init" ]
 CMD [ "/app/run.sh" ]

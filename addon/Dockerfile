@@ -7,14 +7,11 @@ RUN apk add --no-cache nodejs npm
 # Set working directory
 WORKDIR /app
 
-# Copy package files first (for better Docker layer caching)
-COPY package.json package-lock.json* ./
+# Copy all files (Home Assistant builds from repo root)
+COPY . .
 
 # Install dependencies
 RUN npm install
-
-# Copy rest of application
-COPY . .
 
 # Generate Prisma
 RUN npx prisma generate

@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Child {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+}
+
+model RecurrenceTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  frequency   String   // "daily", "weekly", "monthly"
+  dayOfWeek   Int?     // 0-6 for weekly (0 = Sunday)
+  dayOfMonth  Int?     // 1-31 for monthly
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+}
+
+model Task {
+  id                    String             @id @default(cuid())
+  title                 String
+  description           String?
+  dueDate               DateTime
+  completed             Boolean            @default(false)
+  completedAt           DateTime?
+  childId               String
+  child                 Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  recurrenceTemplateId  String?
+  recurrenceTemplate    RecurrenceTemplate? @relation(fields: [recurrenceTemplateId], references: [id], onDelete: SetNull)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([dueDate])
+  @@index([childId])
+  @@index([completed])
+}
+

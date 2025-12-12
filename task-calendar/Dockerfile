@@ -7,7 +7,7 @@ RUN apk add --no-cache nodejs npm
 # Set working directory
 WORKDIR /app
 
-# Copy all files from build context (addon/ directory)
+# Copy all files from build context (task-calendar/ directory)
 COPY . .
 
 # Verify package.json exists

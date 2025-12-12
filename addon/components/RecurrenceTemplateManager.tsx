@@ -141,11 +141,11 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                       )}
                       <p className="text-sm text-gray-500 mt-1">
                         Frequency: {template.frequency}
-                        {template.frequency === 'weekly' && template.dayOfWeek !== null && (
-                          <span> (Day: {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][template.dayOfWeek]})</span>
+                        {template.frequency === 'weekly' && template.dayOfWeek != null && (
+                          <span> (Day: {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][template.dayOfWeek!]})</span>
                         )}
-                        {template.frequency === 'monthly' && template.dayOfMonth !== null && (
-                          <span> (Day: {template.dayOfMonth})</span>
+                        {template.frequency === 'monthly' && template.dayOfMonth != null && (
+                          <span> (Day: {template.dayOfMonth!})</span>
                         )}
                       </p>
                     </div>

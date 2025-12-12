@@ -1,20 +1,13 @@
-#!/bin/bash
+#!/bin/sh
+set -e
 
-# Source bashio for Home Assistant integration
-if [ -f /usr/bin/bashio ]; then
-    . /usr/bin/bashio
-fi
-
-# Get Home Assistant token from supervisor
-export HOME_ASSISTANT_URL="http://supervisor/core"
+# Get Home Assistant token from supervisor (if available)
+export HOME_ASSISTANT_URL="${HOME_ASSISTANT_URL:-http://supervisor/core}"
 export HOME_ASSISTANT_TOKEN="${SUPERVISOR_TOKEN:-}"
 
-# Get database path from options (with fallback)
-if command -v bashio &> /dev/null; then
-    DATABASE_PATH=$(bashio::config 'database_path' || echo "/data/task-calendar.db")
-else
-    DATABASE_PATH="${DATABASE_PATH:-/data/task-calendar.db}"
-fi
+# Get database path - try to read from Home Assistant config, fallback to default
+# Home Assistant should set this via environment or we use the default from config.json
+DATABASE_PATH="${DATABASE_PATH:-/data/task-calendar.db}"
 export DATABASE_URL="file:${DATABASE_PATH}"
 
 # Create data directory if needed

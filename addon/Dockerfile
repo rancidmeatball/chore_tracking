@@ -1,29 +1,31 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
+# Install Node.js
+RUN apk add --no-cache nodejs npm
+
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy application
+# Copy everything
 COPY . .
 
-# Generate Prisma Client
+# Install dependencies
+RUN npm ci
+
+# Generate Prisma
 RUN npx prisma generate
 
-# Build Next.js
+# Build
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
+
+# Copy run script
+COPY addon/run.sh /run.sh
+RUN chmod a+x /run.sh
 
 # Expose port
 EXPOSE 3000
 
-# Start script
-COPY addon/run.sh /run.sh
-RUN chmod a+x /run.sh
-
+# Start the application
 CMD [ "/run.sh" ]

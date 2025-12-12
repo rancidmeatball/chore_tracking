@@ -7,11 +7,16 @@ RUN apk add --no-cache nodejs npm
 # Set working directory
 WORKDIR /app
 
-# Copy all files (Home Assistant builds from repo root)
+# Home Assistant should build from repository root
+# Copy all files from build context
 COPY . .
 
-# Debug: List files to verify package.json is there
-RUN ls -la /app/ | head -20
+# Debug: Show what was copied
+RUN echo "=== Files in /app ===" && ls -la /app/ | head -20
+RUN echo "=== Looking for package.json ===" && find /app -maxdepth 2 -name "package.json" -type f || echo "package.json not found in /app or subdirectories"
+
+# Verify package.json exists (should be at /app/package.json if build context is repo root)
+RUN test -f /app/package.json || (echo "ERROR: package.json not found! Build context may be wrong." && ls -la /app/ && exit 1)
 
 # Install dependencies
 RUN npm install

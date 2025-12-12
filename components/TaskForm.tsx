@@ -1,0 +1,204 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Task, Child, RecurrenceTemplate } from '@/types'
+import { format } from 'date-fns'
+
+interface TaskFormProps {
+  task?: Task | null
+  children: Child[]
+  onSave: () => void
+  onCancel: () => void
+  onDelete?: (taskId: string) => void
+}
+
+export default function TaskForm({ task, children, onSave, onCancel, onDelete }: TaskFormProps) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [childId, setChildId] = useState('')
+  const [recurrenceTemplateId, setRecurrenceTemplateId] = useState('')
+  const [recurrenceTemplates, setRecurrenceTemplates] = useState<RecurrenceTemplate[]>([])
+
+  useEffect(() => {
+    fetchRecurrenceTemplates()
+    if (task) {
+      setTitle(task.title)
+      setDescription(task.description || '')
+      setDueDate(format(new Date(task.dueDate), 'yyyy-MM-dd'))
+      setChildId(task.childId)
+      setRecurrenceTemplateId(task.recurrenceTemplateId || '')
+    }
+  }, [task])
+
+  const fetchRecurrenceTemplates = async () => {
+    try {
+      const response = await fetch('/api/recurrence-templates')
+      const data = await response.json()
+      setRecurrenceTemplates(data)
+    } catch (error) {
+      console.error('Error fetching recurrence templates:', error)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const url = task ? `/api/tasks/${task.id}` : '/api/tasks'
+      const method = task ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          dueDate: new Date(dueDate).toISOString(),
+          childId,
+          recurrenceTemplateId: recurrenceTemplateId || null,
+        }),
+      })
+
+      if (response.ok) {
+        onSave()
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.message || 'Failed to save task'}`)
+      }
+    } catch (error) {
+      console.error('Error saving task:', error)
+      alert('Failed to save task')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!task || !onDelete) return
+    if (!confirm(`Are you sure you want to delete "${task.title}"?`)) return
+
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        onSave()
+      } else {
+        alert('Failed to delete task')
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      alert('Failed to delete task')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-2xl font-bold mb-4">
+          {task ? 'Edit Task' : 'Create New Task'}
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title *
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Due Date *
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assign to Child *
+            </label>
+            <select
+              value={childId}
+              onChange={(e) => setChildId(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select a child</option>
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Recurrence Template (Optional)
+            </label>
+            <select
+              value={recurrenceTemplateId}
+              onChange={(e) => setRecurrenceTemplateId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">None</option>
+              {recurrenceTemplates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name} ({template.frequency})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            {task && onDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            )}
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              {task ? 'Update Task' : 'Create Task'}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,87 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Child } from '@/types'
+
+interface ChildManagerProps {
+  children: Child[]
+  onChildAdded: () => void
+}
+
+export default function ChildManager({ children, onChildAdded }: ChildManagerProps) {
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const response = await fetch('/api/children', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+
+      if (response.ok) {
+        setName('')
+        setShowForm(false)
+        onChildAdded()
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error || 'Failed to add child'}`)
+      }
+    } catch (error) {
+      console.error('Error adding child:', error)
+      alert('Failed to add child')
+    }
+  }
+
+  if (!showForm) {
+    return (
+      <div className="mb-4">
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+        >
+          Add Child
+        </button>
+        {children.length > 0 && (
+          <div className="mt-2 text-sm text-gray-600">
+            Children: {children.map(c => c.name).join(', ')}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Child's name"
+          required
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowForm(false)
+            setName('')
+          }}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  )
+}
+

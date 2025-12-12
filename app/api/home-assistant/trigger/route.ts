@@ -5,22 +5,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { date } = body
 
-    const homeAssistantUrl = process.env.HOME_ASSISTANT_URL
-    const homeAssistantToken = process.env.HOME_ASSISTANT_TOKEN
-    const webhookId = process.env.HOME_ASSISTANT_WEBHOOK_ID
+    // Use supervisor API when running as add-on
+    const homeAssistantUrl = process.env.HOME_ASSISTANT_URL || 'http://supervisor/core'
+    const homeAssistantToken = process.env.HOME_ASSISTANT_TOKEN || process.env.SUPERVISOR_TOKEN
 
-    if (!homeAssistantUrl || !homeAssistantToken) {
+    if (!homeAssistantToken) {
       return NextResponse.json(
         {
-          error: 'Home Assistant configuration missing',
-          message: 'Please set HOME_ASSISTANT_URL and HOME_ASSISTANT_TOKEN in your .env file',
+          error: 'Home Assistant token missing',
+          message: 'SUPERVISOR_TOKEN not available',
         },
         { status: 500 }
       )
     }
 
-    // Option 1: Use REST API to trigger an automation
-    // This requires creating a service/automation in Home Assistant
+    // Call Home Assistant service directly
     const response = await fetch(`${homeAssistantUrl}/api/services/automation/trigger`, {
       method: 'POST',
       headers: {
@@ -28,42 +27,16 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        entity_id: 'automation.all_tasks_complete', // You'll need to create this automation
+        entity_id: 'automation.all_tasks_complete',
         variables: {
           date: date,
         },
       }),
     })
 
-    // Option 2: Use webhook (if webhookId is configured)
-    if (webhookId && !response.ok) {
-      const webhookResponse = await fetch(
-        `${homeAssistantUrl}/api/webhook/${webhookId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            event_type: 'all_tasks_complete',
-            date: date,
-          }),
-        }
-      )
-
-      if (webhookResponse.ok) {
-        return NextResponse.json({
-          success: true,
-          method: 'webhook',
-          message: 'Home Assistant webhook triggered successfully',
-        })
-      }
-    }
-
     if (response.ok) {
       return NextResponse.json({
         success: true,
-        method: 'rest_api',
         message: 'Home Assistant automation triggered successfully',
       })
     } else {

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "slug": "task-calendar",
   "description": "Chore tracker for children with Home Assistant integration",
-  "url": "https://github.com/rancidmeatball/task-calendar",
+  "url": "https://github.com/rancidmeatball/chore_tracking",
   "arch": ["amd64", "armv7", "armhf", "aarch64", "i386"],
   "startup": "application",
   "boot": "auto",
@@ -22,7 +22,7 @@
   "schema": {
     "database_path": "str"
   },
-  "image": "ghcr.io/rancidmeatball/task-calendar-{arch}"
+  "image": "ghcr.io/rancidmeatball/chore_tracking-{arch}"
 }
 
 

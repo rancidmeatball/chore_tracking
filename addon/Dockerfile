@@ -23,11 +23,11 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Copy run script from the already copied files (it's at /app/addon/run.sh)
-RUN cp addon/run.sh /run.sh && chmod a+x /run.sh
+# Make run script executable (it's already in /app/run.sh from COPY . .)
+RUN chmod a+x /app/run.sh
 
 # Expose port
 EXPOSE 3000
 
 # Start the application
-CMD [ "/run.sh" ]
+CMD [ "/app/run.sh" ]

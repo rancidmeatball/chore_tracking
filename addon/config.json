@@ -1,3 +1,29 @@
+{
+  "name": "Task Calendar",
+  "version": "0.1.0",
+  "slug": "task-calendar",
+  "description": "Chore tracker for children with Home Assistant integration",
+  "url": "https://github.com/rancidmeatball/task-calendar",
+  "arch": ["amd64", "armv7", "armhf", "aarch64", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "ports": {
+    "3000/tcp": 3000
+  },
+  "ports_description": {
+    "3000/tcp": "Web interface"
+  },
+  "map": [
+    "config:rw"
+  ],
+  "options": {
+    "database_path": "/data/task-calendar.db"
+  },
+  "schema": {
+    "database_path": "str"
+  },
+  "image": "ghcr.io/rancidmeatball/task-calendar-{arch}"
+}
 
 
 

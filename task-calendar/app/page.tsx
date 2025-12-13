@@ -7,6 +7,7 @@ import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
 import ChildManager from '@/components/ChildManager'
 import TimeTracker from '@/components/TimeTracker'
 import SettingsMenu from '@/components/SettingsMenu'
+import CompletionTracker from '@/components/CompletionTracker'
 import { Task, Child, RecurrenceTemplate } from '@/types'
 
 export default function Home() {
@@ -172,6 +173,8 @@ export default function Home() {
         <ChildManager childrenList={children} onChildAdded={fetchChildren} />
 
         <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
+
+        <CompletionTracker childrenList={children} />
 
         <div className="mb-6 flex gap-4">
           <button

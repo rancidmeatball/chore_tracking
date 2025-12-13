@@ -74,17 +74,35 @@ export async function PATCH(
     const body = await request.json()
     const { completed } = body
 
+    // Get task first for logging
+    const existingTask = await prisma.task.findUnique({
+      where: { id: params.id },
+      include: {
+        child: true,
+      },
+    })
+
+    const now = new Date()
     const task = await prisma.task.update({
       where: { id: params.id },
       data: {
         completed: completed === true,
-        completedAt: completed === true ? new Date() : null,
+        completedAt: completed === true ? now : null,
       },
       include: {
         child: true,
         recurrenceTemplate: true,
       },
     })
+
+    // Log completion tracking
+    if (completed && existingTask) {
+      const dueDate = new Date(existingTask.dueDate)
+      const isOnTime = now <= dueDate
+      const hoursLate = isOnTime ? 0 : Math.round((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60))
+      
+      console.log(`[COMPLETION] Task "${task.title}" completed by ${task.child.name} - ${isOnTime ? 'ON TIME' : `${hoursLate}h LATE`}`)
+    }
 
     return NextResponse.json(task)
   } catch (error) {

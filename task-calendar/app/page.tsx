@@ -14,6 +14,8 @@ export default function Home() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showRecurrenceManager, setShowRecurrenceManager] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchTasks()
@@ -22,21 +24,35 @@ export default function Home() {
 
   const fetchTasks = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const response = await fetch('/api/tasks')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
       const data = await response.json()
       setTasks(data)
-    } catch (error) {
+      setLoading(false)
+    } catch (error: any) {
       console.error('Error fetching tasks:', error)
+      setError(`Failed to load tasks: ${error.message || error}`)
+      setLoading(false)
     }
   }
 
   const fetchChildren = async () => {
     try {
       const response = await fetch('/api/children')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
       const data = await response.json()
       setChildren(data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching children:', error)
+      setError(`Failed to load children: ${error.message || error}`)
     }
   }
 
@@ -114,6 +130,29 @@ export default function Home() {
             Track chores and tasks for your children
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p className="font-bold">Error:</p>
+            <p>{error}</p>
+            <button
+              onClick={() => {
+                setError(null)
+                fetchTasks()
+                fetchChildren()
+              }}
+              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loading && !error && (
+          <div className="mb-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+            Loading...
+          </div>
+        )}
 
         <ChildManager childrenList={children} onChildAdded={fetchChildren} />
 

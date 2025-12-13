@@ -81,6 +81,12 @@ RUN if [ ! -d .next/standalone ]; then \
         exit 1; \
     fi
 
+# List standalone directory structure for debugging
+RUN echo "Standalone directory structure:" && \
+    ls -la .next/standalone/ && \
+    echo "Looking for server.js:" && \
+    find .next/standalone -name "server.js" -type f || echo "server.js not found with find"
+
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true
 

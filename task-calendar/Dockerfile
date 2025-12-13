@@ -1,48 +1,97 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-# Install Node.js and OpenSSL (required for Prisma)
-# Prisma's linux-musl binary requires libssl.so.1.1
-RUN apk add --no-cache nodejs npm openssl openssl1.1-compat
+# Install Node.js and build dependencies
+# Home Assistant base images are Alpine Linux
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    openssl \
+    python3 \
+    make \
+    g++
+
+# Verify Node.js and npm versions
+RUN node --version && npm --version
 
 # Set working directory
 WORKDIR /app
 
-# Copy all files from build context (task-calendar/ directory)
-COPY . .
+# Copy package files first for better caching
+COPY package*.json ./
+COPY prisma ./prisma/
 
-# Verify package.json exists
-RUN test -f /app/package.json || (echo "ERROR: package.json not found!" && ls -la /app/ && exit 1)
+# Verify files were copied
+RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) && \
+    test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
+# Use --include=dev to ensure devDependencies are installed for build
 RUN echo "Installing npm dependencies..." && \
-    npm install || (echo "npm install failed!" && exit 1)
+    npm install --include=dev --loglevel=verbose || \
+    (echo "npm install failed!" && \
+     echo "package.json contents:" && cat package.json && \
+     echo "npm version:" && npm --version && \
+     exit 1)
 
-# Generate Prisma
+# Verify Prisma is installed
+RUN echo "Verifying Prisma installation..." && \
+    npx prisma --version || (echo "Prisma not found!" && exit 1)
+
+# Copy all other files needed for build
+COPY . .
+
+# Verify critical files exist
+RUN test -f next.config.js || (echo "ERROR: next.config.js not found!" && exit 1) && \
+    test -f tsconfig.json || (echo "ERROR: tsconfig.json not found!" && exit 1) && \
+    test -d app || (echo "ERROR: app directory not found!" && exit 1)
+
+# Generate Prisma client
 RUN echo "Generating Prisma client..." && \
-    npx prisma generate || (echo "Prisma generate failed!" && exit 1)
+    npx prisma generate || \
+    (echo "Prisma generate failed!" && \
+     echo "Prisma version:" && npx prisma --version && \
+     echo "Schema file:" && cat prisma/schema.prisma && \
+     exit 1)
 
-# Build
+# Verify Prisma client was generated
+RUN test -d node_modules/.prisma/client || \
+    (echo "ERROR: Prisma client not generated!" && \
+     ls -la node_modules/.prisma/ 2>/dev/null || echo "No .prisma directory" && \
+     exit 1)
+
+# Build Next.js application
+# Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN echo "Building Next.js application..." && \
-    npm run build || (echo "npm build failed!" && exit 1)
+    npm run build || \
+    (echo "npm build failed!" && \
+     echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
+     exit 1)
 
-# Make scripts executable (only if they exist)
-RUN if [ -f /app/run.sh ]; then chmod a+x /app/run.sh; fi && \
-    if [ -f /app/init-db.js ]; then chmod a+x /app/init-db.js; fi && \
-    if [ -f /app/start.js ]; then chmod a+x /app/start.js; fi
+# Verify standalone output exists
+RUN if [ ! -d .next/standalone ]; then \
+        echo "ERROR: Standalone output not found!" && \
+        echo "Contents of .next:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
+        exit 1; \
+    fi && \
+    if [ ! -f .next/standalone/server.js ]; then \
+        echo "ERROR: server.js not found in standalone!" && \
+        echo "Contents of .next/standalone:" && ls -la .next/standalone/ 2>/dev/null || echo "No standalone directory" && \
+        exit 1; \
+    fi
 
-# Set default environment variables (can be overridden at runtime)
+# Make scripts executable
+RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true
+
+# Set default environment variables
 ENV HOME_ASSISTANT_URL="http://supervisor/core"
 ENV DATABASE_PATH="/data/task-calendar.db"
 ENV DATABASE_URL="file:/data/task-calendar.db"
-# Help Prisma find OpenSSL libraries
-ENV LD_LIBRARY_PATH="/usr/lib:/lib:${LD_LIBRARY_PATH:-}"
+ENV LD_LIBRARY_PATH="/usr/lib:/lib"
 
 # Expose port
 EXPOSE 3000
 
-# Don't override ENTRYPOINT - let Home Assistant base image handle it
-# With init: false, the base image should not use s6-overlay
-# Run node directly - this becomes PID 1
+# Run node directly
 CMD [ "node", "/app/start.js" ]

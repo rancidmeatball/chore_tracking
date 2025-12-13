@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (frequency === 'monthly' && dayOfMonth === undefined) {
+    if (frequency === 'monthly' && (dayOfMonth === undefined || dayOfMonth < 1 || dayOfMonth > 31)) {
       return NextResponse.json(
-        { error: 'dayOfMonth is required for monthly frequency' },
+        { error: 'dayOfMonth is required for monthly frequency (must be 1-31)' },
         { status: 400 }
       )
     }

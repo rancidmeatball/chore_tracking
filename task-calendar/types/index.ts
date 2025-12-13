@@ -10,7 +10,7 @@ export interface RecurrenceTemplate {
   id: string
   name: string
   description?: string
-  frequency: 'daily' | 'weekly' | 'monthly'
+  frequency: 'one-time' | 'weekly' | 'monthly'
   daysOfWeek?: number[] // Array of day numbers [0-6] for weekly
   dayOfMonth?: number
   createdAt: string

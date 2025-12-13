@@ -24,9 +24,9 @@ model RecurrenceTemplate {
   id          String   @id @default(cuid())
   name        String
   description String?
-  frequency   String   // "daily", "weekly", "monthly"
+  frequency   String   // "one-time", "weekly", "monthly"
   daysOfWeek  String?  // JSON array of day numbers [0,1,2,3,4,5,6] for weekly (0 = Sunday)
-  dayOfMonth  Int?     // 1-31 for monthly
+  dayOfMonth  Int?     // 1-31 for monthly (repeats on same day each month)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tasks       Task[]

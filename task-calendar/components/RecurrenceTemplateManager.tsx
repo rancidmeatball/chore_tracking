@@ -13,7 +13,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
   const [editingTemplate, setEditingTemplate] = useState<RecurrenceTemplate | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [frequency, setFrequency] = useState<'one-time' | 'weekly' | 'monthly'>('one-time')
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
   const [dayOfMonth, setDayOfMonth] = useState(1)
 
@@ -98,7 +98,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
     setEditingTemplate(null)
     setName('')
     setDescription('')
-    setFrequency('daily')
+    setFrequency('one-time')
     setDaysOfWeek([])
     setDayOfMonth(1)
   }
@@ -150,12 +150,12 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                         <p className="text-sm text-gray-600">{template.description}</p>
                       )}
                       <p className="text-sm text-gray-500 mt-1">
-                        Frequency: {template.frequency}
+                        Frequency: {template.frequency === 'one-time' ? 'One-Time (No Recurrence)' : template.frequency}
                         {template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0 && (
                           <span> (Days: {template.daysOfWeek.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})</span>
                         )}
                         {template.frequency === 'monthly' && template.dayOfMonth != null && (
-                          <span> (Day: {template.dayOfMonth!})</span>
+                          <span> (Day {template.dayOfMonth!} of each month)</span>
                         )}
                       </p>
                     </div>
@@ -215,20 +215,20 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
               </label>
               <select
                 value={frequency}
-                onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
+                onChange={(e) => setFrequency(e.target.value as 'one-time' | 'weekly' | 'monthly')}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
+                <option value="one-time">One-Time (No Recurrence)</option>
+                <option value="weekly">Weekly (Repeat on Selected Days)</option>
+                <option value="monthly">Monthly (Same Day Each Month)</option>
               </select>
             </div>
 
             {frequency === 'weekly' && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Days of Week * (Select one or more)
+                  Select Days of Week * (Choose which days to repeat weekly)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {dayNames.map((dayName, index) => (

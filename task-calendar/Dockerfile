@@ -59,10 +59,11 @@ RUN echo "Generating Prisma client..." && \
      exit 1)
 
 # Verify Prisma client was generated
-RUN test -d node_modules/.prisma/client || \
-    (echo "ERROR: Prisma client not generated!" && \
-     ls -la node_modules/.prisma/ 2>/dev/null || echo "No .prisma directory" && \
-     exit 1)
+RUN if [ ! -d node_modules/.prisma/client ]; then \
+        echo "ERROR: Prisma client not generated!" && \
+        ls -la node_modules/.prisma/ 2>/dev/null || echo "No .prisma directory" && \
+        exit 1; \
+    fi
 
 # Build Next.js application
 # Don't set NODE_ENV=production during build - we need devDependencies

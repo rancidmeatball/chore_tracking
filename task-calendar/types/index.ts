@@ -2,6 +2,7 @@ export interface Child {
   id: string
   name: string
   timeBalance: number // Time in minutes
+  color?: string // Hex color code for calendar display
   createdAt: string
   updatedAt: string
 }

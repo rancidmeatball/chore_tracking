@@ -62,8 +62,20 @@ export async function POST(request: NextRequest) {
       endDate.setFullYear(endDate.getFullYear() + 1) // Generate tasks for 1 year
 
       if (template.frequency === 'weekly' && template.daysOfWeek) {
-        const daysOfWeek = JSON.parse(template.daysOfWeek) as number[]
+        let daysOfWeek: number[]
+        try {
+          daysOfWeek = JSON.parse(template.daysOfWeek) as number[]
+        } catch (e) {
+          console.error('Error parsing daysOfWeek:', template.daysOfWeek, e)
+          return NextResponse.json(
+            { error: 'Invalid daysOfWeek format in template' },
+            { status: 400 }
+          )
+        }
+        
+        console.log(`Generating weekly tasks for days: ${daysOfWeek.join(', ')}`)
         let currentDate = new Date(startDate)
+        let taskCount = 0
         
         // Generate tasks for each matching day of week for 1 year
         while (currentDate <= endDate) {
@@ -79,9 +91,12 @@ export async function POST(request: NextRequest) {
               childId,
               recurrenceTemplateId,
             })
+            taskCount++
           }
           currentDate.setDate(currentDate.getDate() + 1)
         }
+        
+        console.log(`Generated ${taskCount} weekly tasks`)
       } else if (template.frequency === 'monthly' && template.dayOfMonth) {
         // Start from today, find the next occurrence of the day of month
         let currentDate = new Date(startDate)

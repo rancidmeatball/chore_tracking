@@ -49,6 +49,32 @@ function Calendar({
     return map
   }, [tasks])
 
+  // Helper to get task color based on child
+  const getTaskColor = (task: Task) => {
+    if (task.completed) {
+      return 'bg-green-200 text-green-800'
+    }
+    // Use child's color if available, otherwise default blue
+    const childColor = task.child?.color || '#3B82F6'
+    // Convert hex to RGB for better text contrast
+    const hex = childColor.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    // Calculate brightness to determine text color
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+    const textColor = brightness > 128 ? 'text-gray-900' : 'text-white'
+    return `${textColor}`
+  }
+
+  // Helper to get task background color
+  const getTaskBgColor = (task: Task) => {
+    if (task.completed) {
+      return 'bg-green-200'
+    }
+    return task.child?.color || '#3B82F6'
+  }
+
   // Simple inline function
   const getTasksForDate = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd')
@@ -130,22 +156,27 @@ function Calendar({
                 )}
               </div>
               <div className="space-y-1 overflow-y-auto max-h-16">
-                {dayTasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onTaskEdit(task)
-                    }}
-                    className={`
-                      text-xs p-1 rounded truncate cursor-pointer
-                      ${task.completed ? 'bg-green-200 text-green-800 line-through' : 'bg-blue-100 text-blue-800'}
-                    `}
-                    title={task.title}
-                  >
-                    {task.title}
-                  </div>
-                ))}
+                {dayTasks.slice(0, 3).map((task) => {
+                  const bgColor = getTaskBgColor(task)
+                  const textColor = getTaskColor(task)
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onTaskEdit(task)
+                      }}
+                      className={`
+                        text-xs p-1 rounded truncate cursor-pointer
+                        ${task.completed ? 'bg-green-200 text-green-800 line-through' : ''}
+                      `}
+                      style={task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }}
+                      title={task.title}
+                    >
+                      {task.title}
+                    </div>
+                  )
+                })}
                 {dayTasks.length > 3 && (
                   <div className="text-xs text-gray-700">
                     +{dayTasks.length - 3} more

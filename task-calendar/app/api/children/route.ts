@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name } = body
+    const { name, color } = body
 
     if (!name) {
       return NextResponse.json(
@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     const child = await prisma.child.create({
-      data: { name },
+      data: { 
+        name,
+        color: color || null,
+      },
     })
 
     return NextResponse.json(child, { status: 201 })

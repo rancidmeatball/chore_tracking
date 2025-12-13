@@ -253,28 +253,33 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
             </div>
 
             {frequency === 'weekly' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-900 mb-3">
                   Select Days of Week * (Choose which days to repeat weekly)
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {dayNames.map((dayName, index) => (
                     <label
                       key={index}
-                      className="flex items-center space-x-2 p-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                      className="flex items-center space-x-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-white hover:border-blue-400 transition bg-white"
                     >
                       <input
                         type="checkbox"
                         checked={daysOfWeek.includes(index)}
                         onChange={() => toggleDayOfWeek(index)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-5 h-5 text-blue-600 border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
                       />
-                      <span className="text-gray-900 font-medium">{dayName}</span>
+                      <span className="text-gray-900 font-semibold text-base">{dayName}</span>
                     </label>
                   ))}
                 </div>
                 {daysOfWeek.length === 0 && (
-                  <p className="text-sm text-red-600 mt-1">Please select at least one day</p>
+                  <p className="text-sm text-red-600 font-medium mt-3">⚠️ Please select at least one day</p>
+                )}
+                {daysOfWeek.length > 0 && (
+                  <p className="text-sm text-green-600 font-medium mt-3">
+                    ✓ Selected: {daysOfWeek.map(d => dayNames[d]).join(', ')}
+                  </p>
                 )}
               </div>
             )}

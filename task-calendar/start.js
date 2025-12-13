@@ -20,41 +20,22 @@ if (!fs.existsSync(dbDir)) {
 // Database will be initialized automatically by Prisma on first connection
 // No need to run db push here - Prisma handles SQLite database creation
 
-// Determine which command to run
-let command, args, cwd;
+// Next.js standalone build - directly require the server
+// This keeps the process as PID 1 (required for s6-overlay)
+const standalonePath = '/app/.next/standalone';
 
-if (fs.existsSync('/app/.next/standalone')) {
-  // Standalone build
-  cwd = '/app/.next/standalone';
-  command = 'node';
-  args = ['server.js'];
-} else {
-  // Regular build
-  cwd = '/app';
-  command = 'npm';
-  args = ['start'];
-}
-
-// Change directory
-process.chdir(cwd);
-
-// For standalone build, require the server directly (stays as PID 1)
-// For npm start, we'll need to handle it differently
-if (command === 'node' && args[0] === 'server.js') {
-  // Direct require - this process stays as PID 1
+if (fs.existsSync(standalonePath)) {
+  // Change to standalone directory
+  process.chdir(standalonePath);
+  
+  // Directly require the server - no child processes
+  // This process becomes the main process (PID 1)
   require('./server.js');
 } else {
-  // For npm, we need to use child_process but keep this as PID 1
-  // This might cause issues, so prefer standalone build
-  const { spawn } = require('child_process');
-  const child = spawn(command, args, {
-    cwd: cwd,
-    stdio: 'inherit',
-    env: process.env
-  });
-  
-  child.on('exit', (code) => process.exit(code || 0));
-  process.on('SIGTERM', () => child.kill('SIGTERM'));
-  process.on('SIGINT', () => child.kill('SIGINT'));
+  // Fallback: if standalone build doesn't exist, we have a build problem
+  console.error('ERROR: Standalone build not found at /app/.next/standalone');
+  console.error('Please ensure next.config.js has output: "standalone"');
+  console.error('And that npm run build completed successfully');
+  process.exit(1);
 }
 

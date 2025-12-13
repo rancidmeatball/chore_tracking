@@ -91,10 +91,12 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(response, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating recurrence template:', error)
+    // Return more specific error message
+    const errorMessage = error?.message || 'Failed to create recurrence template'
     return NextResponse.json(
-      { error: 'Failed to create recurrence template' },
+      { error: errorMessage, details: error?.code || 'UNKNOWN_ERROR' },
       { status: 500 }
     )
   }

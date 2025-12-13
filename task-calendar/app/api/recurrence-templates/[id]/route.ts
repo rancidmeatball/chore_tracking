@@ -85,10 +85,11 @@ export async function PUT(
     }
 
     return NextResponse.json(response)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating template:', error)
+    const errorMessage = error?.message || 'Failed to update template'
     return NextResponse.json(
-      { error: 'Failed to update template' },
+      { error: errorMessage, details: error?.code || 'UNKNOWN_ERROR' },
       { status: 500 }
     )
   }

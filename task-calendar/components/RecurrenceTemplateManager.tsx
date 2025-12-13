@@ -67,12 +67,13 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
         fetchTemplates()
         resetForm()
       } else {
-        const error = await response.json()
-        alert(`Error: ${error.message || 'Failed to save template'}`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Template save error:', errorData)
+        alert(`Error: ${errorData.error || errorData.message || 'Failed to save template'}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving template:', error)
-      alert('Failed to save template')
+      alert(`Failed to save template: ${error.message || error}`)
     }
   }
 
@@ -228,6 +229,19 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter a description for this template..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
+              />
             </div>
 
             <div>

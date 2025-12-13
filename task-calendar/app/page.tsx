@@ -12,7 +12,8 @@ import { Task, Child, RecurrenceTemplate } from '@/types'
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [children, setChildren] = useState<Child[]>([])
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  // Memoize initial date to prevent unnecessary re-renders
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showRecurrenceManager, setShowRecurrenceManager] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)

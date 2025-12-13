@@ -21,7 +21,8 @@ function Calendar({
   onTaskEdit,
   onTaskDelete,
 }: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  // Memoize initial date to prevent unnecessary re-renders
+  const [currentMonth, setCurrentMonth] = useState(() => new Date())
 
   // Memoize month calculations
   const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays, monthYear } = useMemo(() => {
@@ -34,15 +35,27 @@ function Calendar({
     return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty, monthYear: monthYearStr }
   }, [currentMonth])
 
-  // Memoize task lookup map for O(1) access - only recalculate when tasks array reference changes
-  // Use tasks.length as a quick check to avoid expensive comparisons
+  // Memoize task lookup map with completion status - only recalculate when tasks change
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, Task[]>()
+    const map = new Map<string, { tasks: Task[], completion: { total: number, completed: number } | null }>()
     for (const task of tasks) {
       const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd')
-      const existing = map.get(dateKey) || []
-      existing.push(task)
-      map.set(dateKey, existing)
+      const existing = map.get(dateKey)
+      if (existing) {
+        existing.tasks.push(task)
+        existing.completion = {
+          total: existing.tasks.length,
+          completed: existing.tasks.filter(t => t.completed).length
+        }
+      } else {
+        map.set(dateKey, {
+          tasks: [task],
+          completion: {
+            total: 1,
+            completed: task.completed ? 1 : 0
+          }
+        })
+      }
     }
     return map
   }, [tasks])
@@ -50,7 +63,12 @@ function Calendar({
   // Simple inline functions - no callback overhead
   const getTasksForDate = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd')
-    return tasksByDate.get(dateKey) || []
+    return tasksByDate.get(dateKey)?.tasks || []
+  }
+  
+  const getCompletionForDate = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd')
+    return tasksByDate.get(dateKey)?.completion || null
   }
 
 
@@ -98,13 +116,10 @@ function Calendar({
           <div key={`empty-${index}`} className="h-24"></div>
         ))}
         {daysInMonth.map((day) => {
-          // Pre-compute all values once per day
+          // Pre-compute all values once per day - use cached values
           const dayKey = format(day, 'yyyy-MM-dd')
           const dayTasks = getTasksForDate(day)
-          const completion = dayTasks.length > 0 ? {
-            total: dayTasks.length,
-            completed: dayTasks.filter(t => t.completed).length
-          } : null
+          const completion = getCompletionForDate(day)
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
           const dayNumber = day.getDate() // Cache day number
@@ -162,7 +177,7 @@ function Calendar({
       </div>
 
       {/* Selected Date Tasks Detail */}
-      {(() => {
+      {useMemo(() => {
         const selectedDateTasks = getTasksForDate(selectedDate)
         const selectedDateFormatted = format(selectedDate, 'MMMM d, yyyy')
         
@@ -221,11 +236,52 @@ function Calendar({
             </div>
           </div>
         )
-      })()}
+      }, [selectedDate, tasksByDate])}
     </div>
   )
 }
 
-// Memoize the Calendar component to prevent unnecessary re-renders
-// Use simple reference comparison - React will handle the rest
-export default memo(Calendar)
+// Memoize the Calendar component with custom comparison
+// Only re-render if tasks, selectedDate, or callbacks actually change
+export default memo(Calendar, (prevProps, nextProps) => {
+  // Quick reference check first
+  if (prevProps.tasks === nextProps.tasks && 
+      prevProps.selectedDate === nextProps.selectedDate &&
+      prevProps.onDateSelect === nextProps.onDateSelect &&
+      prevProps.onTaskComplete === nextProps.onTaskComplete &&
+      prevProps.onTaskEdit === nextProps.onTaskEdit &&
+      prevProps.onTaskDelete === nextProps.onTaskDelete) {
+    return true // Skip re-render
+  }
+  
+  // Check selectedDate by time value
+  if (prevProps.selectedDate.getTime() !== nextProps.selectedDate.getTime()) {
+    return false // Re-render
+  }
+  
+  // Check tasks array length and reference
+  if (prevProps.tasks.length !== nextProps.tasks.length) {
+    return false // Re-render
+  }
+  
+  // If tasks array reference changed but length is same, check if content changed
+  if (prevProps.tasks !== nextProps.tasks) {
+    // Quick check: compare first and last task IDs
+    if (prevProps.tasks.length > 0 && nextProps.tasks.length > 0) {
+      if (prevProps.tasks[0].id !== nextProps.tasks[0].id ||
+          prevProps.tasks[prevProps.tasks.length - 1].id !== nextProps.tasks[nextProps.tasks.length - 1].id) {
+        return false // Re-render
+      }
+    }
+  }
+  
+  // Check callbacks
+  if (prevProps.onDateSelect !== nextProps.onDateSelect ||
+      prevProps.onTaskComplete !== nextProps.onTaskComplete ||
+      prevProps.onTaskEdit !== nextProps.onTaskEdit ||
+      prevProps.onTaskDelete !== nextProps.onTaskDelete) {
+    return false // Re-render
+  }
+  
+  return true // Skip re-render
+})

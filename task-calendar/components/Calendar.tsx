@@ -166,15 +166,6 @@ function Calendar({
               return <p className="text-gray-700">No tasks for this date</p>
             }
             return selectedDateTasks.map((task) => (
-          <div className="mt-6 border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Tasks for {selectedDateFormatted}
-            </h3>
-            <div className="space-y-2">
-              {selectedDateTasks.length === 0 ? (
-                <p className="text-gray-700">No tasks for this date</p>
-              ) : (
-                selectedDateTasks.map((task) => (
               <div
                 key={task.id}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
@@ -215,10 +206,7 @@ function Calendar({
                   </button>
                 </div>
               </div>
-                ))
-              )}
-            </div>
-          ))
+            ))
           })()}
         </div>
       </div>

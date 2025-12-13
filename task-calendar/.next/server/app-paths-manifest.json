@@ -1,12 +1,12 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/home-assistant/trigger/route": "app/api/home-assistant/trigger/route.js",
-  "/api/children/route": "app/api/children/route.js",
   "/api/children/[id]/time/route": "app/api/children/[id]/time/route.js",
-  "/api/tasks/check-daily-completion/route": "app/api/tasks/check-daily-completion/route.js",
-  "/api/tasks/route": "app/api/tasks/route.js",
   "/api/recurrence-templates/[id]/route": "app/api/recurrence-templates/[id]/route.js",
+  "/api/recurrence-templates/route": "app/api/recurrence-templates/route.js",
   "/api/tasks/[id]/route": "app/api/tasks/[id]/route.js",
+  "/api/children/route": "app/api/children/route.js",
+  "/api/tasks/route": "app/api/tasks/route.js",
   "/page": "app/page.js",
-  "/api/recurrence-templates/route": "app/api/recurrence-templates/route.js"
+  "/api/home-assistant/trigger/route": "app/api/home-assistant/trigger/route.js",
+  "/api/tasks/check-daily-completion/route": "app/api/tasks/check-daily-completion/route.js"
 }

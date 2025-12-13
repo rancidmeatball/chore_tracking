@@ -74,10 +74,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js application
 RUN echo "Building Next.js application..." && \
-    npm run build || \
+    npm run build 2>&1 | tee /tmp/build-output.log || \
     (echo "npm build failed!" && \
+     echo "=== BUILD OUTPUT ===" && \
+     cat /tmp/build-output.log && \
+     echo "=== END BUILD OUTPUT ===" && \
      echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
-     echo "Checking for build errors above..." && \
      exit 1)
 
 # Verify build output exists

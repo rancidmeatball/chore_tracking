@@ -17,8 +17,23 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-// Database will be initialized automatically by Prisma on first connection
-// No need to run db push here - Prisma handles SQLite database creation
+// Initialize database if needed
+// Prisma doesn't auto-create the schema, so we need to run db push
+if (!fs.existsSync(dbPath)) {
+  console.log('Database not found, initializing...');
+  try {
+    const { execSync } = require('child_process');
+    execSync('npx prisma db push', {
+      cwd: appPath,
+      stdio: 'inherit',
+      env: process.env
+    });
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    // Continue anyway - might work if schema already exists
+  }
+}
 
 // Use next start directly - simpler and more reliable
 // This keeps the process as PID 1 (required for s6-overlay)

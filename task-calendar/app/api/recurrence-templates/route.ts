@@ -8,7 +8,12 @@ export async function GET() {
         name: 'asc',
       },
     })
-    return NextResponse.json(templates)
+    // Parse daysOfWeek JSON strings to arrays
+    const parsedTemplates = templates.map(template => ({
+      ...template,
+      daysOfWeek: template.daysOfWeek ? JSON.parse(template.daysOfWeek) : null,
+    }))
+    return NextResponse.json(parsedTemplates)
   } catch (error) {
     console.error('Error fetching recurrence templates:', error)
     return NextResponse.json(
@@ -21,7 +26,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, frequency, dayOfWeek, dayOfMonth } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth } = body
 
     if (!name || !frequency) {
       return NextResponse.json(
@@ -30,9 +35,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (frequency === 'weekly' && dayOfWeek === undefined) {
+    if (frequency === 'weekly' && (!daysOfWeek || daysOfWeek.length === 0)) {
       return NextResponse.json(
-        { error: 'dayOfWeek is required for weekly frequency' },
+        { error: 'At least one day of week is required for weekly frequency' },
         { status: 400 }
       )
     }
@@ -49,12 +54,18 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         frequency,
-        dayOfWeek: frequency === 'weekly' ? dayOfWeek : null,
+        daysOfWeek: frequency === 'weekly' ? JSON.stringify(daysOfWeek) : null,
         dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
       },
     })
 
-    return NextResponse.json(template, { status: 201 })
+    // Parse daysOfWeek for response
+    const response = {
+      ...template,
+      daysOfWeek: template.daysOfWeek ? JSON.parse(template.daysOfWeek) : null,
+    }
+
+    return NextResponse.json(response, { status: 201 })
   } catch (error) {
     console.error('Error creating recurrence template:', error)
     return NextResponse.json(

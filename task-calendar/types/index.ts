@@ -1,6 +1,7 @@
 export interface Child {
   id: string
   name: string
+  timeBalance: number // Time in minutes
   createdAt: string
   updatedAt: string
 }
@@ -10,7 +11,7 @@ export interface RecurrenceTemplate {
   name: string
   description?: string
   frequency: 'daily' | 'weekly' | 'monthly'
-  dayOfWeek?: number
+  daysOfWeek?: number[] // Array of day numbers [0-6] for weekly
   dayOfMonth?: number
   createdAt: string
   updatedAt: string

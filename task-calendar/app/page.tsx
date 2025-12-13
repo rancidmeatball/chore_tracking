@@ -5,6 +5,7 @@ import Calendar from '@/components/Calendar'
 import TaskForm from '@/components/TaskForm'
 import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
 import ChildManager from '@/components/ChildManager'
+import TimeTracker from '@/components/TimeTracker'
 import { Task, Child, RecurrenceTemplate } from '@/types'
 
 export default function Home() {
@@ -155,6 +156,8 @@ export default function Home() {
         )}
 
         <ChildManager childrenList={children} onChildAdded={fetchChildren} />
+
+        <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
 
         <div className="mb-6 flex gap-4">
           <button

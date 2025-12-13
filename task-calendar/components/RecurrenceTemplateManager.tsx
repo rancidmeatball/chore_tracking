@@ -14,7 +14,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
-  const [dayOfWeek, setDayOfWeek] = useState(0)
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
   const [dayOfMonth, setDayOfMonth] = useState(1)
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
           name,
           description,
           frequency,
-          dayOfWeek: frequency === 'weekly' ? dayOfWeek : null,
+          daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
         }),
       })
@@ -69,7 +69,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
     setName(template.name)
     setDescription(template.description || '')
     setFrequency(template.frequency)
-    setDayOfWeek(template.dayOfWeek || 0)
+    setDaysOfWeek(template.daysOfWeek || [])
     setDayOfMonth(template.dayOfMonth || 1)
     setShowForm(true)
   }
@@ -99,9 +99,19 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
     setName('')
     setDescription('')
     setFrequency('daily')
-    setDayOfWeek(0)
+    setDaysOfWeek([])
     setDayOfMonth(1)
   }
+
+  const toggleDayOfWeek = (day: number) => {
+    setDaysOfWeek(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    )
+  }
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -141,8 +151,8 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                       )}
                       <p className="text-sm text-gray-500 mt-1">
                         Frequency: {template.frequency}
-                        {template.frequency === 'weekly' && template.dayOfWeek != null && (
-                          <span> (Day: {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][template.dayOfWeek!]})</span>
+                        {template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0 && (
+                          <span> (Days: {template.daysOfWeek.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})</span>
                         )}
                         {template.frequency === 'monthly' && template.dayOfMonth != null && (
                           <span> (Day: {template.dayOfMonth!})</span>
@@ -175,7 +185,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Name *
               </label>
               <input
@@ -188,7 +198,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Description
               </label>
               <textarea
@@ -200,7 +210,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Frequency *
               </label>
               <select
@@ -217,29 +227,34 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
 
             {frequency === 'weekly' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Day of Week *
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Days of Week * (Select one or more)
                 </label>
-                <select
-                  value={dayOfWeek}
-                  onChange={(e) => setDayOfWeek(parseInt(e.target.value))}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                >
-                  <option value={0}>Sunday</option>
-                  <option value={1}>Monday</option>
-                  <option value={2}>Tuesday</option>
-                  <option value={3}>Wednesday</option>
-                  <option value={4}>Thursday</option>
-                  <option value={5}>Friday</option>
-                  <option value={6}>Saturday</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {dayNames.map((dayName, index) => (
+                    <label
+                      key={index}
+                      className="flex items-center space-x-2 p-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={daysOfWeek.includes(index)}
+                        onChange={() => toggleDayOfWeek(index)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-900 font-medium">{dayName}</span>
+                    </label>
+                  ))}
+                </div>
+                {daysOfWeek.length === 0 && (
+                  <p className="text-sm text-red-600 mt-1">Please select at least one day</p>
+                )}
               </div>
             )}
 
             {frequency === 'monthly' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Day of Month (1-31) *
                 </label>
                 <input

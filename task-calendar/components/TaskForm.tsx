@@ -99,7 +99,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Title *
             </label>
             <input
@@ -112,7 +112,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Description
             </label>
             <textarea
@@ -124,7 +124,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Due Date *
             </label>
             <input
@@ -137,7 +137,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Assign to Child *
             </label>
             <select
@@ -156,7 +156,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Recurrence Template (Optional)
             </label>
             <select

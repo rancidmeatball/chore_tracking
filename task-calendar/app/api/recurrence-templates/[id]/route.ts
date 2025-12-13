@@ -17,7 +17,13 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(template)
+    // Parse daysOfWeek JSON string to array
+    const response = {
+      ...template,
+      daysOfWeek: template.daysOfWeek ? JSON.parse(template.daysOfWeek) : null,
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Error fetching template:', error)
     return NextResponse.json(
@@ -33,7 +39,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, description, frequency, dayOfWeek, dayOfMonth } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth } = body
 
     const template = await prisma.recurrenceTemplate.update({
       where: { id: params.id },
@@ -41,8 +47,10 @@ export async function PUT(
         ...(name && { name }),
         ...(description !== undefined && { description: description || null }),
         ...(frequency && { frequency }),
-        ...(dayOfWeek !== undefined && {
-          dayOfWeek: frequency === 'weekly' ? dayOfWeek : null,
+        ...(daysOfWeek !== undefined && {
+          daysOfWeek: frequency === 'weekly' && daysOfWeek && daysOfWeek.length > 0 
+            ? JSON.stringify(daysOfWeek) 
+            : null,
         }),
         ...(dayOfMonth !== undefined && {
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
@@ -50,7 +58,13 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json(template)
+    // Parse daysOfWeek for response
+    const response = {
+      ...template,
+      daysOfWeek: template.daysOfWeek ? JSON.parse(template.daysOfWeek) : null,
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Error updating template:', error)
     return NextResponse.json(

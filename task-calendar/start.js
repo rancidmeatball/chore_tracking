@@ -49,6 +49,9 @@ if (fs.existsSync(serverJsPath)) {
   console.log('Starting Next.js standalone server from:', serverJsPath);
   process.chdir(standalonePath);
   
+  // Set PORT environment variable (Next.js uses PORT or defaults to 3000)
+  process.env.PORT = process.env.PORT || '3000';
+  
   // Directly require the server - no child processes
   // This process becomes the main process (PID 1)
   require('./server.js');

@@ -19,11 +19,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTasks()
-    fetchChildren()
-  }, [fetchTasks, fetchChildren])
-
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
@@ -58,39 +53,6 @@ export default function Home() {
     }
   }, [])
 
-  const handleTaskComplete = useCallback(async (taskId: string, completed: boolean) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed }),
-      })
-      if (response.ok) {
-        await fetchTasks()
-        // Check if all tasks for the day are complete
-        await checkDailyCompletion()
-      }
-    } catch (error) {
-      console.error('Error updating task:', error)
-    }
-  }, [checkDailyCompletion])
-
-  const handleTaskDelete = useCallback(async (taskId: string) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        await fetchTasks()
-      } else {
-        alert('Failed to delete task')
-      }
-    } catch (error) {
-      console.error('Error deleting task:', error)
-      alert('Failed to delete task')
-    }
-  }, [])
-
   const checkDailyCompletion = useCallback(async () => {
     try {
       const response = await fetch('/api/tasks/check-daily-completion')
@@ -110,6 +72,39 @@ export default function Home() {
     }
   }, [])
 
+  const handleTaskComplete = useCallback(async (taskId: string, completed: boolean) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed }),
+      })
+      if (response.ok) {
+        await fetchTasks()
+        // Check if all tasks for the day are complete
+        await checkDailyCompletion()
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }, [fetchTasks, checkDailyCompletion])
+
+  const handleTaskDelete = useCallback(async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        await fetchTasks()
+      } else {
+        alert('Failed to delete task')
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      alert('Failed to delete task')
+    }
+  }, [fetchTasks])
+
   const handleTaskSaved = () => {
     fetchTasks()
     setShowTaskForm(false)
@@ -124,6 +119,12 @@ export default function Home() {
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date)
   }, [])
+
+  // Initialize data on mount
+  useEffect(() => {
+    fetchTasks()
+    fetchChildren()
+  }, [fetchTasks, fetchChildren])
 
   return (
     <main className="min-h-screen p-8 bg-gray-50">

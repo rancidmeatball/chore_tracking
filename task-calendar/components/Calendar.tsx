@@ -24,13 +24,14 @@ function Calendar({
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   // Memoize month calculations
-  const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays } = useMemo(() => {
+  const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays, monthYear } = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
     const days = eachDayOfInterval({ start, end })
     const firstDay = start.getDay()
     const empty = Array(firstDay).fill(null)
-    return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty }
+    const monthYearStr = format(currentMonth, 'MMMM yyyy')
+    return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty, monthYear: monthYearStr }
   }, [currentMonth])
 
   // Memoize task lookup map for O(1) access - only recalculate when tasks array reference changes

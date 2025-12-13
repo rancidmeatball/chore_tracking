@@ -9,7 +9,12 @@ export async function GET(
     const template = await prisma.recurrenceTemplate.findUnique({
       where: { id: params.id },
       include: {
-        child: true,
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 
@@ -64,7 +69,12 @@ export async function PUT(
         ...(childId !== undefined && { childId: childId || null }),
       },
       include: {
-        child: true,
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 

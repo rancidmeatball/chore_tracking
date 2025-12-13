@@ -5,7 +5,12 @@ export async function GET() {
   try {
     const templates = await prisma.recurrenceTemplate.findMany({
       include: {
-        child: true,
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         name: 'asc',
@@ -70,7 +75,12 @@ export async function POST(request: NextRequest) {
         childId: childId || null,
       },
       include: {
-        child: true,
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 

@@ -15,14 +15,17 @@ COPY . .
 RUN test -f /app/package.json || (echo "ERROR: package.json not found!" && ls -la /app/ && exit 1)
 
 # Install dependencies
-RUN npm install
+RUN echo "Installing npm dependencies..." && \
+    npm install || (echo "npm install failed!" && exit 1)
 
 # Generate Prisma
-RUN npx prisma generate
+RUN echo "Generating Prisma client..." && \
+    npx prisma generate || (echo "Prisma generate failed!" && exit 1)
 
 # Build
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN echo "Building Next.js application..." && \
+    npm run build || (echo "npm build failed!" && exit 1)
 
 # Make scripts executable (only if they exist)
 RUN if [ -f /app/run.sh ]; then chmod a+x /app/run.sh; fi && \

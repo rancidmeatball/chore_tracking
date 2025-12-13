@@ -81,12 +81,20 @@ RUN if [ ! -d .next ]; then \
     echo "Build output verified:" && \
     ls -la .next/ | head -10
 
-# Verify static files exist
+# Verify static files exist (CSS should be here)
 RUN if [ -d .next/static ]; then \
         echo "Static files found:" && \
-        ls -la .next/static/ | head -5; \
+        ls -la .next/static/ && \
+        echo "Checking for CSS files:" && \
+        find .next/static -name "*.css" -type f | head -5 || echo "No CSS files found"; \
     else \
         echo "WARNING: .next/static directory not found"; \
+    fi
+
+# Verify CSS was generated in the build
+RUN if [ -d .next ]; then \
+        echo "Checking for CSS in build output:" && \
+        find .next -name "*.css" -type f | head -10 || echo "No CSS files in .next"; \
     fi
 
 # Make scripts executable

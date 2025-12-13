@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import Calendar from '@/components/Calendar'
 import TaskForm from '@/components/TaskForm'
 import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
@@ -12,15 +12,19 @@ import { Task, Child, RecurrenceTemplate } from '@/types'
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [children, setChildren] = useState<Child[]>([])
-  // Memoize initial date to prevent unnecessary re-renders
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showRecurrenceManager, setShowRecurrenceManager] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchTasks = useCallback(async () => {
+  useEffect(() => {
+    fetchTasks()
+    fetchChildren()
+  }, [])
+
+  const fetchTasks = async () => {
     try {
       setLoading(true)
       setError(null)
@@ -37,9 +41,9 @@ export default function Home() {
       setError(`Failed to load tasks: ${error.message || error}`)
       setLoading(false)
     }
-  }, [])
+  }
 
-  const fetchChildren = useCallback(async () => {
+  const fetchChildren = async () => {
     try {
       const response = await fetch('/api/children')
       if (!response.ok) {
@@ -52,9 +56,9 @@ export default function Home() {
       console.error('Error fetching children:', error)
       setError(`Failed to load children: ${error.message || error}`)
     }
-  }, [])
+  }
 
-  const checkDailyCompletion = useCallback(async () => {
+  const checkDailyCompletion = async () => {
     try {
       const response = await fetch('/api/tasks/check-daily-completion')
       if (response.ok) {
@@ -71,9 +75,9 @@ export default function Home() {
     } catch (error) {
       console.error('Error checking daily completion:', error)
     }
-  }, [])
+  }
 
-  const handleTaskComplete = useCallback(async (taskId: string, completed: boolean) => {
+  const handleTaskComplete = async (taskId: string, completed: boolean) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -88,9 +92,9 @@ export default function Home() {
     } catch (error) {
       console.error('Error updating task:', error)
     }
-  }, [fetchTasks, checkDailyCompletion])
+  }
 
-  const handleTaskDelete = useCallback(async (taskId: string) => {
+  const handleTaskDelete = async (taskId: string) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
@@ -104,7 +108,7 @@ export default function Home() {
       console.error('Error deleting task:', error)
       alert('Failed to delete task')
     }
-  }, [fetchTasks])
+  }
 
   const handleTaskSaved = () => {
     fetchTasks()
@@ -112,20 +116,10 @@ export default function Home() {
     setSelectedTask(null)
   }
 
-  const handleEditTask = useCallback((task: Task) => {
+  const handleEditTask = (task: Task) => {
     setSelectedTask(task)
     setShowTaskForm(true)
-  }, [])
-
-  const handleDateSelect = useCallback((date: Date) => {
-    setSelectedDate(date)
-  }, [])
-
-  // Initialize data on mount
-  useEffect(() => {
-    fetchTasks()
-    fetchChildren()
-  }, [fetchTasks, fetchChildren])
+  }
 
   return (
     <main className="min-h-screen p-8 bg-gray-50">
@@ -190,7 +184,7 @@ export default function Home() {
         <Calendar
           tasks={tasks}
           selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
+          onDateSelect={setSelectedDate}
           onTaskComplete={handleTaskComplete}
           onTaskEdit={handleEditTask}
           onTaskDelete={handleTaskDelete}

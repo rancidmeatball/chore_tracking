@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, memo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -21,8 +21,7 @@ function Calendar({
   onTaskEdit,
   onTaskDelete,
 }: CalendarProps) {
-  // Memoize initial date to prevent unnecessary re-renders
-  const [currentMonth, setCurrentMonth] = useState(() => new Date())
+  const [currentMonth, setCurrentMonth] = useState(new Date())
 
   // Memoize month calculations
   const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays, monthYear } = useMemo(() => {
@@ -35,50 +34,27 @@ function Calendar({
     return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty, monthYear: monthYearStr }
   }, [currentMonth])
 
-  // Memoize task lookup map with completion status - only recalculate when tasks change
+  // Simple task lookup map - only recalculate when tasks change
   const tasksByDate = useMemo(() => {
-    const map = new Map<string, { tasks: Task[], completion: { total: number, completed: number } | null }>()
+    const map = new Map<string, Task[]>()
     for (const task of tasks) {
       const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd')
-      const existing = map.get(dateKey)
-      if (existing) {
-        existing.tasks.push(task)
-        existing.completion = {
-          total: existing.tasks.length,
-          completed: existing.tasks.filter(t => t.completed).length
-        }
-      } else {
-        map.set(dateKey, {
-          tasks: [task],
-          completion: {
-            total: 1,
-            completed: task.completed ? 1 : 0
-          }
-        })
-      }
+      const existing = map.get(dateKey) || []
+      existing.push(task)
+      map.set(dateKey, existing)
     }
     return map
   }, [tasks])
 
-  // Simple inline functions - no callback overhead
+  // Simple inline function
   const getTasksForDate = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd')
-    return tasksByDate.get(dateKey)?.tasks || []
-  }
-  
-  const getCompletionForDate = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd')
-    return tasksByDate.get(dateKey)?.completion || null
+    return tasksByDate.get(dateKey) || []
   }
 
 
-  const prevMonth = useCallback(() => {
-    setCurrentMonth(prev => subMonths(prev, 1))
-  }, [])
-  
-  const nextMonth = useCallback(() => {
-    setCurrentMonth(prev => addMonths(prev, 1))
-  }, [])
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
 
 
   return (
@@ -116,13 +92,15 @@ function Calendar({
           <div key={`empty-${index}`} className="h-24"></div>
         ))}
         {daysInMonth.map((day) => {
-          // Pre-compute all values once per day - use cached values
           const dayKey = format(day, 'yyyy-MM-dd')
           const dayTasks = getTasksForDate(day)
-          const completion = getCompletionForDate(day)
+          const completion = dayTasks.length > 0 ? {
+            total: dayTasks.length,
+            completed: dayTasks.filter(t => t.completed).length
+          } : null
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
-          const dayNumber = day.getDate() // Cache day number
+          const dayNumber = day.getDate()
 
           return (
             <div
@@ -177,11 +155,17 @@ function Calendar({
       </div>
 
       {/* Selected Date Tasks Detail */}
-      {useMemo(() => {
-        const selectedDateTasks = getTasksForDate(selectedDate)
-        const selectedDateFormatted = format(selectedDate, 'MMMM d, yyyy')
-        
-        return (
+      <div className="mt-6 border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Tasks for {format(selectedDate, 'MMMM d, yyyy')}
+        </h3>
+        <div className="space-y-2">
+          {(() => {
+            const selectedDateTasks = getTasksForDate(selectedDate)
+            if (selectedDateTasks.length === 0) {
+              return <p className="text-gray-700">No tasks for this date</p>
+            }
+            return selectedDateTasks.map((task) => (
           <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Tasks for {selectedDateFormatted}
@@ -234,13 +218,13 @@ function Calendar({
                 ))
               )}
             </div>
-          </div>
-        )
-      }, [selectedDate, tasks])}
+          ))
+          })()}
+        </div>
+      </div>
     </div>
   )
 }
 
-// Memoize the Calendar component - use default shallow comparison
-// The expensive operations are already memoized inside the component
-export default memo(Calendar)
+// Export Calendar without memo - let React handle re-renders naturally
+export default Calendar

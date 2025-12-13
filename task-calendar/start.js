@@ -40,7 +40,7 @@ if (!fs.existsSync(dbPath)) {
   }
 }
 
-// Use next start - simpler and more reliable
+// Use next start - simpler and more reliable than standalone mode
 process.env.PORT = process.env.PORT || '3000';
 
 console.log('Starting Next.js application...');
@@ -53,26 +53,18 @@ if (!fs.existsSync('/app/.next')) {
   process.exit(1);
 }
 
-// Use next start via node - this replaces the current process
-// For Home Assistant with init: false, we need to exec to replace PID 1
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const execAsync = promisify(exec);
-
-// Start Next.js server
-console.log('Executing: npm run start');
-exec('npm run start', {
-  cwd: '/app',
-  env: process.env
-}, (error, stdout, stderr) => {
-  if (error) {
-    console.error('Failed to start Next.js:', error);
-    process.exit(1);
-  }
-  if (stdout) console.log(stdout);
-  if (stderr) console.error(stderr);
-});
-
-// Keep the process alive
-process.stdin.resume();
+// Use next start - execSync will block and keep the process running
+// This is fine for Home Assistant add-ons
+const { execSync } = require('child_process');
+try {
+  console.log('Executing: npm run start');
+  execSync('npm run start', {
+    cwd: '/app',
+    stdio: 'inherit',
+    env: process.env
+  });
+} catch (error) {
+  console.error('Failed to start Next.js:', error);
+  process.exit(1);
+}
 

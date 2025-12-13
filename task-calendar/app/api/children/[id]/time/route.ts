@@ -19,6 +19,10 @@ export async function PUT(
     // Get current child to calculate new balance
     const child = await prisma.child.findUnique({
       where: { id: params.id },
+      select: {
+        id: true,
+        timeBalance: true,
+      },
     })
 
     if (!child) {
@@ -29,7 +33,9 @@ export async function PUT(
     }
 
     // Update time balance (can be positive or negative)
-    const newBalance = child.timeBalance + minutes
+    // Handle case where timeBalance might be null/undefined (defaults to 0)
+    const currentBalance = child.timeBalance ?? 0
+    const newBalance = currentBalance + minutes
 
     const updatedChild = await prisma.child.update({
       where: { id: params.id },

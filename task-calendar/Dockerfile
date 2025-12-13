@@ -51,7 +51,9 @@ RUN test -f next.config.js || (echo "ERROR: next.config.js not found!" && exit 1
     test -d app || (echo "ERROR: app directory not found!" && exit 1)
 
 # Generate Prisma client
+# Force regeneration to ensure types are up to date
 RUN echo "Generating Prisma client..." && \
+    rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true && \
     npx prisma generate || \
     (echo "Prisma generate failed!" && \
      echo "Prisma version:" && npx prisma --version && \
@@ -72,8 +74,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js application
 RUN echo "Building Next.js application..." && \
-    npm run build || \
+    npm run build 2>&1 | tee /tmp/build-output.log || \
     (echo "npm build failed!" && \
+     echo "Build output:" && cat /tmp/build-output.log && \
      echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
      exit 1)
 

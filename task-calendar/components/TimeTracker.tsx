@@ -159,7 +159,7 @@ export default function TimeTracker({ childrenList, onTimeUpdated }: TimeTracker
 
       {childrenList.length > 0 && (
         <div className="mt-6 pt-6 border-t">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">All Children's Time Balance</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">All Children&apos;s Time Balance</h3>
           <div className="space-y-2">
             {childrenList.map((child) => (
               <div

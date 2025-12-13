@@ -73,17 +73,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Version 0.1.4 - Removed CSS verification step
 
 # Build Next.js application
-# Capture build output to file and display on failure
-RUN set -o pipefail && \
-    echo "Building Next.js application..." && \
-    npm run build > /tmp/build-output.log 2>&1 || \
-    (echo "=== BUILD FAILED ===" && \
-     echo "Build output:" && \
-     cat /tmp/build-output.log && \
-     echo "=== END BUILD OUTPUT ===" && \
-     echo "Checking .next directory:" && \
-     ls -la .next/ 2>/dev/null || echo "No .next directory" && \
-     exit 1)
+# Run build and capture output - show errors on failure
+RUN echo "Building Next.js application..." && \
+    npm run build 2>&1 | tee /tmp/build.log; BUILD_EXIT=$$?; \
+    if [ $$BUILD_EXIT -ne 0 ]; then \
+        echo "=== BUILD FAILED (exit code: $$BUILD_EXIT) ==="; \
+        echo "=== BUILD OUTPUT ==="; \
+        cat /tmp/build.log 2>/dev/null || echo "No build log found"; \
+        echo "=== END BUILD OUTPUT ==="; \
+        echo "=== .next directory contents ==="; \
+        ls -la .next/ 2>/dev/null || echo "No .next directory"; \
+        exit 1; \
+    fi
 
 # Verify build output exists
 RUN if [ ! -d .next ]; then \

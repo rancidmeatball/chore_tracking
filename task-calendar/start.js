@@ -52,7 +52,26 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 // Verify .next directory exists
 if (!fs.existsSync('/app/.next')) {
   console.error('ERROR: .next directory not found. Build may have failed.');
+  console.error('Current directory:', process.cwd());
+  console.error('Files in /app:', fs.readdirSync('/app').join(', '));
   process.exit(1);
+}
+
+// Check for server files
+const serverFiles = ['server.js', 'server.mjs'];
+let serverFile = null;
+for (const file of serverFiles) {
+  const path = `/app/.next/${file}`;
+  if (fs.existsSync(path)) {
+    serverFile = path;
+    console.log(`Found server file: ${serverFile}`);
+    break;
+  }
+}
+
+if (!serverFile) {
+  console.warn('WARNING: No server file found in .next directory');
+  console.log('Contents of .next:', fs.readdirSync('/app/.next').join(', '));
 }
 
 // Check if standalone build exists

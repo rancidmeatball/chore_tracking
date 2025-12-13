@@ -155,7 +155,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
 
             <div className="space-y-2">
               {templates.length === 0 ? (
-                <p className="text-gray-700">No recurrence templates yet</p>
+                <p className="text-gray-900">No recurrence templates yet</p>
               ) : (
                 templates.map((template) => (
                   <div

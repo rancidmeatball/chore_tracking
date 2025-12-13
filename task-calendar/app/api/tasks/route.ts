@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { title, description, dueDate, childId, recurrenceTemplateId } = body
 
-    if (!title || !dueDate || !childId) {
+    // If there's a recurrence template, childId might come from the template
+    if (recurrenceTemplateId) {
+      // Don't require childId here - it might come from the template
+    } else if (!title || !dueDate || !childId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -53,6 +56,11 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         )
       }
+
+      // Use template's childId if available, otherwise use the provided childId
+      const taskChildId = template.childId || childId
+      
+      console.log(`Creating recurring tasks with template ${recurrenceTemplateId}, childId: ${taskChildId}, frequency: ${template.frequency}`)
 
       const tasks = []
       // For recurring tasks, start from today (not the dueDate which might be far future)
@@ -88,7 +96,7 @@ export async function POST(request: NextRequest) {
               title,
               description: description || null,
               dueDate: taskDate,
-              childId,
+              childId: taskChildId,
               recurrenceTemplateId,
             })
             taskCount++
@@ -125,7 +133,7 @@ export async function POST(request: NextRequest) {
               title,
               description: description || null,
               dueDate: taskDate,
-              childId,
+              childId: taskChildId,
               recurrenceTemplateId,
             })
           }
@@ -142,7 +150,7 @@ export async function POST(request: NextRequest) {
           title,
           description: description || null,
           dueDate: oneTimeDate,
-          childId,
+          childId: taskChildId,
           recurrenceTemplateId,
         })
       }

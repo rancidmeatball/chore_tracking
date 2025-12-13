@@ -68,7 +68,7 @@ export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+        className="p-2 text-gray-800 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
         aria-label="Settings"
         title="Settings"
       >

@@ -87,24 +87,26 @@ function Calendar({
 
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
+      <div className="flex justify-between items-center mb-3 sm:mb-6 gap-2">
         <button
           onClick={prevMonth}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold shadow-md"
+          className="px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold shadow-md text-sm sm:text-base touch-manipulation"
           aria-label="Previous month"
         >
-          ← Prev
+          <span className="hidden sm:inline">← Prev</span>
+          <span className="sm:hidden">←</span>
         </button>
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 text-center flex-1">
           {monthYear}
         </h2>
         <button
           onClick={nextMonth}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold shadow-md"
+          className="px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition font-semibold shadow-md text-sm sm:text-base touch-manipulation"
           aria-label="Next month"
         >
-          Next →
+          <span className="hidden sm:inline">Next →</span>
+          <span className="sm:hidden">→</span>
         </button>
       </div>
 
@@ -136,17 +138,17 @@ function Calendar({
               key={dayKey}
               onClick={() => onDateSelect(day)}
               className={`
-                h-24 border-2 rounded-lg p-2 cursor-pointer transition
-                ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}
+                h-12 sm:h-16 md:h-24 border-2 rounded-lg p-1 sm:p-2 cursor-pointer transition touch-manipulation
+                ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 active:bg-gray-100'}
                 ${!isCurrentMonth ? 'opacity-50' : ''}
               `}
             >
-              <div className="flex justify-between items-start mb-1">
-                <span className={`text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
+              <div className="flex justify-between items-start mb-0.5 sm:mb-1">
+                <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
                   {dayNumber}
                 </span>
                 {completion && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded ${
                     completion.completed === completion.total
                       ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'
@@ -155,7 +157,7 @@ function Calendar({
                   </span>
                 )}
               </div>
-              <div className="space-y-1 overflow-y-auto max-h-16">
+              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto max-h-8 sm:max-h-12 md:max-h-16">
                 {dayTasks.slice(0, 3).map((task) => {
                   const bgColor = getTaskBgColor(task)
                   const textColor = getTaskColor(task)
@@ -173,9 +175,9 @@ function Calendar({
                         onTaskEdit(task)
                       }}
                       className={`
-                        text-xs p-1 rounded truncate cursor-pointer relative group
+                        text-[10px] sm:text-xs p-0.5 sm:p-1 rounded truncate cursor-pointer relative group touch-manipulation
                         ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
-                        hover:opacity-90 transition-opacity
+                        hover:opacity-90 active:opacity-80 transition-opacity
                       `}
                       style={task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }}
                       title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
@@ -201,8 +203,8 @@ function Calendar({
       </div>
 
       {/* Selected Date Tasks Detail */}
-      <div className="mt-6 border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="mt-3 sm:mt-6 border-t pt-3 sm:pt-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
           Tasks for {format(selectedDate, 'MMMM d, yyyy')}
         </h3>
         <div className="space-y-2">
@@ -217,14 +219,14 @@ function Calendar({
               return (
               <div
                 key={task.id}
-                className="flex items-center gap-3 p-3 rounded-lg"
+                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg"
                 style={task.completed ? {} : { backgroundColor: bgColor + '40', borderLeft: `4px solid ${bgColor}` }}
               >
                 <input
                   type="checkbox"
                   checked={task.completed}
                   onChange={(e) => onTaskComplete(task.id, e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation"
                 />
                 <div className="flex-1">
                   <h4 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>

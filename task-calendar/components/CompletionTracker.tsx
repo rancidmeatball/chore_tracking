@@ -85,18 +85,18 @@ export default function CompletionTracker({ childrenList }: CompletionTrackerPro
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Completion Tracking</h2>
-        <div className="flex gap-4 items-center">
-          <div>
+    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Completion Tracking</h2>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center w-full sm:w-auto">
+          <div className="w-full sm:w-auto">
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Time Period
             </label>
             <select
               value={days}
               onChange={(e) => setDays(parseInt(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white touch-manipulation"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
@@ -104,14 +104,14 @@ export default function CompletionTracker({ childrenList }: CompletionTrackerPro
               <option value={365}>Last year</option>
             </select>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Filter by Child
             </label>
             <select
               value={selectedChildId}
               onChange={(e) => setSelectedChildId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white touch-manipulation"
             >
               <option value="">All Children</option>
               {childrenList.map((child) => (

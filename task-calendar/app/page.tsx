@@ -133,7 +133,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
+    <main className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex justify-between items-start">
           <div>

@@ -42,7 +42,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
       <div className="mb-4">
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          className="px-4 py-3 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 transition touch-manipulation text-base sm:text-sm font-medium w-full sm:w-auto"
         >
           Add Child
         </button>

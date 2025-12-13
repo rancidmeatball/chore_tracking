@@ -133,8 +133,8 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Recurrence Templates</h2>
           <button
@@ -265,7 +265,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
                 <label className="block text-sm font-medium text-gray-900 mb-3">
                   Select Days of Week * (Choose which days to repeat weekly)
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {dayNames.map((dayName, index) => (
                     <label
                       key={index}

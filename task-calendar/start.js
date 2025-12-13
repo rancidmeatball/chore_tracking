@@ -57,32 +57,40 @@ if (fs.existsSync(standalonePath)) {
   }
 }
 
-// Use next start - this is the standard way to run Next.js
-// We'll use spawn but keep this process as PID 1 by not detaching
-console.log('Starting Next.js server...');
-const { spawn } = require('child_process');
-
-// Use the next binary directly
-const nextPath = path.join(appPath, 'node_modules', '.bin', 'next');
-const child = spawn('node', [nextPath, 'start'], {
-  cwd: appPath,
-  stdio: 'inherit',
-  env: process.env,
-  detached: false  // Keep attached so this process stays as PID 1
-});
-
-child.on('exit', (code) => {
-  console.log('Next.js process exited with code:', code);
-  process.exit(code || 0);
-});
-
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down...');
-  child.kill('SIGTERM');
-});
-
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down...');
-  child.kill('SIGINT');
-});
+// Use standalone server.js directly (as recommended by Next.js)
+// This keeps the process as PID 1 (required for s6-overlay)
+if (fs.existsSync(standalonePath)) {
+  console.log('Starting Next.js standalone server...');
+  process.chdir(standalonePath);
+  
+  // Directly require the server - no child processes
+  // This process becomes the main process (PID 1)
+  require('./server.js');
+} else {
+  // Fallback: use next start if standalone doesn't exist
+  console.log('Standalone build not found, using next start...');
+  const { spawn } = require('child_process');
+  const nextPath = path.join(appPath, 'node_modules', '.bin', 'next');
+  const child = spawn('node', [nextPath, 'start'], {
+    cwd: appPath,
+    stdio: 'inherit',
+    env: process.env,
+    detached: false
+  });
+  
+  child.on('exit', (code) => {
+    console.log('Next.js process exited with code:', code);
+    process.exit(code || 0);
+  });
+  
+  process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down...');
+    child.kill('SIGTERM');
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('Received SIGINT, shutting down...');
+    child.kill('SIGINT');
+  });
+}
 

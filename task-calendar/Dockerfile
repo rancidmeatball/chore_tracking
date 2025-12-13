@@ -67,6 +67,12 @@ RUN test -d node_modules/.prisma/client || \
 # Build Next.js application
 # Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Verify Tailwind and PostCSS are available before building
+RUN echo "Verifying CSS build tools..." && \
+    npx tailwindcss --version || echo "WARNING: Tailwind not found" && \
+    npx postcss --version || echo "WARNING: PostCSS not found"
+
 RUN echo "Building Next.js application..." && \
     npm run build || \
     (echo "npm build failed!" && \

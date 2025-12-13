@@ -38,7 +38,10 @@ function Calendar({
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>()
     for (const task of tasks) {
-      const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd')
+      // Normalize task date to midnight to avoid timezone issues
+      const taskDate = new Date(task.dueDate)
+      taskDate.setHours(0, 0, 0, 0)
+      const dateKey = format(taskDate, 'yyyy-MM-dd')
       const existing = map.get(dateKey) || []
       existing.push(task)
       map.set(dateKey, existing)

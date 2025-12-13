@@ -69,10 +69,13 @@ export async function POST(request: NextRequest) {
         while (currentDate <= endDate) {
           const dayOfWeek = currentDate.getDay()
           if (daysOfWeek.includes(dayOfWeek)) {
+            // Normalize date to midnight to avoid timezone issues
+            const taskDate = new Date(currentDate)
+            taskDate.setHours(0, 0, 0, 0)
             tasks.push({
               title,
               description: description || null,
-              dueDate: new Date(currentDate),
+              dueDate: taskDate,
               childId,
               recurrenceTemplateId,
             })
@@ -101,6 +104,8 @@ export async function POST(request: NextRequest) {
           const taskDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayToUse)
           
           if (taskDate >= startDate && taskDate <= endDate) {
+            // Normalize date to midnight to avoid timezone issues
+            taskDate.setHours(0, 0, 0, 0)
             tasks.push({
               title,
               description: description || null,
@@ -115,28 +120,40 @@ export async function POST(request: NextRequest) {
           currentDate.setDate(dayToUse)
         }
       } else {
-        // One-time task
+        // One-time task - normalize to midnight
+        const oneTimeDate = new Date(dueDate)
+        oneTimeDate.setHours(0, 0, 0, 0)
         tasks.push({
           title,
           description: description || null,
-          dueDate: new Date(dueDate),
+          dueDate: oneTimeDate,
           childId,
           recurrenceTemplateId,
         })
+      }
+
+      // Only create tasks if we have any
+      if (tasks.length === 0) {
+        return NextResponse.json(
+          { error: 'No tasks generated from recurrence template' },
+          { status: 400 }
+        )
       }
 
       const createdTasks = await prisma.task.createMany({
         data: tasks,
       })
 
-      // Fetch the created tasks with relations
+      console.log(`Created ${createdTasks.count} recurring tasks from template ${recurrenceTemplateId}`)
+
+      // Fetch the created tasks with relations - use a longer time window to ensure we get them
       const taskIds = await prisma.task.findMany({
         where: {
           childId,
           recurrenceTemplateId,
           title,
           createdAt: {
-            gte: new Date(Date.now() - 1000), // Created in the last second
+            gte: new Date(Date.now() - 5000), // Created in the last 5 seconds
           },
         },
         include: {

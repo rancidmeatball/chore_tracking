@@ -34,6 +34,7 @@ ENV DATABASE_URL="file:/data/task-calendar.db"
 # Expose port
 EXPOSE 3000
 
-# Run node directly without shell script to avoid s6-overlay-suexec issues
+# Run node directly - ensure we use the correct path
 # The start.js script will handle environment variable setup from SUPERVISOR_TOKEN
-CMD [ "/usr/bin/node", "/app/start.js" ]
+# Using exec form to ensure proper PID 1 execution
+CMD [ "node", "/app/start.js" ]

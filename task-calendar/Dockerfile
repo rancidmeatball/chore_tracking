@@ -34,8 +34,7 @@ ENV DATABASE_URL="file:/data/task-calendar.db"
 # Expose port
 EXPOSE 3000
 
-# Don't override ENTRYPOINT - let Home Assistant base image handle s6-overlay
-# Run node directly as the main process
-# The start.js script will handle environment variable setup from SUPERVISOR_TOKEN
-ENTRYPOINT [ "/init" ]
+# Don't override ENTRYPOINT - let Home Assistant base image handle it
+# With init: false, the base image should not use s6-overlay
+# Run node directly - this becomes PID 1
 CMD [ "node", "/app/start.js" ]

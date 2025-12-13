@@ -162,13 +162,13 @@ export async function POST(request: NextRequest) {
       console.log(`Created ${createdTasks.count} recurring tasks from template ${recurrenceTemplateId}`)
 
       // Fetch the created tasks with relations - use a longer time window to ensure we get them
-      const taskIds = await prisma.task.findMany({
+      // Also fetch by recurrenceTemplateId to ensure we get all tasks
+      const createdTaskIds = await prisma.task.findMany({
         where: {
-          childId,
           recurrenceTemplateId,
           title,
           createdAt: {
-            gte: new Date(Date.now() - 5000), // Created in the last 5 seconds
+            gte: new Date(Date.now() - 10000), // Created in the last 10 seconds
           },
         },
         include: {
@@ -180,8 +180,8 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      console.log(`Returning ${taskIds.length} created tasks`)
-      return NextResponse.json(taskIds, { status: 201 })
+      console.log(`Returning ${createdTaskIds.length} created tasks (expected ${tasks.length})`)
+      return NextResponse.json(createdTaskIds, { status: 201 })
     } else {
       // No recurrence template - create single task
       const task = await prisma.task.create({

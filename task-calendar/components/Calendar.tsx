@@ -199,10 +199,14 @@ function Calendar({
             if (selectedDateTasks.length === 0) {
               return <p className="text-gray-700">No tasks for this date</p>
             }
-            return selectedDateTasks.map((task) => (
+            return selectedDateTasks.map((task) => {
+              const bgColor = getTaskBgColor(task)
+              const textColor = getTaskColor(task)
+              return (
               <div
                 key={task.id}
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                className="flex items-center gap-3 p-3 rounded-lg"
+                style={task.completed ? {} : { backgroundColor: bgColor + '40', borderLeft: `4px solid ${bgColor}` }}
               >
                 <input
                   type="checkbox"
@@ -224,7 +228,7 @@ function Calendar({
                 <div className="flex gap-2">
                   <button
                     onClick={() => onTaskEdit(task)}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                   >
                     Edit
                   </button>
@@ -240,7 +244,7 @@ function Calendar({
                   </button>
                 </div>
               </div>
-            ))
+            )})
           })()}
         </div>
       </div>

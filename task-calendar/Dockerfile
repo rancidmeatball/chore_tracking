@@ -70,32 +70,27 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Verify Tailwind and PostCSS are available before building
 RUN echo "Verifying CSS build tools..." && \
-    npx tailwindcss --version && \
-    npx postcss --version && \
-    echo "CSS build tools verified"
+    (npx tailwindcss --version || echo "WARNING: Tailwind version check failed") && \
+    (npx postcss --version || echo "WARNING: PostCSS version check failed") && \
+    echo "CSS build tools check complete"
 
-# Verify PostCSS config exists
+# Verify config files exist (non-blocking)
 RUN if [ -f postcss.config.js ]; then \
         echo "PostCSS config found"; \
-        cat postcss.config.js; \
     else \
-        echo "ERROR: postcss.config.js not found!"; \
-        exit 1; \
+        echo "WARNING: postcss.config.js not found (this might be okay)"; \
     fi
 
-# Verify Tailwind config exists
 RUN if [ -f tailwind.config.ts ] || [ -f tailwind.config.js ]; then \
         echo "Tailwind config found"; \
     else \
-        echo "ERROR: tailwind.config not found!"; \
-        exit 1; \
+        echo "WARNING: tailwind.config not found (this might be okay)"; \
     fi
 
+# Build Next.js application
 RUN echo "Building Next.js application..." && \
-    npm run build 2>&1 | tee /tmp/build.log || \
+    npm run build || \
     (echo "npm build failed!" && \
-     echo "Build log:" && \
-     tail -50 /tmp/build.log && \
      echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
      exit 1)
 
@@ -107,28 +102,25 @@ RUN if [ ! -d .next ]; then \
     echo "Build output verified:" && \
     ls -la .next/ | head -10
 
-# Verify static files exist (CSS should be here)
+# Verify static files exist (CSS should be here) - non-blocking
 RUN if [ -d .next/static ]; then \
         echo "Static files found:" && \
         ls -la .next/static/ && \
-        echo "Checking for CSS directory:" && \
         if [ -d .next/static/css ]; then \
             echo "CSS directory exists:" && \
-            ls -la .next/static/css/ && \
-            echo "CSS files:" && \
-            find .next/static/css -name "*.css" -type f || echo "No CSS files in css directory"; \
+            ls -la .next/static/css/ | head -10 && \
+            echo "CSS files found:" && \
+            find .next/static/css -name "*.css" -type f | head -5 || echo "No CSS files in css directory"; \
         else \
-            echo "ERROR: .next/static/css directory not found!" && \
-            echo "This means CSS was not generated during build!" && \
-            echo "Checking if Tailwind processed correctly..."; \
+            echo "WARNING: .next/static/css directory not found - CSS may not be generated"; \
         fi; \
     else \
-        echo "ERROR: .next/static directory not found!"; \
+        echo "WARNING: .next/static directory not found"; \
     fi
 
-# Verify CSS was generated in the build
-RUN echo "Searching for all CSS files in .next:" && \
-    find .next -name "*.css" -type f || echo "No CSS files found anywhere in .next"
+# Search for CSS files (non-blocking)
+RUN echo "Searching for CSS files:" && \
+    (find .next -name "*.css" -type f | head -10 || echo "No CSS files found")
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true

@@ -233,9 +233,21 @@ function Calendar({
                   className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation"
                 />
                 <div className="flex-1">
-                  <h4 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                    {task.title}
-                  </h4>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm">
+                      {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
+                    </span>
+                    <h4 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                      {task.title}
+                    </h4>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      task.category === 'helping-family' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {task.category === 'helping-family' ? 'Family' : 'Enrichment'}
+                    </span>
+                  </div>
                   {task.description && (
                     <p className="text-sm text-gray-700">{task.description}</p>
                   )}

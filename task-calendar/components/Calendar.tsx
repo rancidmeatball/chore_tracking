@@ -234,8 +234,20 @@ function Calendar({
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
-                        onTaskDelete(task.id)
+                      // Check if this task is part of a recurring series
+                      if (task.recurrenceTemplateId) {
+                        const deleteChoice = confirm(
+                          `"${task.title}" is part of a recurring series.\n\n` +
+                          `Click OK to delete ALL future tasks in this series (starting from this date).\n` +
+                          `Click Cancel to delete just this one task.`
+                        )
+                        // If user clicks OK, delete series. If Cancel, delete just this task.
+                        onTaskDelete(task.id, deleteChoice)
+                      } else {
+                        // Not a recurring task, just confirm deletion
+                        if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+                          onTaskDelete(task.id, false)
+                        }
                       }
                     }}
                     className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"

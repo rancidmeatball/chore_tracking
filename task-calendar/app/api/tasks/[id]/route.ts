@@ -101,11 +101,51 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.task.delete({
+    // Get the task first to check if it's part of a recurring series
+    const task = await prisma.task.findUnique({
       where: { id: params.id },
+      select: {
+        id: true,
+        recurrenceTemplateId: true,
+        dueDate: true,
+      },
     })
 
-    return NextResponse.json({ message: 'Task deleted successfully' })
+    if (!task) {
+      return NextResponse.json(
+        { error: 'Task not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if user wants to delete the whole series
+    const { searchParams } = new URL(request.url)
+    const deleteSeries = searchParams.get('deleteSeries') === 'true'
+
+    if (deleteSeries && task.recurrenceTemplateId) {
+      // Delete all future tasks from this recurrence template (including the current one)
+      const deletedCount = await prisma.task.deleteMany({
+        where: {
+          recurrenceTemplateId: task.recurrenceTemplateId,
+          dueDate: {
+            gte: task.dueDate, // Delete this task and all future ones
+          },
+        },
+      })
+
+      console.log(`Deleted ${deletedCount.count} tasks from recurring series`)
+      return NextResponse.json({ 
+        message: `Deleted ${deletedCount.count} task(s) from recurring series`,
+        deletedCount: deletedCount.count,
+      })
+    } else {
+      // Delete just this one task
+      await prisma.task.delete({
+        where: { id: params.id },
+      })
+
+      return NextResponse.json({ message: 'Task deleted successfully' })
+    }
   } catch (error) {
     console.error('Error deleting task:', error)
     return NextResponse.json(

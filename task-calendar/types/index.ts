@@ -13,6 +13,7 @@ export interface RecurrenceTemplate {
   frequency: 'one-time' | 'weekly' | 'monthly'
   daysOfWeek?: number[] // Array of day numbers [0-6] for weekly
   dayOfMonth?: number
+  dueDate?: string // Optional due date (only for one-time tasks)
   childId?: string
   child?: Child
   createdAt: string

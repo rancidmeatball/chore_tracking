@@ -16,6 +16,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [isOpenEnded, setIsOpenEnded] = useState(false)
   const [childId, setChildId] = useState('')
   const [recurrenceTemplateId, setRecurrenceTemplateId] = useState('')
   const [recurrenceTemplates, setRecurrenceTemplates] = useState<RecurrenceTemplate[]>([])
@@ -28,8 +29,13 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
       setDueDate(format(new Date(task.dueDate), 'yyyy-MM-dd'))
       setChildId(task.childId)
       setRecurrenceTemplateId(task.recurrenceTemplateId || '')
+      setIsOpenEnded(false) // Tasks always have a due date
     }
   }, [task])
+
+  // Get selected recurrence template
+  const selectedTemplate = recurrenceTemplates.find(t => t.id === recurrenceTemplateId)
+  const isRecurring = selectedTemplate && selectedTemplate.frequency !== 'one-time'
 
   const fetchRecurrenceTemplates = async () => {
     try {
@@ -47,13 +53,22 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
       const url = task ? `/api/tasks/${task.id}` : '/api/tasks'
       const method = task ? 'PUT' : 'POST'
       
+      // For open-ended recurring tasks, use a far future date or null
+      let taskDueDate: string | null = null
+      if (isOpenEnded && isRecurring) {
+        // Open-ended: use a far future date (10 years from now)
+        taskDueDate = new Date(new Date().setFullYear(new Date().getFullYear() + 10)).toISOString()
+      } else {
+        taskDueDate = new Date(dueDate).toISOString()
+      }
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           description,
-          dueDate: new Date(dueDate).toISOString(),
+          dueDate: taskDueDate,
           childId,
           recurrenceTemplateId: recurrenceTemplateId || null,
         }),
@@ -123,18 +138,57 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Due Date *
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            />
-          </div>
+          {(!selectedTemplate || selectedTemplate.frequency === 'one-time') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Due Date *
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              />
+            </div>
+          )}
+
+          {isRecurring && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Due Date
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isOpenEnded}
+                    onChange={(e) => {
+                      setIsOpenEnded(e.target.checked)
+                      if (!e.target.checked) {
+                        setDueDate(format(new Date(), 'yyyy-MM-dd'))
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-gray-900 font-medium">Open-Ended (No Due Date)</span>
+                </label>
+                {!isOpenEnded && (
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-gray-700 mt-1">
+                {isOpenEnded 
+                  ? 'This task will repeat indefinitely on the scheduled days'
+                  : 'Set a specific end date for this recurring task'}
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">

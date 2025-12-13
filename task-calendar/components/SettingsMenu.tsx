@@ -99,7 +99,7 @@ export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
           <div className="py-1">
             <button
               onClick={clearApplicationData}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition flex items-center gap-2 font-medium"
             >
               <svg
                 className="w-4 h-4"
@@ -118,7 +118,7 @@ export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
               Clear Cache
             </button>
             <div className="border-t border-gray-200 my-1"></div>
-            <div className="px-4 py-2 text-xs text-gray-500">
+            <div className="px-4 py-2 text-xs text-gray-700">
               Clears browser cache and reloads the page
             </div>
           </div>

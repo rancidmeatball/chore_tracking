@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, frequency, daysOfWeek, dayOfMonth, childId } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth, dueDate, childId } = body
 
     if (!name || !frequency || !childId) {
       return NextResponse.json(
@@ -52,6 +52,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (frequency === 'one-time' && !dueDate) {
+      return NextResponse.json(
+        { error: 'dueDate is required for one-time frequency' },
+        { status: 400 }
+      )
+    }
+
     const template = await prisma.recurrenceTemplate.create({
       data: {
         name,
@@ -59,6 +66,7 @@ export async function POST(request: NextRequest) {
         frequency,
         daysOfWeek: frequency === 'weekly' ? JSON.stringify(daysOfWeek) : null,
         dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+        dueDate: frequency === 'one-time' && dueDate ? new Date(dueDate) : null,
         childId: childId || null,
       },
       include: {

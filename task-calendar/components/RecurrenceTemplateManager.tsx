@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { format } from 'date-fns'
 import { RecurrenceTemplate, Child } from '@/types'
 
 interface RecurrenceTemplateManagerProps {
@@ -17,6 +18,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
   const [frequency, setFrequency] = useState<'one-time' | 'weekly' | 'monthly'>('one-time')
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
   const [dayOfMonth, setDayOfMonth] = useState(1)
+  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [childId, setChildId] = useState<string>('')
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
           frequency,
           daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+          dueDate: frequency === 'one-time' ? new Date(dueDate).toISOString() : null,
           childId: childId || null,
         }),
       })
@@ -75,6 +78,11 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
     setDaysOfWeek(template.daysOfWeek || [])
     setDayOfMonth(template.dayOfMonth || 1)
     setChildId(template.childId || '')
+    if (template.dueDate) {
+      setDueDate(format(new Date(template.dueDate), 'yyyy-MM-dd'))
+    } else {
+      setDueDate(format(new Date(), 'yyyy-MM-dd'))
+    }
     setShowForm(true)
   }
 
@@ -105,6 +113,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
     setFrequency('one-time')
     setDaysOfWeek([])
     setDayOfMonth(1)
+    setDueDate(format(new Date(), 'yyyy-MM-dd'))
     setChildId('')
   }
 
@@ -157,13 +166,19 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
                       {template.child && (
                         <p className="text-sm text-gray-900 font-medium mt-1">Child: {template.child.name}</p>
                       )}
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-900 mt-1">
                         Frequency: {template.frequency === 'one-time' ? 'One-Time (No Recurrence)' : template.frequency}
                         {template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0 && (
                           <span> (Days: {template.daysOfWeek.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})</span>
                         )}
                         {template.frequency === 'monthly' && template.dayOfMonth != null && (
                           <span> (Day {template.dayOfMonth!} of each month)</span>
+                        )}
+                        {template.frequency === 'one-time' && template.dueDate && (
+                          <span> - Due: {format(new Date(template.dueDate), 'MMM d, yyyy')}</span>
+                        )}
+                        {(template.frequency === 'weekly' || template.frequency === 'monthly') && (
+                          <span className="text-green-700 font-medium"> (Open-Ended)</span>
                         )}
                       </p>
                     </div>
@@ -295,6 +310,21 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
                   max="31"
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(parseInt(e.target.value))}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                />
+              </div>
+            )}
+
+            {frequency === 'one-time' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Due Date *
+                </label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 />

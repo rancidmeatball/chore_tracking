@@ -45,7 +45,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
           Add Child
         </button>
         {childrenList.length > 0 && (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-gray-900">
             Children: {childrenList.map(c => c.name).join(', ')}
           </div>
         )}

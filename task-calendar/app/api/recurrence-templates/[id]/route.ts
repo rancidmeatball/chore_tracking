@@ -42,7 +42,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, description, frequency, daysOfWeek, dayOfMonth, childId } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth, dueDate, childId } = body
 
     const template = await prisma.recurrenceTemplate.update({
       where: { id: params.id },
@@ -57,6 +57,9 @@ export async function PUT(
         }),
         ...(dayOfMonth !== undefined && {
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+        }),
+        ...(dueDate !== undefined && {
+          dueDate: frequency === 'one-time' && dueDate ? new Date(dueDate) : null,
         }),
         ...(childId !== undefined && { childId: childId || null }),
       },

@@ -28,6 +28,7 @@ model RecurrenceTemplate {
   frequency   String   // "one-time", "weekly", "monthly"
   daysOfWeek  String?  // JSON array of day numbers [0,1,2,3,4,5,6] for weekly (0 = Sunday)
   dayOfMonth  Int?     // 1-31 for monthly (repeats on same day each month)
+  dueDate     DateTime? // Optional due date (only used for one-time tasks)
   childId     String?
   child       Child?   @relation(fields: [childId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())

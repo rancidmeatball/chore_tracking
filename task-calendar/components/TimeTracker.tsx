@@ -88,7 +88,7 @@ export default function TimeTracker({ childrenList, onTimeUpdated }: TimeTracker
 
         {selectedChild && (
           <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">Current Balance:</p>
+            <p className="text-sm text-gray-900 mb-1 font-medium">Current Balance:</p>
             <p className={`text-2xl font-bold ${selectedChild.timeBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatTime(selectedChild.timeBalance)}
             </p>

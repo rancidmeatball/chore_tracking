@@ -2,29 +2,8 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install Node.js and OpenSSL (required for Prisma)
-# Prisma's linux-musl binary requires libssl.so.1.1
-# Try to install openssl1.1-compat, fallback to regular openssl if not available
-RUN apk add --no-cache nodejs npm openssl && \
-    (apk add --no-cache openssl1.1-compat || apk add --no-cache libssl1.1 || echo "OpenSSL 1.1 compat not available, will try symlink") || true
-
-# Find and link OpenSSL libraries for Prisma
-RUN LIBSSL=$(find /usr/lib /lib -name "libssl.so*" 2>/dev/null | head -1) && \
-    if [ -n "$LIBSSL" ]; then \
-      LIBSSL_DIR=$(dirname "$LIBSSL"); \
-      if [ ! -f "$LIBSSL_DIR/libssl.so.1.1" ]; then \
-        if [ -f "$LIBSSL_DIR/libssl.so.3" ]; then \
-          ln -sf "$LIBSSL_DIR/libssl.so.3" "$LIBSSL_DIR/libssl.so.1.1" && \
-          echo "Created symlink: $LIBSSL_DIR/libssl.so.1.1 -> $LIBSSL_DIR/libssl.so.3"; \
-        elif [ -f "$LIBSSL_DIR/libssl.so.1.1.1" ]; then \
-          ln -sf "$LIBSSL_DIR/libssl.so.1.1.1" "$LIBSSL_DIR/libssl.so.1.1" && \
-          echo "Created symlink: $LIBSSL_DIR/libssl.so.1.1 -> $LIBSSL_DIR/libssl.so.1.1.1"; \
-        fi; \
-      fi; \
-      echo "OpenSSL libraries found in: $LIBSSL_DIR"; \
-      ls -la "$LIBSSL_DIR"/libssl.so* || true; \
-    else \
-      echo "WARNING: No OpenSSL libraries found"; \
-    fi
+# Using OpenSSL 3.0 binary target, so we just need openssl
+RUN apk add --no-cache nodejs npm openssl
 
 # Set working directory
 WORKDIR /app

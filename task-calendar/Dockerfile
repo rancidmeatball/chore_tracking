@@ -24,8 +24,10 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Make scripts executable
-RUN chmod a+x /app/run.sh /app/init-db.js /app/start.js
+# Make scripts executable (only if they exist)
+RUN if [ -f /app/run.sh ]; then chmod a+x /app/run.sh; fi && \
+    if [ -f /app/init-db.js ]; then chmod a+x /app/init-db.js; fi && \
+    if [ -f /app/start.js ]; then chmod a+x /app/start.js; fi
 
 # Set default environment variables (can be overridden at runtime)
 ENV HOME_ASSISTANT_URL="http://supervisor/core"

@@ -9,10 +9,17 @@ export async function GET() {
       },
     })
     return NextResponse.json(children)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching children:', error)
+    // Check if it's a database schema error
+    if (error?.code === 'P2021' || error?.message?.includes('does not exist')) {
+      return NextResponse.json(
+        { error: 'Database not initialized. Please restart the add-on.' },
+        { status: 503 }
+      )
+    }
     return NextResponse.json(
-      { error: 'Failed to fetch children' },
+      { error: 'Failed to fetch children', details: error?.message },
       { status: 500 }
     )
   }

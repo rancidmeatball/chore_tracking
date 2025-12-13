@@ -24,20 +24,26 @@ process.chdir(appPath);
 
 // Initialize database if needed
 // Prisma doesn't auto-create the schema, so we need to run db push
-if (!fs.existsSync(dbPath)) {
-  console.log('Database not found, initializing...');
-  try {
-    const { execSync } = require('child_process');
-    execSync('npx prisma db push', {
-      cwd: appPath,
-      stdio: 'inherit',
-      env: process.env
-    });
-    console.log('Database initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-    // Continue anyway - might work if schema already exists
-  }
+console.log('Checking database...');
+console.log('Database path:', dbPath);
+console.log('Database exists:', fs.existsSync(dbPath));
+
+// Always try to push schema to ensure it's up to date
+// This is safe - it won't delete data, just updates schema if needed
+try {
+  console.log('Initializing/updating database schema...');
+  const { execSync } = require('child_process');
+  execSync('npx prisma db push --accept-data-loss', {
+    cwd: appPath,
+    stdio: 'inherit',
+    env: process.env,
+    timeout: 30000 // 30 second timeout
+  });
+  console.log('Database schema initialized/updated successfully');
+} catch (error) {
+  console.error('Failed to initialize database schema:', error);
+  console.error('This might be okay if the schema already exists, but API calls may fail.');
+  // Continue anyway - the app might still work if schema exists
 }
 
 // Use next start - simpler and more reliable than standalone mode

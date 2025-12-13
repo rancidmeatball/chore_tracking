@@ -22,9 +22,9 @@ export default function Home() {
   useEffect(() => {
     fetchTasks()
     fetchChildren()
-  }, [])
+  }, [fetchTasks])
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -41,7 +41,7 @@ export default function Home() {
       setError(`Failed to load tasks: ${error.message || error}`)
       setLoading(false)
     }
-  }
+  }, [])
 
   const fetchChildren = async () => {
     try {

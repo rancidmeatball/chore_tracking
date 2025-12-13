@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         const daysOfWeek = JSON.parse(template.daysOfWeek) as number[]
         let currentDate = new Date(startDate)
         
-        // Find the first occurrence
+        // Generate tasks for each matching day of week for 1 year
         while (currentDate <= endDate) {
           const dayOfWeek = currentDate.getDay()
           if (daysOfWeek.includes(dayOfWeek)) {
@@ -78,19 +78,35 @@ export async function POST(request: NextRequest) {
           currentDate.setDate(currentDate.getDate() + 1)
         }
       } else if (template.frequency === 'monthly' && template.dayOfMonth) {
+        // Start from the first month with the specified day
         let currentDate = new Date(startDate)
+        // Set to the day of month, but ensure it's in the future or today
+        if (currentDate.getDate() > template.dayOfMonth) {
+          // If we've passed the day this month, start next month
+          currentDate.setMonth(currentDate.getMonth() + 1)
+        }
         currentDate.setDate(template.dayOfMonth)
         
-        while (currentDate <= endDate) {
-          tasks.push({
-            title,
-            description: description || null,
-            dueDate: new Date(currentDate),
-            childId,
-            recurrenceTemplateId,
-          })
+        // Generate tasks for 12 months
+        for (let i = 0; i < 12 && currentDate <= endDate; i++) {
+          // Ensure the date is valid (e.g., Feb 31 becomes Feb 28/29)
+          const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+          const dayToUse = Math.min(template.dayOfMonth, lastDayOfMonth)
+          const taskDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayToUse)
+          
+          if (taskDate >= startDate && taskDate <= endDate) {
+            tasks.push({
+              title,
+              description: description || null,
+              dueDate: taskDate,
+              childId,
+              recurrenceTemplateId,
+            })
+          }
+          
+          // Move to next month
           currentDate.setMonth(currentDate.getMonth() + 1)
-          currentDate.setDate(template.dayOfMonth)
+          currentDate.setDate(dayToUse)
         }
       } else {
         // One-time task

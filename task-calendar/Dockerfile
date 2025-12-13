@@ -69,24 +69,8 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 # Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Verify Tailwind and PostCSS are available before building
-RUN echo "Verifying CSS build tools..." && \
-    (node -e "require('tailwindcss/package.json').version" 2>/dev/null && echo "Tailwind found" || echo "WARNING: Tailwind not found") && \
-    (npx postcss --version 2>/dev/null || echo "WARNING: PostCSS version check failed") && \
-    echo "CSS build tools check complete"
-
-# Verify config files exist (non-blocking)
-RUN if [ -f postcss.config.js ]; then \
-        echo "PostCSS config found"; \
-    else \
-        echo "WARNING: postcss.config.js not found (this might be okay)"; \
-    fi
-
-RUN if [ -f tailwind.config.ts ] || [ -f tailwind.config.js ]; then \
-        echo "Tailwind config found"; \
-    else \
-        echo "WARNING: tailwind.config not found (this might be okay)"; \
-    fi
+# CSS build tools (Tailwind/PostCSS) will be used during npm run build
+# No need to verify them separately - Next.js will handle it
 
 # Build Next.js application
 RUN echo "Building Next.js application..." && \

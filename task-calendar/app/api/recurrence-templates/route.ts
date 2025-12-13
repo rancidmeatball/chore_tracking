@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const templates = await prisma.recurrenceTemplate.findMany({
+      include: {
+        child: true,
+      },
       orderBy: {
         name: 'asc',
       },
@@ -26,11 +29,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, frequency, daysOfWeek, dayOfMonth } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth, childId } = body
 
-    if (!name || !frequency) {
+    if (!name || !frequency || !childId) {
       return NextResponse.json(
-        { error: 'Name and frequency are required' },
+        { error: 'Name, frequency, and child are required' },
         { status: 400 }
       )
     }
@@ -56,6 +59,10 @@ export async function POST(request: NextRequest) {
         frequency,
         daysOfWeek: frequency === 'weekly' ? JSON.stringify(daysOfWeek) : null,
         dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+        childId: childId || null,
+      },
+      include: {
+        child: true,
       },
     })
 

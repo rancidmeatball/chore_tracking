@@ -206,6 +206,7 @@ export default function Home() {
         {showRecurrenceManager && (
           <RecurrenceTemplateManager
             onClose={() => setShowRecurrenceManager(false)}
+            childrenList={children}
           />
         )}
       </div>

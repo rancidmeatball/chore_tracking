@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RecurrenceTemplate } from '@/types'
+import { RecurrenceTemplate, Child } from '@/types'
 
 interface RecurrenceTemplateManagerProps {
   onClose: () => void
+  childrenList: Child[]
 }
 
-export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplateManagerProps) {
+export default function RecurrenceTemplateManager({ onClose, childrenList }: RecurrenceTemplateManagerProps) {
   const [templates, setTemplates] = useState<RecurrenceTemplate[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<RecurrenceTemplate | null>(null)
@@ -16,6 +17,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
   const [frequency, setFrequency] = useState<'one-time' | 'weekly' | 'monthly'>('one-time')
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
   const [dayOfMonth, setDayOfMonth] = useState(1)
+  const [childId, setChildId] = useState<string>('')
 
   useEffect(() => {
     fetchTemplates()
@@ -48,6 +50,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
           frequency,
           daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
+          childId: childId || null,
         }),
       })
 
@@ -71,6 +74,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
     setFrequency(template.frequency)
     setDaysOfWeek(template.daysOfWeek || [])
     setDayOfMonth(template.dayOfMonth || 1)
+    setChildId(template.childId || '')
     setShowForm(true)
   }
 
@@ -101,6 +105,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
     setFrequency('one-time')
     setDaysOfWeek([])
     setDayOfMonth(1)
+    setChildId('')
   }
 
   const toggleDayOfWeek = (day: number) => {
@@ -137,7 +142,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
 
             <div className="space-y-2">
               {templates.length === 0 ? (
-                <p className="text-gray-500">No recurrence templates yet</p>
+                <p className="text-gray-700">No recurrence templates yet</p>
               ) : (
                 templates.map((template) => (
                   <div
@@ -147,9 +152,12 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                     <div>
                       <h3 className="font-semibold text-gray-900">{template.name}</h3>
                       {template.description && (
-                        <p className="text-sm text-gray-600">{template.description}</p>
+                        <p className="text-sm text-gray-700">{template.description}</p>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
+                      {template.child && (
+                        <p className="text-sm text-gray-900 font-medium mt-1">Child: {template.child.name}</p>
+                      )}
+                      <p className="text-sm text-gray-700 mt-1">
                         Frequency: {template.frequency === 'one-time' ? 'One-Time (No Recurrence)' : template.frequency}
                         {template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0 && (
                           <span> (Days: {template.daysOfWeek.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})</span>
@@ -207,6 +215,25 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Assign to Child *
+              </label>
+              <select
+                value={childId}
+                onChange={(e) => setChildId(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              >
+                <option value="">Select a child...</option>
+                {childrenList.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

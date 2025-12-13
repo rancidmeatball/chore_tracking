@@ -8,6 +8,9 @@ export async function GET(
   try {
     const template = await prisma.recurrenceTemplate.findUnique({
       where: { id: params.id },
+      include: {
+        child: true,
+      },
     })
 
     if (!template) {
@@ -39,7 +42,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, description, frequency, daysOfWeek, dayOfMonth } = body
+    const { name, description, frequency, daysOfWeek, dayOfMonth, childId } = body
 
     const template = await prisma.recurrenceTemplate.update({
       where: { id: params.id },
@@ -55,6 +58,10 @@ export async function PUT(
         ...(dayOfMonth !== undefined && {
           dayOfMonth: frequency === 'monthly' ? dayOfMonth : null,
         }),
+        ...(childId !== undefined && { childId: childId || null }),
+      },
+      include: {
+        child: true,
       },
     })
 

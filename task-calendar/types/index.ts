@@ -13,6 +13,8 @@ export interface RecurrenceTemplate {
   frequency: 'one-time' | 'weekly' | 'monthly'
   daysOfWeek?: number[] // Array of day numbers [0-6] for weekly
   dayOfMonth?: number
+  childId?: string
+  child?: Child
   createdAt: string
   updatedAt: string
 }

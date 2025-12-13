@@ -12,12 +12,13 @@ datasource db {
 }
 
 model Child {
-  id          String   @id @default(cuid())
-  name        String
-  timeBalance Int      @default(0) // Time in minutes (15-minute increments)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tasks       Task[]
+  id                  String               @id @default(cuid())
+  name                String
+  timeBalance         Int                  @default(0) // Time in minutes (15-minute increments)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  tasks               Task[]
+  recurrenceTemplates RecurrenceTemplate[]
 }
 
 model RecurrenceTemplate {
@@ -27,6 +28,8 @@ model RecurrenceTemplate {
   frequency   String   // "one-time", "weekly", "monthly"
   daysOfWeek  String?  // JSON array of day numbers [0,1,2,3,4,5,6] for weekly (0 = Sunday)
   dayOfMonth  Int?     // 1-31 for monthly (repeats on same day each month)
+  childId     String?
+  child       Child?   @relation(fields: [childId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tasks       Task[]

@@ -52,7 +52,7 @@ function Calendar({
   // Helper to get task color based on child
   const getTaskColor = (task: Task) => {
     if (task.completed) {
-      return 'bg-green-200 text-green-800'
+      return 'text-green-800'
     }
     // Use child's color if available, otherwise default blue
     const childColor = task.child?.color || '#3B82F6'
@@ -70,7 +70,7 @@ function Calendar({
   // Helper to get task background color
   const getTaskBgColor = (task: Task) => {
     if (task.completed) {
-      return 'bg-green-200'
+      return '#86efac' // green-300
     }
     return task.child?.color || '#3B82F6'
   }
@@ -164,16 +164,28 @@ function Calendar({
                       key={task.id}
                       onClick={(e) => {
                         e.stopPropagation()
+                        // Toggle completion on click
+                        onTaskComplete(task.id, !task.completed)
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation()
+                        // Double-click to edit
                         onTaskEdit(task)
                       }}
                       className={`
-                        text-xs p-1 rounded truncate cursor-pointer
-                        ${task.completed ? 'bg-green-200 text-green-800 line-through' : ''}
+                        text-xs p-1 rounded truncate cursor-pointer relative group
+                        ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
+                        hover:opacity-90 transition-opacity
                       `}
                       style={task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }}
-                      title={task.title}
+                      title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
                     >
-                      {task.title}
+                      <div className="flex items-center gap-1">
+                        {task.completed && (
+                          <span className="text-green-700 font-bold flex-shrink-0">✓</span>
+                        )}
+                        <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
+                      </div>
                     </div>
                   )
                 })}

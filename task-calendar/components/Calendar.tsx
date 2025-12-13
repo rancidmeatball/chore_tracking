@@ -219,4 +219,27 @@ function Calendar({
 }
 
 // Memoize the Calendar component to prevent unnecessary re-renders
-export default memo(Calendar)
+// Only re-render if tasks, selectedDate, or callbacks actually change
+export default memo(Calendar, (prevProps, nextProps) => {
+  // Return true if props are equal (skip re-render), false if different (re-render)
+  
+  // Check selectedDate by time value (not reference)
+  if (prevProps.selectedDate.getTime() !== nextProps.selectedDate.getTime()) return false
+  
+  // Check tasks array - compare length and IDs
+  if (prevProps.tasks.length !== nextProps.tasks.length) return false
+  if (prevProps.tasks !== nextProps.tasks) {
+    // Deep comparison of task IDs
+    const prevIds = prevProps.tasks.map(t => `${t.id}-${t.completed}`).sort().join('|')
+    const nextIds = nextProps.tasks.map(t => `${t.id}-${t.completed}`).sort().join('|')
+    if (prevIds !== nextIds) return false
+  }
+  
+  // Check callbacks by reference (should be stable with useCallback)
+  if (prevProps.onDateSelect !== nextProps.onDateSelect) return false
+  if (prevProps.onTaskComplete !== nextProps.onTaskComplete) return false
+  if (prevProps.onTaskEdit !== nextProps.onTaskEdit) return false
+  if (prevProps.onTaskDelete !== nextProps.onTaskDelete) return false
+  
+  return true // All props are equal, skip re-render
+})

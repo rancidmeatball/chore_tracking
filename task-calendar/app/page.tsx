@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Calendar from '@/components/Calendar'
 import TaskForm from '@/components/TaskForm'
 import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
@@ -58,7 +58,7 @@ export default function Home() {
     }
   }
 
-  const handleTaskComplete = async (taskId: string, completed: boolean) => {
+  const handleTaskComplete = useCallback(async (taskId: string, completed: boolean) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -73,9 +73,9 @@ export default function Home() {
     } catch (error) {
       console.error('Error updating task:', error)
     }
-  }
+  }, [checkDailyCompletion])
 
-  const handleTaskDelete = async (taskId: string) => {
+  const handleTaskDelete = useCallback(async (taskId: string) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
@@ -89,9 +89,9 @@ export default function Home() {
       console.error('Error deleting task:', error)
       alert('Failed to delete task')
     }
-  }
+  }, [])
 
-  const checkDailyCompletion = async () => {
+  const checkDailyCompletion = useCallback(async () => {
     try {
       const response = await fetch('/api/tasks/check-daily-completion')
       if (response.ok) {
@@ -108,7 +108,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error checking daily completion:', error)
     }
-  }
+  }, [])
 
   const handleTaskSaved = () => {
     fetchTasks()
@@ -116,10 +116,14 @@ export default function Home() {
     setSelectedTask(null)
   }
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setSelectedTask(task)
     setShowTaskForm(true)
-  }
+  }, [])
+
+  const handleDateSelect = useCallback((date: Date) => {
+    setSelectedDate(date)
+  }, [])
 
   return (
     <main className="min-h-screen p-8 bg-gray-50">
@@ -184,7 +188,7 @@ export default function Home() {
         <Calendar
           tasks={tasks}
           selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
+          onDateSelect={handleDateSelect}
           onTaskComplete={handleTaskComplete}
           onTaskEdit={handleEditTask}
           onTaskDelete={handleTaskDelete}

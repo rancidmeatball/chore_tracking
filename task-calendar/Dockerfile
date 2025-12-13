@@ -2,8 +2,8 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install Node.js and OpenSSL (required for Prisma)
-# Using OpenSSL 3.0 binary target, so we just need openssl
-RUN apk add --no-cache nodejs npm openssl
+# Prisma's linux-musl binary requires libssl.so.1.1
+RUN apk add --no-cache nodejs npm openssl openssl1.1-compat
 
 # Set working directory
 WORKDIR /app

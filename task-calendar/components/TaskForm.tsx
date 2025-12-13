@@ -9,7 +9,7 @@ interface TaskFormProps {
   childrenList: Child[]
   onSave: () => void
   onCancel: () => void
-  onDelete?: (taskId: string) => void
+  onDelete?: (taskId: string, deleteSeries?: boolean) => void
 }
 
 export default function TaskForm({ task, childrenList, onSave, onCancel, onDelete }: TaskFormProps) {
@@ -95,16 +95,38 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
 
   const handleDelete = async () => {
     if (!task || !onDelete) return
-    if (!confirm(`Are you sure you want to delete "${task.title}"?`)) return
+
+    // Check if this task is part of a recurring series
+    let deleteSeries = false
+    if (task.recurrenceTemplateId) {
+      deleteSeries = confirm(
+        `"${task.title}" is part of a recurring series.\n\n` +
+        `Click OK to delete ALL future tasks in this series (starting from this date).\n` +
+        `Click Cancel to delete just this one task.`
+      )
+    } else {
+      if (!confirm(`Are you sure you want to delete "${task.title}"?`)) return
+    }
 
     try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
+      const url = deleteSeries 
+        ? `/api/tasks/${task.id}?deleteSeries=true`
+        : `/api/tasks/${task.id}`
+      
+      const response = await fetch(url, {
         method: 'DELETE',
       })
+
       if (response.ok) {
-        onSave()
+        const result = await response.json()
+        if (result.deletedCount && result.deletedCount > 1) {
+          console.log(`Deleted ${result.deletedCount} tasks from series`)
+        }
+        onDelete(task.id, deleteSeries)
+        onCancel()
       } else {
-        alert('Failed to delete task')
+        const error = await response.json()
+        alert(`Error: ${error.error || 'Failed to delete task'}`)
       }
     } catch (error) {
       console.error('Error deleting task:', error)

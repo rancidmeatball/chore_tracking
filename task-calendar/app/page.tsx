@@ -94,15 +94,25 @@ export default function Home() {
     }
   }
 
-  const handleTaskDelete = async (taskId: string) => {
+  const handleTaskDelete = async (taskId: string, deleteSeries: boolean = false) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
+      const url = deleteSeries 
+        ? `/api/tasks/${taskId}?deleteSeries=true`
+        : `/api/tasks/${taskId}`
+      
+      const response = await fetch(url, {
         method: 'DELETE',
       })
+
       if (response.ok) {
+        const result = await response.json()
+        if (result.deletedCount && result.deletedCount > 1) {
+          console.log(`Deleted ${result.deletedCount} tasks from series`)
+        }
         await fetchTasks()
       } else {
-        alert('Failed to delete task')
+        const error = await response.json()
+        alert(`Error: ${error.error || 'Failed to delete task'}`)
       }
     } catch (error) {
       console.error('Error deleting task:', error)

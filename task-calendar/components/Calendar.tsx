@@ -10,7 +10,7 @@ interface CalendarProps {
   onDateSelect: (date: Date) => void
   onTaskComplete: (taskId: string, completed: boolean) => void
   onTaskEdit: (task: Task) => void
-  onTaskDelete: (taskId: string) => void
+  onTaskDelete: (taskId: string, deleteSeries?: boolean) => void
 }
 
 function Calendar({

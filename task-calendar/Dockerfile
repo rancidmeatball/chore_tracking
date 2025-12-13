@@ -70,12 +70,32 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Verify Tailwind and PostCSS are available before building
 RUN echo "Verifying CSS build tools..." && \
-    npx tailwindcss --version || echo "WARNING: Tailwind not found" && \
-    npx postcss --version || echo "WARNING: PostCSS not found"
+    npx tailwindcss --version && \
+    npx postcss --version && \
+    echo "CSS build tools verified"
+
+# Verify PostCSS config exists
+RUN if [ -f postcss.config.js ]; then \
+        echo "PostCSS config found"; \
+        cat postcss.config.js; \
+    else \
+        echo "ERROR: postcss.config.js not found!"; \
+        exit 1; \
+    fi
+
+# Verify Tailwind config exists
+RUN if [ -f tailwind.config.ts ] || [ -f tailwind.config.js ]; then \
+        echo "Tailwind config found"; \
+    else \
+        echo "ERROR: tailwind.config not found!"; \
+        exit 1; \
+    fi
 
 RUN echo "Building Next.js application..." && \
-    npm run build || \
+    npm run build 2>&1 | tee /tmp/build.log || \
     (echo "npm build failed!" && \
+     echo "Build log:" && \
+     tail -50 /tmp/build.log && \
      echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
      exit 1)
 

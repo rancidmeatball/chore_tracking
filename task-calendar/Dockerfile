@@ -43,6 +43,8 @@ RUN chmod a+x /app/run.sh /app/init-db.js /app/start.js
 ENV HOME_ASSISTANT_URL="http://supervisor/core"
 ENV DATABASE_PATH="/data/task-calendar.db"
 ENV DATABASE_URL="file:/data/task-calendar.db"
+# Help Prisma find OpenSSL libraries
+ENV LD_LIBRARY_PATH="/usr/lib:/lib:${LD_LIBRARY_PATH:-}"
 
 # Expose port
 EXPOSE 3000

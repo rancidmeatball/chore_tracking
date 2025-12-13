@@ -27,6 +27,9 @@ RUN npm run build
 # Make scripts executable
 RUN chmod a+x /app/run.sh /app/init-db.js /app/start.js
 
+# Verify start.js has the correct code (check for absolute path require)
+RUN grep -q "require(serverJsPath)" /app/start.js || (echo "ERROR: start.js doesn't have correct code!" && cat /app/start.js && exit 1)
+
 # Set default environment variables (can be overridden at runtime)
 ENV HOME_ASSISTANT_URL="http://supervisor/core"
 ENV DATABASE_PATH="/data/task-calendar.db"

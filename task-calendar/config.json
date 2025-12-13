@@ -17,6 +17,9 @@
   "map": [
     "config:rw"
   ],
+  "persistent": [
+    "data"
+  ],
   "options": {
     "database_path": "/data/task-calendar.db"
   },

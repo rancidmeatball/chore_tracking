@@ -30,10 +30,13 @@ console.log('Database exists:', fs.existsSync(dbPath));
 
 // Always try to push schema to ensure it's up to date
 // This is safe - it won't delete data, just updates schema if needed
+// DO NOT use --accept-data-loss as it can cause data loss!
 try {
   console.log('Initializing/updating database schema...');
   const { execSync } = require('child_process');
-  execSync('npx prisma db push --accept-data-loss', {
+  // Use db push without --accept-data-loss to preserve existing data
+  // This will only add new columns/tables, not delete existing data
+  execSync('npx prisma db push', {
     cwd: appPath,
     stdio: 'inherit',
     env: process.env,

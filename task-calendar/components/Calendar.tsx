@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -33,7 +33,7 @@ export default function Calendar({
     return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty }
   }, [currentMonth])
 
-  // Memoize task lookup map for O(1) access
+  // Memoize task lookup map for O(1) access - only recalculate when tasks change
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>()
     tasks.forEach((task) => {
@@ -47,22 +47,21 @@ export default function Calendar({
     return map
   }, [tasks])
 
-  // Get tasks for a specific date (memoized)
-  const getTasksForDate = useCallback((date: Date) => {
+  // Simple inline functions - no callback overhead
+  const getTasksForDate = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd')
     return tasksByDate.get(dateKey) || []
-  }, [tasksByDate])
+  }
 
-  // Get completion status for a date (memoized)
-  const getDateCompletionStatus = useCallback((date: Date) => {
+  const getDateCompletionStatus = (date: Date) => {
     const dateTasks = getTasksForDate(date)
     if (dateTasks.length === 0) return null
     const completedCount = dateTasks.filter((t) => t.completed).length
     return { total: dateTasks.length, completed: completedCount }
-  }, [getTasksForDate])
+  }
 
-  const prevMonth = useCallback(() => setCurrentMonth(subMonths(currentMonth, 1)), [currentMonth])
-  const nextMonth = useCallback(() => setCurrentMonth(addMonths(currentMonth, 1)), [currentMonth])
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
 
 
   return (

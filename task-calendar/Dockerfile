@@ -26,8 +26,14 @@ RUN npm run build
 # Make scripts executable
 RUN chmod a+x /app/run.sh /app/init-db.js /app/start.js
 
+# Set default environment variables (can be overridden at runtime)
+ENV HOME_ASSISTANT_URL="http://supervisor/core"
+ENV DATABASE_PATH="/data/task-calendar.db"
+ENV DATABASE_URL="file:/data/task-calendar.db"
+
 # Expose port
 EXPOSE 3000
 
-# Use shell script which execs node (required for s6-overlay PID 1)
-CMD [ "/app/run.sh" ]
+# Run node directly without shell script to avoid s6-overlay-suexec issues
+# The start.js script will handle environment variable setup from SUPERVISOR_TOKEN
+CMD [ "/usr/bin/node", "/app/start.js" ]

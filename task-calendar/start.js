@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// Set environment variables
+// Set environment variables from Home Assistant supervisor
+// SUPERVISOR_TOKEN is automatically provided by Home Assistant
 process.env.HOME_ASSISTANT_URL = process.env.HOME_ASSISTANT_URL || 'http://supervisor/core';
 process.env.HOME_ASSISTANT_TOKEN = process.env.SUPERVISOR_TOKEN || process.env.HOME_ASSISTANT_TOKEN || '';
 

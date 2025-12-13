@@ -2,7 +2,12 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install Node.js and OpenSSL (required for Prisma)
-RUN apk add --no-cache nodejs npm openssl1.1-compat
+RUN apk add --no-cache nodejs npm openssl openssl1.1-compat
+
+# Create symlink for libssl.so.1.1 if openssl1.1-compat provides it in a different location
+RUN if [ ! -f /usr/lib/libssl.so.1.1 ] && [ -f /usr/lib/libssl.so.3 ]; then \
+      ln -s /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 || true; \
+    fi
 
 # Set working directory
 WORKDIR /app

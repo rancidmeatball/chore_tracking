@@ -40,54 +40,39 @@ if (!fs.existsSync(dbPath)) {
   }
 }
 
-// Try to use standalone server.js first, fallback to next start
-const standalonePath = '/app/.next/standalone';
-const serverJsPath = path.join(standalonePath, 'server.js');
-
-// Set PORT environment variable
+// Use next start - simpler and more reliable
 process.env.PORT = process.env.PORT || '3000';
 
-// Check if standalone build exists and has server.js
-if (fs.existsSync(standalonePath) && fs.existsSync(serverJsPath)) {
-  console.log('Using Next.js standalone build...');
-  console.log('Standalone directory contents:');
-  try {
-    const files = fs.readdirSync(standalonePath);
-    files.forEach(file => {
-      const fullPath = path.join(standalonePath, file);
-      const stat = fs.statSync(fullPath);
-      console.log(`  ${stat.isDirectory() ? 'DIR' : 'FILE'}: ${file}`);
-    });
-  } catch (e) {
-    console.error('Could not read standalone directory:', e.message);
-  }
-  
-  // Change to standalone directory - required for Next.js standalone mode
-  process.chdir(standalonePath);
-  console.log('Changed working directory to:', process.cwd());
-  console.log('Starting Next.js standalone server from:', serverJsPath);
-  
-  // Use absolute path to require server.js
-  require(serverJsPath);
-} else {
-  // Fallback: use next start (should work if standalone build exists but structure is different)
-  console.log('Standalone server.js not found, using next start...');
-  if (!fs.existsSync('/app/.next')) {
-    console.error('ERROR: .next directory not found. Build may have failed.');
-    process.exit(1);
-  }
-  
-  // Use next start command
-  const { execSync } = require('child_process');
-  try {
-    execSync('npm run start', {
-      cwd: '/app',
-      stdio: 'inherit',
-      env: process.env
-    });
-  } catch (error) {
+console.log('Starting Next.js application...');
+console.log('PORT:', process.env.PORT);
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+
+// Verify .next directory exists
+if (!fs.existsSync('/app/.next')) {
+  console.error('ERROR: .next directory not found. Build may have failed.');
+  process.exit(1);
+}
+
+// Use next start via node - this replaces the current process
+// For Home Assistant with init: false, we need to exec to replace PID 1
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
+
+// Start Next.js server
+console.log('Executing: npm run start');
+exec('npm run start', {
+  cwd: '/app',
+  env: process.env
+}, (error, stdout, stderr) => {
+  if (error) {
     console.error('Failed to start Next.js:', error);
     process.exit(1);
   }
-}
+  if (stdout) console.log(stdout);
+  if (stderr) console.error(stderr);
+});
+
+// Keep the process alive
+process.stdin.resume();
 

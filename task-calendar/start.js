@@ -47,14 +47,17 @@ const serverJsPath = path.join(standalonePath, 'server.js');
 
 if (fs.existsSync(serverJsPath)) {
   console.log('Starting Next.js standalone server from:', serverJsPath);
+  console.log('Current directory before chdir:', process.cwd());
   process.chdir(standalonePath);
+  console.log('Current directory after chdir:', process.cwd());
+  console.log('Verifying server.js exists:', fs.existsSync('./server.js'));
+  console.log('Verifying server.js exists (absolute):', fs.existsSync(serverJsPath));
   
   // Set PORT environment variable (Next.js uses PORT or defaults to 3000)
   process.env.PORT = process.env.PORT || '3000';
   
-  // Directly require the server - no child processes
-  // This process becomes the main process (PID 1)
-  require('./server.js');
+  // Use absolute path to be sure
+  require(serverJsPath);
 } else {
   console.error('ERROR: Standalone server.js not found at:', serverJsPath);
   console.error('Standalone directory exists:', fs.existsSync(standalonePath));

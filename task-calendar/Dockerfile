@@ -105,6 +105,12 @@ RUN if [ -d .next/static ]; then \
 RUN echo "Searching for CSS files:" && \
     (find .next -name "*.css" -type f | head -10 || echo "No CSS files found")
 
+# Verify static files are readable
+RUN if [ -d .next/static ]; then \
+        echo "Checking static file permissions:" && \
+        ls -la .next/static/css/*.css 2>/dev/null | head -3 || echo "Could not list CSS files"; \
+    fi
+
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true
 

@@ -1,8 +1,8 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-# Install Node.js
-RUN apk add --no-cache nodejs npm
+# Install Node.js and OpenSSL (required for Prisma)
+RUN apk add --no-cache nodejs npm openssl1.1-compat
 
 # Set working directory
 WORKDIR /app

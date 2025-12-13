@@ -17,6 +17,11 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// Use next start directly - simpler and more reliable
+// This keeps the process as PID 1 (required for s6-overlay)
+const appPath = '/app';
+process.chdir(appPath);
+
 // Initialize database if needed
 // Prisma doesn't auto-create the schema, so we need to run db push
 if (!fs.existsSync(dbPath)) {
@@ -34,11 +39,6 @@ if (!fs.existsSync(dbPath)) {
     // Continue anyway - might work if schema already exists
   }
 }
-
-// Use next start directly - simpler and more reliable
-// This keeps the process as PID 1 (required for s6-overlay)
-const appPath = '/app';
-process.chdir(appPath);
 
 // Check if standalone build exists and list its contents for debugging
 const standalonePath = '/app/.next/standalone';

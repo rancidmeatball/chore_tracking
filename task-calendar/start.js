@@ -7,7 +7,7 @@ const path = require('path');
 process.env.HOME_ASSISTANT_URL = process.env.HOME_ASSISTANT_URL || 'http://supervisor/core';
 process.env.HOME_ASSISTANT_TOKEN = process.env.SUPERVISOR_TOKEN || process.env.HOME_ASSISTANT_TOKEN || '';
 
-// Use default database path
+// Use default database path - /data is persistent in Home Assistant add-ons
 const dbPath = process.env.DATABASE_PATH || '/data/task-calendar.db';
 process.env.DATABASE_URL = `file:${dbPath}`;
 
@@ -15,6 +15,7 @@ process.env.DATABASE_URL = `file:${dbPath}`;
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
+  console.log('Created data directory:', dbDir);
 }
 
 // Use next start directly - simpler and more reliable
@@ -27,6 +28,14 @@ process.chdir(appPath);
 console.log('Checking database...');
 console.log('Database path:', dbPath);
 console.log('Database exists:', fs.existsSync(dbPath));
+
+// Verify database persistence
+console.log('Data directory exists:', fs.existsSync(dbDir));
+if (fs.existsSync(dbPath)) {
+  const stats = fs.statSync(dbPath);
+  console.log('Database file exists, size:', stats.size, 'bytes');
+  console.log('Database last modified:', stats.mtime);
+}
 
 // Always try to push schema to ensure it's up to date
 // This is safe - it won't delete data, just updates schema if needed

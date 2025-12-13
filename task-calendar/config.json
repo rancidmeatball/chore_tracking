@@ -5,6 +5,7 @@
   "description": "Chore tracker for children with Home Assistant integration",
   "url": "https://github.com/rancidmeatball/chore_tracking",
   "arch": ["amd64", "armv7", "armhf", "aarch64", "i386"],
+  "init": false,
   "startup": "application",
   "boot": "auto",
   "ports": {

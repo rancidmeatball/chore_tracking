@@ -13,7 +13,6 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
   const [templates, setTemplates] = useState<RecurrenceTemplate[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<RecurrenceTemplate | null>(null)
-  const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [frequency, setFrequency] = useState<'one-time' | 'weekly' | 'monthly'>('one-time')
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
@@ -43,11 +42,18 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
         : '/api/recurrence-templates'
       const method = editingTemplate ? 'PUT' : 'POST'
 
+      // Get child name for the template name
+      const selectedChild = childrenList.find(c => c.id === childId)
+      if (!selectedChild) {
+        alert('Please select a child')
+        return
+      }
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          name: selectedChild.name, // Use child name as template name
           description,
           frequency,
           daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
@@ -72,7 +78,6 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
 
   const handleEdit = (template: RecurrenceTemplate) => {
     setEditingTemplate(template)
-    setName(template.name)
     setDescription(template.description || '')
     setFrequency(template.frequency)
     setDaysOfWeek(template.daysOfWeek || [])
@@ -108,7 +113,6 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
   const resetForm = () => {
     setShowForm(false)
     setEditingTemplate(null)
-    setName('')
     setDescription('')
     setFrequency('one-time')
     setDaysOfWeek([])
@@ -161,7 +165,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
                     <div>
                       <h3 className="font-semibold text-gray-900">{template.name}</h3>
                       {template.description && (
-                        <p className="text-sm text-gray-700">{template.description}</p>
+                        <p className="text-sm text-gray-900">{template.description}</p>
                       )}
                       {template.child && (
                         <p className="text-sm text-gray-900 font-medium mt-1">Child: {template.child.name}</p>
@@ -209,32 +213,7 @@ export default function RecurrenceTemplateManager({ onClose, childrenList }: Rec
 
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1">
-                Name *
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Assign to Child *
+                Child Name * (Template will use this name)
               </label>
               <select
                 value={childId}

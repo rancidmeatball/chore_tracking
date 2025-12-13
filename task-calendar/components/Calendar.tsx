@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -13,7 +13,7 @@ interface CalendarProps {
   onTaskDelete: (taskId: string) => void
 }
 
-export default function Calendar({
+function Calendar({
   tasks,
   selectedDate,
   onDateSelect,
@@ -104,6 +104,7 @@ export default function Calendar({
           const completion = getDateCompletionStatus(day)
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
+          const dayNumber = day.getDate() // Cache day number
 
           return (
             <div
@@ -117,7 +118,7 @@ export default function Calendar({
             >
               <div className="flex justify-between items-start mb-1">
                 <span className={`text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
-                  {format(day, 'd')}
+                  {dayNumber}
                 </span>
                 {completion && (
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -163,10 +164,12 @@ export default function Calendar({
           Tasks for {format(selectedDate, 'MMMM d, yyyy')}
         </h3>
         <div className="space-y-2">
-          {getTasksForDate(selectedDate).length === 0 ? (
-            <p className="text-gray-700">No tasks for this date</p>
-          ) : (
-            getTasksForDate(selectedDate).map((task) => (
+          {(() => {
+            const selectedDateTasks = getTasksForDate(selectedDate)
+            if (selectedDateTasks.length === 0) {
+              return <p className="text-gray-700">No tasks for this date</p>
+            }
+            return selectedDateTasks.map((task) => (
               <div
                 key={task.id}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
@@ -208,9 +211,12 @@ export default function Calendar({
                 </div>
               </div>
             ))
-          )}
+          })()}
         </div>
       </div>
     </div>
   )
 }
+
+// Memoize the Calendar component to prevent unnecessary re-renders
+export default memo(Calendar)

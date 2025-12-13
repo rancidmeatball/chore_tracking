@@ -42,15 +42,32 @@ if (!fs.existsSync(dbPath)) {
 
 // Use next start - simpler and more reliable than standalone mode
 process.env.PORT = process.env.PORT || '3000';
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 console.log('Starting Next.js application...');
 console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
 // Verify .next directory exists
 if (!fs.existsSync('/app/.next')) {
   console.error('ERROR: .next directory not found. Build may have failed.');
   process.exit(1);
+}
+
+// Check if standalone build exists
+const standalonePath = '/app/.next/standalone';
+if (fs.existsSync(standalonePath)) {
+  console.log('Standalone build detected');
+  console.log('Contents of standalone:', fs.readdirSync(standalonePath).join(', '));
+}
+
+// Check static files
+const staticPath = '/app/.next/static';
+if (fs.existsSync(staticPath)) {
+  console.log('Static files found at:', staticPath);
+} else {
+  console.warn('WARNING: Static files not found at:', staticPath);
 }
 
 // Use next start - execSync will block and keep the process running

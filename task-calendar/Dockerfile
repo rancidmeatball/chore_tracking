@@ -81,11 +81,22 @@ RUN if [ ! -d .next/standalone ]; then \
         exit 1; \
     fi
 
-# List standalone directory structure for debugging
-RUN echo "Standalone directory structure:" && \
-    ls -la .next/standalone/ && \
-    echo "Looking for server.js:" && \
-    find .next/standalone -name "server.js" -type f || echo "server.js not found with find"
+# Copy static files to standalone directory (required for standalone mode)
+# Next.js standalone build needs static files in .next/standalone/.next/static
+RUN if [ -d .next/static ]; then \
+        echo "Copying static files to standalone..." && \
+        mkdir -p .next/standalone/.next/static && \
+        cp -r .next/static/* .next/standalone/.next/static/ && \
+        echo "Static files copied successfully"; \
+    else \
+        echo "WARNING: .next/static directory not found"; \
+    fi
+
+# Also copy public directory if it exists
+RUN if [ -d public ]; then \
+        echo "Copying public directory to standalone..." && \
+        cp -r public .next/standalone/ 2>/dev/null || true; \
+    fi
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true

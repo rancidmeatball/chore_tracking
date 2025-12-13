@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, memo, useCallback } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -60,8 +60,13 @@ function Calendar({
     return { total: dateTasks.length, completed: completedCount }
   }
 
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
+  const prevMonth = useCallback(() => {
+    setCurrentMonth(prev => subMonths(prev, 1))
+  }, [])
+  
+  const nextMonth = useCallback(() => {
+    setCurrentMonth(prev => addMonths(prev, 1))
+  }, [])
 
 
   return (
@@ -75,7 +80,7 @@ function Calendar({
           ← Prev
         </button>
         <h2 className="text-2xl font-bold text-gray-800">
-          {format(currentMonth, 'MMMM yyyy')}
+          {monthYear}
         </h2>
         <button
           onClick={nextMonth}
@@ -159,17 +164,20 @@ function Calendar({
       </div>
 
       {/* Selected Date Tasks Detail */}
-      <div className="mt-6 border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Tasks for {format(selectedDate, 'MMMM d, yyyy')}
-        </h3>
-        <div className="space-y-2">
-          {(() => {
-            const selectedDateTasks = getTasksForDate(selectedDate)
-            if (selectedDateTasks.length === 0) {
-              return <p className="text-gray-700">No tasks for this date</p>
-            }
-            return selectedDateTasks.map((task) => (
+      {(() => {
+        const selectedDateTasks = getTasksForDate(selectedDate)
+        const selectedDateFormatted = format(selectedDate, 'MMMM d, yyyy')
+        
+        return (
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Tasks for {selectedDateFormatted}
+            </h3>
+            <div className="space-y-2">
+              {selectedDateTasks.length === 0 ? (
+                <p className="text-gray-700">No tasks for this date</p>
+              ) : (
+                selectedDateTasks.map((task) => (
               <div
                 key={task.id}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
@@ -210,10 +218,12 @@ function Calendar({
                   </button>
                 </div>
               </div>
-            ))
-          })()}
-        </div>
-      </div>
+                ))
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

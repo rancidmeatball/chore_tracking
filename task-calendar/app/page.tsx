@@ -135,12 +135,12 @@ export default function Home() {
   return (
     <main className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               Task Calendar
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Track chores and tasks for your children
             </p>
           </div>

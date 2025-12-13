@@ -68,9 +68,7 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 # Build Next.js application
 # Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# CSS build tools (Tailwind/PostCSS) will be used during npm run build
-# No need to verify them separately - Next.js will handle it
+# Version 0.1.4 - Removed CSS verification step
 
 # Build Next.js application
 RUN echo "Building Next.js application..." && \

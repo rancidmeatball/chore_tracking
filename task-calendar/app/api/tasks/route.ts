@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
       }
 
       const tasks = []
-      const startDate = new Date(dueDate)
+      // For recurring tasks, start from today (not the dueDate which might be far future)
+      const startDate = new Date()
+      startDate.setHours(0, 0, 0, 0) // Start of today
       const endDate = new Date(startDate)
       endDate.setFullYear(endDate.getFullYear() + 1) // Generate tasks for 1 year
 
@@ -78,14 +80,18 @@ export async function POST(request: NextRequest) {
           currentDate.setDate(currentDate.getDate() + 1)
         }
       } else if (template.frequency === 'monthly' && template.dayOfMonth) {
-        // Start from the first month with the specified day
+        // Start from today, find the next occurrence of the day of month
         let currentDate = new Date(startDate)
-        // Set to the day of month, but ensure it's in the future or today
-        if (currentDate.getDate() > template.dayOfMonth) {
-          // If we've passed the day this month, start next month
+        const today = currentDate.getDate()
+        
+        // If we haven't passed the day this month, use this month
+        if (today <= template.dayOfMonth) {
+          currentDate.setDate(template.dayOfMonth)
+        } else {
+          // Otherwise, start next month
           currentDate.setMonth(currentDate.getMonth() + 1)
+          currentDate.setDate(template.dayOfMonth)
         }
-        currentDate.setDate(template.dayOfMonth)
         
         // Generate tasks for 12 months
         for (let i = 0; i < 12 && currentDate <= endDate; i++) {

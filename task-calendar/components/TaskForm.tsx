@@ -75,10 +75,17 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
       })
 
       if (response.ok) {
+        const result = await response.json()
+        // Log how many tasks were created (for recurring templates, this will be an array)
+        if (Array.isArray(result)) {
+          console.log(`Created ${result.length} recurring tasks`)
+        } else {
+          console.log('Created single task')
+        }
         onSave()
       } else {
         const error = await response.json()
-        alert(`Error: ${error.message || 'Failed to save task'}`)
+        alert(`Error: ${error.error || error.message || 'Failed to save task'}`)
       }
     } catch (error) {
       console.error('Error saving task:', error)

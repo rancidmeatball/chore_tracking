@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      console.log(`Returning ${taskIds.length} created tasks`)
       return NextResponse.json(taskIds, { status: 201 })
     } else {
       // No recurrence template - create single task

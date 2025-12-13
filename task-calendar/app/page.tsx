@@ -22,7 +22,7 @@ export default function Home() {
   useEffect(() => {
     fetchTasks()
     fetchChildren()
-  }, [fetchTasks])
+  }, [fetchTasks, fetchChildren])
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -43,7 +43,7 @@ export default function Home() {
     }
   }, [])
 
-  const fetchChildren = async () => {
+  const fetchChildren = useCallback(async () => {
     try {
       const response = await fetch('/api/children')
       if (!response.ok) {
@@ -56,7 +56,7 @@ export default function Home() {
       console.error('Error fetching children:', error)
       setError(`Failed to load children: ${error.message || error}`)
     }
-  }
+  }, [])
 
   const handleTaskComplete = useCallback(async (taskId: string, completed: boolean) => {
     try {

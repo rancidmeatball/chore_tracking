@@ -41,21 +41,110 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const task = await prisma.task.create({
-      data: {
-        title,
-        description: description || null,
-        dueDate: new Date(dueDate),
-        childId,
-        recurrenceTemplateId: recurrenceTemplateId || null,
-      },
-      include: {
-        child: true,
-        recurrenceTemplate: true,
-      },
-    })
+    // If there's a recurrence template, generate multiple tasks
+    if (recurrenceTemplateId) {
+      const template = await prisma.recurrenceTemplate.findUnique({
+        where: { id: recurrenceTemplateId },
+      })
 
-    return NextResponse.json(task, { status: 201 })
+      if (!template) {
+        return NextResponse.json(
+          { error: 'Recurrence template not found' },
+          { status: 404 }
+        )
+      }
+
+      const tasks = []
+      const startDate = new Date(dueDate)
+      const endDate = new Date(startDate)
+      endDate.setFullYear(endDate.getFullYear() + 1) // Generate tasks for 1 year
+
+      if (template.frequency === 'weekly' && template.daysOfWeek) {
+        const daysOfWeek = JSON.parse(template.daysOfWeek) as number[]
+        let currentDate = new Date(startDate)
+        
+        // Find the first occurrence
+        while (currentDate <= endDate) {
+          const dayOfWeek = currentDate.getDay()
+          if (daysOfWeek.includes(dayOfWeek)) {
+            tasks.push({
+              title,
+              description: description || null,
+              dueDate: new Date(currentDate),
+              childId,
+              recurrenceTemplateId,
+            })
+          }
+          currentDate.setDate(currentDate.getDate() + 1)
+        }
+      } else if (template.frequency === 'monthly' && template.dayOfMonth) {
+        let currentDate = new Date(startDate)
+        currentDate.setDate(template.dayOfMonth)
+        
+        while (currentDate <= endDate) {
+          tasks.push({
+            title,
+            description: description || null,
+            dueDate: new Date(currentDate),
+            childId,
+            recurrenceTemplateId,
+          })
+          currentDate.setMonth(currentDate.getMonth() + 1)
+          currentDate.setDate(template.dayOfMonth)
+        }
+      } else {
+        // One-time task
+        tasks.push({
+          title,
+          description: description || null,
+          dueDate: new Date(dueDate),
+          childId,
+          recurrenceTemplateId,
+        })
+      }
+
+      const createdTasks = await prisma.task.createMany({
+        data: tasks,
+      })
+
+      // Fetch the created tasks with relations
+      const taskIds = await prisma.task.findMany({
+        where: {
+          childId,
+          recurrenceTemplateId,
+          title,
+          createdAt: {
+            gte: new Date(Date.now() - 1000), // Created in the last second
+          },
+        },
+        include: {
+          child: true,
+          recurrenceTemplate: true,
+        },
+        orderBy: {
+          dueDate: 'asc',
+        },
+      })
+
+      return NextResponse.json(taskIds, { status: 201 })
+    } else {
+      // No recurrence template - create single task
+      const task = await prisma.task.create({
+        data: {
+          title,
+          description: description || null,
+          dueDate: new Date(dueDate),
+          childId,
+          recurrenceTemplateId: null,
+        },
+        include: {
+          child: true,
+          recurrenceTemplate: true,
+        },
+      })
+
+      return NextResponse.json(task, { status: 201 })
+    }
   } catch (error) {
     console.error('Error creating task:', error)
     return NextResponse.json(

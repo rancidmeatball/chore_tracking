@@ -33,17 +33,16 @@ function Calendar({
     return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty }
   }, [currentMonth])
 
-  // Memoize task lookup map for O(1) access - only recalculate when tasks change
+  // Memoize task lookup map for O(1) access - only recalculate when tasks array reference changes
+  // Use tasks.length as a quick check to avoid expensive comparisons
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>()
-    tasks.forEach((task) => {
-      const taskDate = new Date(task.dueDate)
-      const dateKey = format(taskDate, 'yyyy-MM-dd')
-      if (!map.has(dateKey)) {
-        map.set(dateKey, [])
-      }
-      map.get(dateKey)!.push(task)
-    })
+    for (const task of tasks) {
+      const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd')
+      const existing = map.get(dateKey) || []
+      existing.push(task)
+      map.set(dateKey, existing)
+    }
     return map
   }, [tasks])
 
@@ -227,27 +226,5 @@ function Calendar({
 }
 
 // Memoize the Calendar component to prevent unnecessary re-renders
-// Only re-render if tasks, selectedDate, or callbacks actually change
-export default memo(Calendar, (prevProps, nextProps) => {
-  // Return true if props are equal (skip re-render), false if different (re-render)
-  
-  // Check selectedDate by time value (not reference)
-  if (prevProps.selectedDate.getTime() !== nextProps.selectedDate.getTime()) return false
-  
-  // Check tasks array - compare length and IDs
-  if (prevProps.tasks.length !== nextProps.tasks.length) return false
-  if (prevProps.tasks !== nextProps.tasks) {
-    // Deep comparison of task IDs
-    const prevIds = prevProps.tasks.map(t => `${t.id}-${t.completed}`).sort().join('|')
-    const nextIds = nextProps.tasks.map(t => `${t.id}-${t.completed}`).sort().join('|')
-    if (prevIds !== nextIds) return false
-  }
-  
-  // Check callbacks by reference (should be stable with useCallback)
-  if (prevProps.onDateSelect !== nextProps.onDateSelect) return false
-  if (prevProps.onTaskComplete !== nextProps.onTaskComplete) return false
-  if (prevProps.onTaskEdit !== nextProps.onTaskEdit) return false
-  if (prevProps.onTaskDelete !== nextProps.onTaskDelete) return false
-  
-  return true // All props are equal, skip re-render
-})
+// Use simple reference comparison - React will handle the rest
+export default memo(Calendar)

@@ -53,12 +53,6 @@ function Calendar({
     return tasksByDate.get(dateKey) || []
   }
 
-  const getDateCompletionStatus = (date: Date) => {
-    const dateTasks = getTasksForDate(date)
-    if (dateTasks.length === 0) return null
-    const completedCount = dateTasks.filter((t) => t.completed).length
-    return { total: dateTasks.length, completed: completedCount }
-  }
 
   const prevMonth = useCallback(() => {
     setCurrentMonth(prev => subMonths(prev, 1))
@@ -104,9 +98,13 @@ function Calendar({
           <div key={`empty-${index}`} className="h-24"></div>
         ))}
         {daysInMonth.map((day) => {
+          // Pre-compute all values once per day
           const dayKey = format(day, 'yyyy-MM-dd')
           const dayTasks = getTasksForDate(day)
-          const completion = getDateCompletionStatus(day)
+          const completion = dayTasks.length > 0 ? {
+            total: dayTasks.length,
+            completed: dayTasks.filter(t => t.completed).length
+          } : null
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
           const dayNumber = day.getDate() // Cache day number

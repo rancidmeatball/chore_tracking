@@ -91,17 +91,24 @@ RUN if [ ! -d .next ]; then \
 RUN if [ -d .next/static ]; then \
         echo "Static files found:" && \
         ls -la .next/static/ && \
-        echo "Checking for CSS files:" && \
-        find .next/static -name "*.css" -type f | head -5 || echo "No CSS files found"; \
+        echo "Checking for CSS directory:" && \
+        if [ -d .next/static/css ]; then \
+            echo "CSS directory exists:" && \
+            ls -la .next/static/css/ && \
+            echo "CSS files:" && \
+            find .next/static/css -name "*.css" -type f || echo "No CSS files in css directory"; \
+        else \
+            echo "ERROR: .next/static/css directory not found!" && \
+            echo "This means CSS was not generated during build!" && \
+            echo "Checking if Tailwind processed correctly..."; \
+        fi; \
     else \
-        echo "WARNING: .next/static directory not found"; \
+        echo "ERROR: .next/static directory not found!"; \
     fi
 
 # Verify CSS was generated in the build
-RUN if [ -d .next ]; then \
-        echo "Checking for CSS in build output:" && \
-        find .next -name "*.css" -type f | head -10 || echo "No CSS files in .next"; \
-    fi
+RUN echo "Searching for all CSS files in .next:" && \
+    find .next -name "*.css" -type f || echo "No CSS files found anywhere in .next"
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true

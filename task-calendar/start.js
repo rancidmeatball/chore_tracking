@@ -40,57 +40,34 @@ if (!fs.existsSync(dbPath)) {
   }
 }
 
-// Check if standalone build exists and list its contents for debugging
-const standalonePath = '/app/.next/standalone';
-if (fs.existsSync(standalonePath)) {
-  console.log('Standalone build found at:', standalonePath);
-  console.log('Contents:');
-  try {
-    const files = fs.readdirSync(standalonePath);
-    files.forEach(file => {
-      const fullPath = path.join(standalonePath, file);
-      const stat = fs.statSync(fullPath);
-      console.log(`  ${stat.isDirectory() ? 'DIR' : 'FILE'}: ${file}`);
-    });
-  } catch (e) {
-    console.error('Could not read standalone directory:', e.message);
-  }
-}
-
 // Use standalone server.js directly (as recommended by Next.js)
 // This keeps the process as PID 1 (required for s6-overlay)
-if (fs.existsSync(standalonePath)) {
-  console.log('Starting Next.js standalone server...');
+const standalonePath = '/app/.next/standalone';
+const serverJsPath = path.join(standalonePath, 'server.js');
+
+if (fs.existsSync(serverJsPath)) {
+  console.log('Starting Next.js standalone server from:', serverJsPath);
   process.chdir(standalonePath);
   
   // Directly require the server - no child processes
   // This process becomes the main process (PID 1)
   require('./server.js');
 } else {
-  // Fallback: use next start if standalone doesn't exist
-  console.log('Standalone build not found, using next start...');
-  const { spawn } = require('child_process');
-  const nextPath = path.join(appPath, 'node_modules', '.bin', 'next');
-  const child = spawn('node', [nextPath, 'start'], {
-    cwd: appPath,
-    stdio: 'inherit',
-    env: process.env,
-    detached: false
-  });
-  
-  child.on('exit', (code) => {
-    console.log('Next.js process exited with code:', code);
-    process.exit(code || 0);
-  });
-  
-  process.on('SIGTERM', () => {
-    console.log('Received SIGTERM, shutting down...');
-    child.kill('SIGTERM');
-  });
-  
-  process.on('SIGINT', () => {
-    console.log('Received SIGINT, shutting down...');
-    child.kill('SIGINT');
-  });
+  console.error('ERROR: Standalone server.js not found at:', serverJsPath);
+  console.error('Standalone directory exists:', fs.existsSync(standalonePath));
+  if (fs.existsSync(standalonePath)) {
+    console.error('Contents of standalone directory:');
+    try {
+      const files = fs.readdirSync(standalonePath);
+      files.forEach(file => {
+        const fullPath = path.join(standalonePath, file);
+        const stat = fs.statSync(fullPath);
+        console.error(`  ${stat.isDirectory() ? 'DIR' : 'FILE'}: ${file}`);
+      });
+    } catch (e) {
+      console.error('Could not read standalone directory:', e.message);
+    }
+  }
+  process.exit(1);
 }
 

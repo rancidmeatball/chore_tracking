@@ -68,59 +68,11 @@ if (!fs.existsSync('/app/.next')) {
   process.exit(1);
 }
 
-// Check for server files
-const serverFiles = ['server.js', 'server.mjs'];
-let serverFile = null;
-for (const file of serverFiles) {
-  const path = `/app/.next/${file}`;
-  if (fs.existsSync(path)) {
-    serverFile = path;
-    console.log(`Found server file: ${serverFile}`);
-    break;
-  }
-}
+// Skip detailed file checks - just verify .next exists (reduces startup CPU)
 
-if (!serverFile) {
-  console.warn('WARNING: No server file found in .next directory');
-  console.log('Contents of .next:', fs.readdirSync('/app/.next').join(', '));
-}
-
-// Check if standalone build exists
-const standalonePath = '/app/.next/standalone';
-if (fs.existsSync(standalonePath)) {
-  console.log('Standalone build detected');
-  console.log('Contents of standalone:', fs.readdirSync(standalonePath).join(', '));
-}
-
-// Check static files and CSS specifically
+// Minimal check - just verify static directory exists (skip detailed file listing to reduce CPU)
 const staticPath = '/app/.next/static';
-if (fs.existsSync(staticPath)) {
-  console.log('Static files found at:', staticPath);
-  console.log('Static directory contents:', fs.readdirSync(staticPath).join(', '));
-  
-  // Check for CSS files
-  const cssFiles = [];
-  try {
-    const staticDirs = fs.readdirSync(staticPath);
-    for (const dir of staticDirs) {
-      const dirPath = path.join(staticPath, dir);
-      if (fs.statSync(dirPath).isDirectory()) {
-        const files = fs.readdirSync(dirPath);
-        const cssInDir = files.filter(f => f.endsWith('.css'));
-        if (cssInDir.length > 0) {
-          cssFiles.push(...cssInDir.map(f => path.join(dir, f)));
-        }
-      }
-    }
-    if (cssFiles.length > 0) {
-      console.log('CSS files found:', cssFiles.join(', '));
-    } else {
-      console.warn('WARNING: No CSS files found in static directory!');
-    }
-  } catch (e) {
-    console.error('Error checking for CSS files:', e.message);
-  }
-} else {
+if (!fs.existsSync(staticPath)) {
   console.warn('WARNING: Static files not found at:', staticPath);
 }
 

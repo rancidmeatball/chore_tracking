@@ -6,6 +6,7 @@ import TaskForm from '@/components/TaskForm'
 import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
 import ChildManager from '@/components/ChildManager'
 import TimeTracker from '@/components/TimeTracker'
+import SettingsMenu from '@/components/SettingsMenu'
 import { Task, Child, RecurrenceTemplate } from '@/types'
 
 export default function Home() {
@@ -123,13 +124,16 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Task Calendar
-          </h1>
-          <p className="text-gray-600">
-            Track chores and tasks for your children
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Task Calendar
+            </h1>
+            <p className="text-gray-600">
+              Track chores and tasks for your children
+            </p>
+          </div>
+          <SettingsMenu />
         </div>
 
         {error && (

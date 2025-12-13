@@ -10,7 +10,8 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   // Disable file watching in production (shouldn't be needed but ensure it's off)
   webpack: (config, { dev, isServer }) => {
-    if (!dev && isServer) {
+    // Only modify config if not in dev mode
+    if (!dev) {
       // Disable file watching in production
       config.watchOptions = {
         ignored: ['**/*'],

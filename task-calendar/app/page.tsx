@@ -87,8 +87,45 @@ export default function Home() {
       })
       if (response.ok) {
         await fetchTasks()
+        await fetchChildren() // Refresh children to get updated time balance
+        
         // Check if all tasks for the day are complete
-        await checkDailyCompletion()
+        const completionResponse = await fetch('/api/tasks/check-daily-completion')
+        if (completionResponse.ok) {
+          const data = await completionResponse.json()
+          
+          // Check for tech time rewards
+          if (data.techTimeRewards && data.techTimeRewards.length > 0) {
+            for (const reward of data.techTimeRewards) {
+              if (!reward.awarded) {
+                // Award tech time for this child
+                const awardResponse = await fetch('/api/tasks/award-tech-time', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    childId: reward.childId,
+                    date: new Date().toISOString(),
+                  }),
+                })
+                
+                if (awardResponse.ok) {
+                  const awardData = await awardResponse.json()
+                  alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
+                  await fetchChildren() // Refresh to show new balance
+                }
+              }
+            }
+          }
+          
+          // Trigger Home Assistant if all tasks complete
+          if (data.allComplete) {
+            await fetch('/api/home-assistant/trigger', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ date: new Date().toISOString() }),
+            })
+          }
+        }
       }
     } catch (error) {
       console.error('Error updating task:', error)

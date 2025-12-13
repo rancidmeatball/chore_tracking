@@ -28,6 +28,7 @@ export interface Task {
   dueDate: string
   completed: boolean
   completedAt?: string
+  category: 'helping-family' | 'enrichment'
   childId: string
   child?: Child
   recurrenceTemplateId?: string

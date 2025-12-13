@@ -187,6 +187,9 @@ function Calendar({
                         {task.completed && (
                           <span className="text-green-700 font-bold flex-shrink-0">✓</span>
                         )}
+                        <span className="text-[8px] sm:text-[10px] opacity-75 flex-shrink-0">
+                          {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
+                        </span>
                         <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
                       </div>
                     </div>

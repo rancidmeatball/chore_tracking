@@ -18,6 +18,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
   const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [isOpenEnded, setIsOpenEnded] = useState(false)
   const [childId, setChildId] = useState('')
+  const [category, setCategory] = useState<'helping-family' | 'enrichment'>('helping-family')
   const [recurrenceTemplateId, setRecurrenceTemplateId] = useState('')
   const [recurrenceTemplates, setRecurrenceTemplates] = useState<RecurrenceTemplate[]>([])
 
@@ -28,6 +29,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
       setDescription(task.description || '')
       setDueDate(format(new Date(task.dueDate), 'yyyy-MM-dd'))
       setChildId(task.childId)
+      setCategory(task.category || 'helping-family')
       setRecurrenceTemplateId(task.recurrenceTemplateId || '')
       setIsOpenEnded(false) // Tasks always have a due date
     }
@@ -69,6 +71,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
           title,
           description,
           dueDate: taskDueDate,
+          category,
           childId,
           recurrenceTemplateId: recurrenceTemplateId || null,
         }),

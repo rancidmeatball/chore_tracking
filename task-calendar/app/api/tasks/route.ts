@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, dueDate, childId, recurrenceTemplateId } = body
+    const { title, description, dueDate, childId, recurrenceTemplateId, category } = body
 
     // If there's a recurrence template, childId might come from the template
     if (recurrenceTemplateId) {
@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
               title,
               description: description || null,
               dueDate: taskDate,
+              category: category || 'helping-family',
               childId: taskChildId,
               recurrenceTemplateId,
             })
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
               title,
               description: description || null,
               dueDate: taskDate,
+              category: category || 'helping-family',
               childId: taskChildId,
               recurrenceTemplateId,
             })

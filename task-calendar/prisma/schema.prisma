@@ -44,6 +44,7 @@ model Task {
   dueDate               DateTime
   completed             Boolean            @default(false)
   completedAt           DateTime?
+  category              String             @default("helping-family") // "helping-family" or "enrichment"
   childId               String
   child                 Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
   recurrenceTemplateId  String?
@@ -54,5 +55,6 @@ model Task {
   @@index([dueDate])
   @@index([childId])
   @@index([completed])
+  @@index([category])
 }
 

@@ -48,7 +48,12 @@ try {
 
 // Use next start - simpler and more reliable than standalone mode
 process.env.PORT = process.env.PORT || '3000';
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+// Force production mode - critical for CPU usage
+process.env.NODE_ENV = 'production';
+// Disable Next.js telemetry to reduce overhead
+process.env.NEXT_TELEMETRY_DISABLED = '1';
+// Node.js production optimizations
+process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '--max-old-space-size=512';
 
 console.log('Starting Next.js application...');
 console.log('PORT:', process.env.PORT);
@@ -119,15 +124,21 @@ if (fs.existsSync(staticPath)) {
   console.warn('WARNING: Static files not found at:', staticPath);
 }
 
-// Use next start - execSync will block and keep the process running
+// Use next start directly - more efficient than npm run start
+// execSync will block and keep the process running
 // This is fine for Home Assistant add-ons
 const { execSync } = require('child_process');
 try {
-  console.log('Executing: npm run start');
-  execSync('npm run start', {
+  console.log('Executing: next start');
+  // Use next start directly instead of npm run start to avoid npm overhead
+  execSync('node_modules/.bin/next start', {
     cwd: '/app',
     stdio: 'inherit',
-    env: process.env
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      NEXT_TELEMETRY_DISABLED: '1',
+    }
   });
 } catch (error) {
   console.error('Failed to start Next.js:', error);

@@ -8,6 +8,20 @@ const nextConfig = {
   swcMinify: true,
   // Disable source maps in production to reduce overhead
   productionBrowserSourceMaps: false,
+  // Disable file watching in production (shouldn't be needed but ensure it's off)
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && isServer) {
+      // Disable file watching in production
+      config.watchOptions = {
+        ignored: ['**/*'],
+      }
+    }
+    return config
+  },
+  // Disable experimental features that might cause overhead
+  experimental: {
+    // Disable any experimental features
+  },
 }
 
 module.exports = nextConfig

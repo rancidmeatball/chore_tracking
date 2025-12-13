@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -23,32 +23,47 @@ export default function Calendar({
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  const monthStart = startOfMonth(currentMonth)
-  const monthEnd = endOfMonth(currentMonth)
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  // Memoize month calculations
+  const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays } = useMemo(() => {
+    const start = startOfMonth(currentMonth)
+    const end = endOfMonth(currentMonth)
+    const days = eachDayOfInterval({ start, end })
+    const firstDay = start.getDay()
+    const empty = Array(firstDay).fill(null)
+    return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty }
+  }, [currentMonth])
 
-  // Get tasks for a specific date
-  const getTasksForDate = (date: Date) => {
-    return tasks.filter((task) => {
+  // Memoize task lookup map for O(1) access
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, Task[]>()
+    tasks.forEach((task) => {
       const taskDate = new Date(task.dueDate)
-      return isSameDay(taskDate, date)
+      const dateKey = format(taskDate, 'yyyy-MM-dd')
+      if (!map.has(dateKey)) {
+        map.set(dateKey, [])
+      }
+      map.get(dateKey)!.push(task)
     })
-  }
+    return map
+  }, [tasks])
 
-  // Get completion status for a date
-  const getDateCompletionStatus = (date: Date) => {
+  // Get tasks for a specific date (memoized)
+  const getTasksForDate = useCallback((date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd')
+    return tasksByDate.get(dateKey) || []
+  }, [tasksByDate])
+
+  // Get completion status for a date (memoized)
+  const getDateCompletionStatus = useCallback((date: Date) => {
     const dateTasks = getTasksForDate(date)
     if (dateTasks.length === 0) return null
     const completedCount = dateTasks.filter((t) => t.completed).length
     return { total: dateTasks.length, completed: completedCount }
-  }
+  }, [getTasksForDate])
 
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
+  const prevMonth = useCallback(() => setCurrentMonth(subMonths(currentMonth, 1)), [currentMonth])
+  const nextMonth = useCallback(() => setCurrentMonth(addMonths(currentMonth, 1)), [currentMonth])
 
-  // Get first day of week for the month
-  const firstDayOfWeek = monthStart.getDay()
-  const emptyDays = Array(firstDayOfWeek).fill(null)
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -85,6 +100,7 @@ export default function Calendar({
           <div key={`empty-${index}`} className="h-24"></div>
         ))}
         {daysInMonth.map((day) => {
+          const dayKey = format(day, 'yyyy-MM-dd')
           const dayTasks = getTasksForDate(day)
           const completion = getDateCompletionStatus(day)
           const isSelected = isSameDay(day, selectedDate)
@@ -92,7 +108,7 @@ export default function Calendar({
 
           return (
             <div
-              key={day.toISOString()}
+              key={dayKey}
               onClick={() => onDateSelect(day)}
               className={`
                 h-24 border-2 rounded-lg p-2 cursor-pointer transition
@@ -101,7 +117,7 @@ export default function Calendar({
               `}
             >
               <div className="flex justify-between items-start mb-1">
-                <span className={`text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-700'}`}>
+                <span className={`text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
                   {format(day, 'd')}
                 </span>
                 {completion && (
@@ -132,7 +148,7 @@ export default function Calendar({
                   </div>
                 ))}
                 {dayTasks.length > 3 && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-700">
                     +{dayTasks.length - 3} more
                   </div>
                 )}
@@ -144,12 +160,12 @@ export default function Calendar({
 
       {/* Selected Date Tasks Detail */}
       <div className="mt-6 border-t pt-6">
-        <h3 className="text-lg font-semibold mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Tasks for {format(selectedDate, 'MMMM d, yyyy')}
         </h3>
         <div className="space-y-2">
           {getTasksForDate(selectedDate).length === 0 ? (
-            <p className="text-gray-500">No tasks for this date</p>
+            <p className="text-gray-700">No tasks for this date</p>
           ) : (
             getTasksForDate(selectedDate).map((task) => (
               <div
@@ -170,7 +186,7 @@ export default function Calendar({
                     <p className="text-sm text-gray-600">{task.description}</p>
                   )}
                   {task.child && (
-                    <p className="text-xs text-gray-500">Assigned to: {task.child.name}</p>
+                    <p className="text-xs text-gray-700">Assigned to: {task.child.name}</p>
                   )}
                 </div>
                 <div className="flex gap-2">

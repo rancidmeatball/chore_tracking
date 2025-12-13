@@ -81,21 +81,19 @@ RUN if [ ! -d .next/standalone ]; then \
         exit 1; \
     fi
 
-# Copy static files to standalone directory (required for standalone mode)
-# Next.js standalone build needs static files in .next/standalone/.next/static
+# Copy static files - Next.js needs these for serving the app
+# For standalone mode, static files should be in .next/standalone/.next/static
+# But when using 'next start', they should be in .next/static
 RUN if [ -d .next/static ]; then \
-        echo "Copying static files to standalone..." && \
-        mkdir -p .next/standalone/.next/static && \
-        cp -r .next/static/* .next/standalone/.next/static/ && \
-        echo "Static files copied successfully"; \
+        echo "Static files found, ensuring they're accessible..."; \
+        ls -la .next/static/ | head -10; \
     else \
         echo "WARNING: .next/static directory not found"; \
     fi
 
-# Also copy public directory if it exists
+# Copy public directory if it exists
 RUN if [ -d public ]; then \
-        echo "Copying public directory to standalone..." && \
-        cp -r public .next/standalone/ 2>/dev/null || true; \
+        echo "Public directory found"; \
     fi
 
 # Make scripts executable

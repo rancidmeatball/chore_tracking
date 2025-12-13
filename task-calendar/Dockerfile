@@ -69,31 +69,20 @@ RUN echo "Building Next.js application..." && \
      echo "Checking .next directory:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
      exit 1)
 
-# Verify standalone output exists
-RUN if [ ! -d .next/standalone ]; then \
-        echo "ERROR: Standalone output not found!" && \
-        echo "Contents of .next:" && ls -la .next/ 2>/dev/null || echo "No .next directory" && \
+# Verify build output exists
+RUN if [ ! -d .next ]; then \
+        echo "ERROR: .next directory not found!" && \
         exit 1; \
     fi && \
-    if [ ! -f .next/standalone/server.js ]; then \
-        echo "ERROR: server.js not found in standalone!" && \
-        echo "Contents of .next/standalone:" && ls -la .next/standalone/ 2>/dev/null || echo "No standalone directory" && \
-        exit 1; \
-    fi
+    echo "Build output verified:" && \
+    ls -la .next/ | head -10
 
-# Copy static files - Next.js needs these for serving the app
-# For standalone mode, static files should be in .next/standalone/.next/static
-# But when using 'next start', they should be in .next/static
+# Verify static files exist
 RUN if [ -d .next/static ]; then \
-        echo "Static files found, ensuring they're accessible..."; \
-        ls -la .next/static/ | head -10; \
+        echo "Static files found:" && \
+        ls -la .next/static/ | head -5; \
     else \
         echo "WARNING: .next/static directory not found"; \
-    fi
-
-# Copy public directory if it exists
-RUN if [ -d public ]; then \
-        echo "Public directory found"; \
     fi
 
 # Make scripts executable

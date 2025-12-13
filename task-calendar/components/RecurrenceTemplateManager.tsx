@@ -183,7 +183,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
 
@@ -195,7 +195,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
 
@@ -207,7 +207,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -224,7 +224,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                   value={dayOfWeek}
                   onChange={(e) => setDayOfWeek(parseInt(e.target.value))}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 >
                   <option value={0}>Sunday</option>
                   <option value={1}>Monday</option>
@@ -249,7 +249,7 @@ export default function RecurrenceTemplateManager({ onClose }: RecurrenceTemplat
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(parseInt(e.target.value))}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 />
               </div>
             )}

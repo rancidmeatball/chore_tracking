@@ -55,7 +55,8 @@ export default function Calendar({
       <div className="flex justify-between items-center mb-6">
         <button
           onClick={prevMonth}
-          className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-semibold"
+          aria-label="Previous month"
         >
           ← Prev
         </button>
@@ -64,7 +65,8 @@ export default function Calendar({
         </h2>
         <button
           onClick={nextMonth}
-          className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-semibold"
+          aria-label="Next month"
         >
           Next →
         </button>

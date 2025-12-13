@@ -62,7 +62,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
           onChange={(e) => setName(e.target.value)}
           placeholder="Child's name"
           required
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
         />
         <button
           type="submit"

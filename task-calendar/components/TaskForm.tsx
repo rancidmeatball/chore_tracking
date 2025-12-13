@@ -107,7 +107,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             />
           </div>
 
@@ -119,7 +119,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             />
           </div>
 
@@ -132,7 +132,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             />
           </div>
 
@@ -144,7 +144,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
               value={childId}
               onChange={(e) => setChildId(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             >
               <option value="">Select a child</option>
               {childrenList.map((child) => (
@@ -162,7 +162,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
             <select
               value={recurrenceTemplateId}
               onChange={(e) => setRecurrenceTemplateId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             >
               <option value="">None</option>
               {recurrenceTemplates.map((template) => (

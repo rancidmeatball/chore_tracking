@@ -236,52 +236,11 @@ function Calendar({
             </div>
           </div>
         )
-      }, [selectedDate, tasksByDate])}
+      }, [selectedDate, tasks])}
     </div>
   )
 }
 
-// Memoize the Calendar component with custom comparison
-// Only re-render if tasks, selectedDate, or callbacks actually change
-export default memo(Calendar, (prevProps, nextProps) => {
-  // Quick reference check first
-  if (prevProps.tasks === nextProps.tasks && 
-      prevProps.selectedDate === nextProps.selectedDate &&
-      prevProps.onDateSelect === nextProps.onDateSelect &&
-      prevProps.onTaskComplete === nextProps.onTaskComplete &&
-      prevProps.onTaskEdit === nextProps.onTaskEdit &&
-      prevProps.onTaskDelete === nextProps.onTaskDelete) {
-    return true // Skip re-render
-  }
-  
-  // Check selectedDate by time value
-  if (prevProps.selectedDate.getTime() !== nextProps.selectedDate.getTime()) {
-    return false // Re-render
-  }
-  
-  // Check tasks array length and reference
-  if (prevProps.tasks.length !== nextProps.tasks.length) {
-    return false // Re-render
-  }
-  
-  // If tasks array reference changed but length is same, check if content changed
-  if (prevProps.tasks !== nextProps.tasks) {
-    // Quick check: compare first and last task IDs
-    if (prevProps.tasks.length > 0 && nextProps.tasks.length > 0) {
-      if (prevProps.tasks[0].id !== nextProps.tasks[0].id ||
-          prevProps.tasks[prevProps.tasks.length - 1].id !== nextProps.tasks[nextProps.tasks.length - 1].id) {
-        return false // Re-render
-      }
-    }
-  }
-  
-  // Check callbacks
-  if (prevProps.onDateSelect !== nextProps.onDateSelect ||
-      prevProps.onTaskComplete !== nextProps.onTaskComplete ||
-      prevProps.onTaskEdit !== nextProps.onTaskEdit ||
-      prevProps.onTaskDelete !== nextProps.onTaskDelete) {
-    return false // Re-render
-  }
-  
-  return true // Skip re-render
-})
+// Memoize the Calendar component - use default shallow comparison
+// The expensive operations are already memoized inside the component
+export default memo(Calendar)

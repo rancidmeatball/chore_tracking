@@ -71,8 +71,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Verify Tailwind and PostCSS are available before building
 RUN echo "Verifying CSS build tools..." && \
-    (npx tailwindcss --version || echo "WARNING: Tailwind version check failed") && \
-    (npx postcss --version || echo "WARNING: PostCSS version check failed") && \
+    (node -e "require('tailwindcss/package.json').version" 2>/dev/null && echo "Tailwind found" || echo "WARNING: Tailwind not found") && \
+    (npx postcss --version 2>/dev/null || echo "WARNING: PostCSS version check failed") && \
     echo "CSS build tools check complete"
 
 # Verify config files exist (non-blocking)

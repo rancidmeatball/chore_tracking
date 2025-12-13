@@ -20,7 +20,7 @@ if (!fs.existsSync(dbDir)) {
 // Database will be initialized automatically by Prisma on first connection
 // No need to run db push here - Prisma handles SQLite database creation
 
-// Next.js standalone build - directly require the server
+// Next.js standalone build - find and require the server
 // This keeps the process as PID 1 (required for s6-overlay)
 const standalonePath = '/app/.next/standalone';
 
@@ -28,9 +28,29 @@ if (fs.existsSync(standalonePath)) {
   // Change to standalone directory
   process.chdir(standalonePath);
   
+  // Check for server.js in current directory or server subdirectory
+  let serverPath = './server.js';
+  if (!fs.existsSync(serverPath)) {
+    // Try server/server.js (some Next.js versions use this structure)
+    if (fs.existsSync('./server/server.js')) {
+      serverPath = './server/server.js';
+    } else {
+      // List what's actually in the directory for debugging
+      console.error('ERROR: server.js not found in standalone build');
+      console.error('Contents of /app/.next/standalone:');
+      try {
+        const files = fs.readdirSync('.');
+        console.error('Files:', files.join(', '));
+      } catch (e) {
+        console.error('Could not read directory:', e.message);
+      }
+      process.exit(1);
+    }
+  }
+  
   // Directly require the server - no child processes
   // This process becomes the main process (PID 1)
-  require('./server.js');
+  require(serverPath);
 } else {
   // Fallback: if standalone build doesn't exist, we have a build problem
   console.error('ERROR: Standalone build not found at /app/.next/standalone');

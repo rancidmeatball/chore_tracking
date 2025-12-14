@@ -222,9 +222,19 @@ console.log('Current working directory:', process.cwd());
 console.log('.next directory exists:', fs.existsSync('/app/.next'));
 console.log('.next/server/app exists:', fs.existsSync('/app/.next/server/app'));
 
+// Verify we can actually read a route file
+const testRoutePath = '/app/.next/server/app/page.js';
+if (fs.existsSync(testRoutePath)) {
+  console.log('✓ Root route file exists at:', testRoutePath);
+  const stats = fs.statSync(testRoutePath);
+  console.log('  File size:', stats.size, 'bytes');
+} else {
+  console.error('ERROR: Root route file NOT found at:', testRoutePath);
+}
+
 // Next.js needs -H 0.0.0.0 to bind to all interfaces, not just localhost
-// Also ensure we're in the right directory and Next.js can find .next
-const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0'], {
+// Use absolute path to ensure Next.js finds .next directory
+const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '-p', '3000'], {
   cwd: '/app',
   stdio: 'inherit',
   env: {
@@ -232,8 +242,7 @@ const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0'], 
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
-    // Ensure Next.js can find the build output
-    NEXT_PRIVATE_STANDALONE: 'false',
+    PORT: '3000',
   }
 });
 

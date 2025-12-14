@@ -90,12 +90,33 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check which children have completed all their tasks
+    const childCompletions: Array<{ childId: string; childName: string; inputBoolean: string | null; allComplete: boolean }> = []
+    
+    for (const childData of Object.values(tasksByChild)) {
+      const childTasks = tasks.filter(t => t.childId === childData.childId)
+      const childTotal = childTasks.length
+      const childCompleted = childTasks.filter(t => t.completed).length
+      const childAllComplete = childTotal > 0 && childCompleted === childTotal
+      
+      // Get the child's inputBoolean from the first task (all tasks have the same child)
+      const childInputBoolean = childTasks.length > 0 ? childTasks[0].child.inputBoolean : null
+      
+      childCompletions.push({
+        childId: childData.childId,
+        childName: childData.childName,
+        inputBoolean: childInputBoolean,
+        allComplete: childAllComplete,
+      })
+    }
+
     return NextResponse.json({
       date: checkDate.toISOString(),
       totalTasks,
       completedTasks,
       allComplete,
       techTimeRewards,
+      childCompletions,
       categoryBreakdown: Object.values(tasksByChild).map(child => ({
         childId: child.childId,
         childName: child.childName,

@@ -411,6 +411,13 @@ console.log('Next.js binary exists:', fs.existsSync(nextBin));
 
 // Only use next start if standalone mode was NOT detected (early check already handled standalone)
 console.log('Using standard next start (standalone mode was not detected in early check)');
+  // Add debug logging to see what Next.js is doing
+  console.log('=== Starting Next.js with next start ===');
+  console.log('Command:', nextBin, 'start --hostname 0.0.0.0 --port 3000');
+  console.log('Working directory:', '/app');
+  console.log('Next.js will look for .next directory at:', '/app/.next');
+  console.log('Verifying .next/server/app-paths-manifest.json exists:', fs.existsSync('/app/.next/server/app-paths-manifest.json'));
+  
   const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
     cwd: '/app',
     stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
@@ -421,6 +428,8 @@ console.log('Using standard next start (standalone mode was not detected in earl
       HOSTNAME: '0.0.0.0',
       HOST: '0.0.0.0',
       PORT: '3000',
+      // Add debug flag to see what Next.js is doing
+      DEBUG: process.env.DEBUG || '',
     }
   });
   

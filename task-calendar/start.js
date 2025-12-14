@@ -276,16 +276,18 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
   
   // Check if BUILD_ID is valid (should be a hash, not a placeholder)
   // BUILD_ID should be a 20-character hex string, not a placeholder
+  // CRITICAL: Invalid BUILD_ID can cause Next.js to not match routes!
   const isInvalid = buildId === '1BUILD_ID' || buildId.length < 10 || buildId.includes('BUILD_ID');
   console.log('BUILD_ID is invalid?', isInvalid);
   
   if (isInvalid) {
-    console.warn('WARNING: BUILD_ID appears to be invalid or placeholder:', buildId);
+    console.error('ERROR: BUILD_ID is INVALID! This will cause route matching to fail!');
+    console.error('BUILD_ID value:', JSON.stringify(buildId));
     console.warn('Regenerating BUILD_ID from build artifacts...');
     
     const crypto = require('crypto');
     const buildManifestPath = '/app/.next/build-manifest.json';
-    let buildIdSource = Date.now().toString();
+    let buildIdSource = Date.now().toString() + Math.random().toString();
     
     if (fs.existsSync(buildManifestPath)) {
       try {
@@ -293,15 +295,16 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
         buildIdSource = JSON.stringify(manifest);
         console.log('Using build-manifest.json for BUILD_ID generation');
       } catch (e) {
-        console.log('Could not read build-manifest.json, using timestamp');
+        console.log('Could not read build-manifest.json, using timestamp+random');
       }
     } else {
-      console.log('build-manifest.json not found, using timestamp');
+      console.log('build-manifest.json not found, using timestamp+random');
     }
     
     buildId = crypto.createHash('md5').update(buildIdSource).digest('hex').substring(0, 20);
     fs.writeFileSync('/app/.next/BUILD_ID', buildId);
-    console.log('✓ Regenerated BUILD_ID:', buildId);
+    console.log('✓ Regenerated BUILD_ID to:', buildId);
+    console.log('New BUILD_ID length:', buildId.length);
   } else {
     console.log('✓ BUILD_ID is valid');
   }

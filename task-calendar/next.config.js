@@ -10,8 +10,6 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   // Ensure trailing slash is handled correctly
   trailingSlash: false,
-  // No basePath - routes should be at root
-  basePath: '',
   // Disable file watching in production (shouldn't be needed but ensure it's off)
   webpack: (config, { dev, isServer }) => {
     // Only modify config if not in dev mode

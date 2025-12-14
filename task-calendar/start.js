@@ -348,11 +348,21 @@ console.log('Starting Next.js with environment:');
 console.log('  NODE_ENV:', process.env.NODE_ENV);
 console.log('  PORT:', process.env.PORT);
 console.log('  HOSTNAME:', process.env.HOSTNAME);
-console.log('  CWD:', '/app');
+console.log('  CWD:', process.cwd());
 console.log('  .next exists:', fs.existsSync('/app/.next'));
 console.log('  app directory exists:', fs.existsSync('/app/app'));
 console.log('  app/page.tsx exists:', fs.existsSync('/app/app/page.tsx'));
 console.log('  app/layout.tsx exists:', fs.existsSync('/app/app/layout.tsx'));
+console.log('  app/middleware.ts exists:', fs.existsSync('/app/app/middleware.ts'));
+// Verify Next.js can read the source files
+if (fs.existsSync('/app/app/page.tsx')) {
+  try {
+    const pageContent = fs.readFileSync('/app/app/page.tsx', 'utf8');
+    console.log('  app/page.tsx is readable, first 100 chars:', pageContent.substring(0, 100));
+  } catch (e) {
+    console.error('  ERROR: Cannot read app/page.tsx:', e.message);
+  }
+}
 
 // Next.js might need the source app directory at runtime for some operations
 if (!fs.existsSync('/app/app')) {

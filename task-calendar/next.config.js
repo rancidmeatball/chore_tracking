@@ -26,6 +26,9 @@ const nextConfig = {
   experimental: {
     // Disable any experimental features
   },
+  // Ensure Next.js can find the app directory
+  // This might help with app router file resolution
+  distDir: '.next',
 }
 
 module.exports = nextConfig

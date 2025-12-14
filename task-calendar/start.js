@@ -474,6 +474,9 @@ console.log('Using standard next start (standalone mode was not detected in earl
   console.log('Verifying .next/server/app-paths-manifest.json exists:', fs.existsSync('/app/.next/server/app-paths-manifest.json'));
   console.log('Verifying .next/server/app/page.js exists:', fs.existsSync('/app/.next/server/app/page.js'));
   
+  // Set NODE_OPTIONS to help with module resolution
+  const nodeOptions = process.env.NODE_OPTIONS || '';
+  
   const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
     cwd: '/app',
     stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
@@ -486,6 +489,10 @@ console.log('Using standard next start (standalone mode was not detected in earl
       PORT: '3000',
       // Add debug flag to see what Next.js is doing
       DEBUG: process.env.DEBUG || '',
+      // Ensure Node.js can resolve modules correctly
+      NODE_OPTIONS: nodeOptions,
+      // Explicitly set the app directory path
+      NEXT_PUBLIC_BASE_PATH: '',
     }
   });
   

@@ -278,8 +278,62 @@ if (!fs.existsSync('/app/app')) {
 const nextBin = '/app/node_modules/.bin/next';
 console.log('Next.js binary exists:', fs.existsSync(nextBin));
 
+// Check if standalone mode was used
+const standalonePath = '/app/.next/standalone';
+const useStandalone = fs.existsSync(standalonePath);
+
+if (useStandalone) {
+  console.log('Standalone mode detected - using standalone server');
+  // In standalone mode, use the standalone server.js
+  const standaloneServer = '/app/.next/standalone/server.js';
+  if (fs.existsSync(standaloneServer)) {
+    console.log('Starting standalone server...');
+    const serverProcess = spawn('node', [standaloneServer], {
+      cwd: '/app/.next/standalone',
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '3000',
+        HOSTNAME: '0.0.0.0',
+        HOST: '0.0.0.0',
+      }
+    });
+    
+    serverProcess.on('exit', (code, signal) => {
+      console.error(`Standalone server exited with code ${code} and signal ${signal}`);
+      if (code !== 0 && code !== null) {
+        process.exit(1);
+      }
+    });
+    
+    process.on('SIGTERM', () => {
+      console.log('Received SIGTERM, shutting down standalone server...');
+      serverProcess.kill('SIGTERM');
+    });
+    
+    process.on('SIGINT', () => {
+      console.log('Received SIGINT, shutting down standalone server...');
+      serverProcess.kill('SIGINT');
+    });
+    
+    // Keep this process alive
+    process.on('exit', () => {
+      if (serverProcess && !serverProcess.killed) {
+        serverProcess.kill();
+      }
+    });
+    
+    // Don't continue - the standalone server is running
+    return;
+  } else {
+    console.warn('Standalone directory exists but server.js not found, falling back to next start');
+  }
+}
+
 // Use explicit hostname and port
 // Use 'inherit' for stdio so Next.js works normally - piping might interfere with routing
+console.log('Using standard next start (not standalone mode)');
 const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
   cwd: '/app',
   stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation

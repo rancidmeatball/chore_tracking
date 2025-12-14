@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo, useRef } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'

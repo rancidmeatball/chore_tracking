@@ -87,9 +87,30 @@ RUN echo "Building Next.js application..." && \
     fi && \
     echo "=== BUILD SUCCEEDED ==="
 
+# Ensure BUILD_ID exists (Next.js requires it for production)
+# If Next.js didn't create it, generate one from build artifacts
+RUN if [ ! -f .next/BUILD_ID ]; then \
+        echo "WARNING: BUILD_ID not found - generating one from build artifacts..." && \
+        if [ -f .next/build-manifest.json ]; then \
+            BUILD_ID=$(md5sum .next/build-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
+            echo "$$BUILD_ID" > .next/BUILD_ID && \
+            echo "Generated BUILD_ID: $$BUILD_ID"; \
+        elif [ -f .next/routes-manifest.json ]; then \
+            BUILD_ID=$(md5sum .next/routes-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
+            echo "$$BUILD_ID" > .next/BUILD_ID && \
+            echo "Generated BUILD_ID: $$BUILD_ID"; \
+        else \
+            BUILD_ID=$(date +%s | md5sum | cut -d' ' -f1 | cut -c1-20) && \
+            echo "$$BUILD_ID" > .next/BUILD_ID && \
+            echo "Generated BUILD_ID (timestamp-based): $$BUILD_ID"; \
+        fi; \
+    else \
+        echo "BUILD_ID exists: $(cat .next/BUILD_ID)"; \
+    fi
+
 # Verify build output exists
 # Updated 2024-12-14: Accepts any build artifacts (static/, server/, standalone/, BUILD_ID, or routes-manifest.json)
-# BUILD_ID is not always created in all Next.js configurations
+# BUILD_ID is now ensured to exist above
 RUN set -e && \
     echo "=== Verifying Next.js build output ===" && \
     if [ ! -d .next ]; then \

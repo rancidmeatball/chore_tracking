@@ -75,16 +75,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build Next.js application
 # Run build and capture output - show errors on failure
 RUN echo "Building Next.js application..." && \
-    set -o pipefail && \
-    npm run build 2>&1 | tee /tmp/build.log || \
-    (echo "=== BUILD FAILED ===" && \
-     echo "=== BUILD OUTPUT ===" && \
-     cat /tmp/build.log 2>/dev/null || echo "No build log found" && \
-     echo "=== END BUILD OUTPUT ===" && \
-     echo "=== .next directory contents ===" && \
-     ls -la .next/ 2>/dev/null || echo "No .next directory" && \
-     echo "=== Checking for build errors ===" && \
-     exit 1)
+    npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
+    if [ $$BUILD_EXIT -ne 0 ]; then \
+        echo "=== BUILD FAILED (exit code: $$BUILD_EXIT) ==="; \
+        echo "=== BUILD OUTPUT ==="; \
+        cat /tmp/build.log; \
+        echo "=== END BUILD OUTPUT ==="; \
+        echo "=== .next directory contents ==="; \
+        ls -la .next/ 2>/dev/null || echo "No .next directory"; \
+        exit 1; \
+    fi && \
+    echo "=== BUILD SUCCEEDED ===" && \
+    cat /tmp/build.log | tail -20
 
 # Verify build output exists and has BUILD_ID
 RUN if [ ! -d .next ]; then \

@@ -48,7 +48,11 @@ COPY . .
 # Verify critical files exist
 RUN test -f next.config.js || (echo "ERROR: next.config.js not found!" && exit 1) && \
     test -f tsconfig.json || (echo "ERROR: tsconfig.json not found!" && exit 1) && \
-    test -d app || (echo "ERROR: app directory not found!" && exit 1)
+    test -d app || (echo "ERROR: app directory not found!" && exit 1) && \
+    echo "=== Verifying next.config.js ===" && \
+    cat next.config.js && \
+    echo "=== Checking for output: standalone in config ===" && \
+    (grep -q "output.*standalone" next.config.js && echo "✓ output: standalone found in config" || echo "✗ output: standalone NOT found in config")
 
 # Generate Prisma client
 # Force regeneration to ensure types are up to date

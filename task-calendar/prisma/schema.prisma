@@ -20,6 +20,7 @@ model Child {
   updatedAt           DateTime             @updatedAt
   tasks               Task[]
   recurrenceTemplates RecurrenceTemplate[]
+  techTimeAwards      TechTimeAward[]
 }
 
 model RecurrenceTemplate {
@@ -56,5 +57,18 @@ model Task {
   @@index([childId])
   @@index([completed])
   @@index([category])
+}
+
+model TechTimeAward {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  awardDate DateTime // Date the award was given (for tracking daily awards)
+  minutes   Int      @default(60) // Amount awarded (default 1 hour)
+  createdAt DateTime @default(now())
+
+  @@unique([childId, awardDate]) // Prevent duplicate awards for same child on same date
+  @@index([childId])
+  @@index([awardDate])
 }
 

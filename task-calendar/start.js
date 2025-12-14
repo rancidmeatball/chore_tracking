@@ -631,15 +631,17 @@ console.log('Using standard next start (standalone mode was not detected in earl
   
   // CRITICAL: Check if Next.js needs server-app-paths-manifest.json
   // This file is required for Next.js to load app router files
+  console.log('=== Checking for server-app-paths-manifest.json ===');
   const serverAppPathsManifest = '/app/.next/server/server-app-paths-manifest.json';
   if (!fs.existsSync(serverAppPathsManifest)) {
-    console.warn('WARNING: server-app-paths-manifest.json not found!');
+    console.warn('⚠ WARNING: server-app-paths-manifest.json not found!');
     console.warn('This might cause appFiles Set(0) - Next.js won\'t load app router files!');
     // Try to create it from app-paths-manifest.json
     const appPathsManifest = '/app/.next/server/app-paths-manifest.json';
     if (fs.existsSync(appPathsManifest)) {
       try {
         const appManifest = JSON.parse(fs.readFileSync(appPathsManifest, 'utf8'));
+        console.log('Found app-paths-manifest.json with', Object.keys(appManifest).length, 'routes');
         // server-app-paths-manifest.json has a different structure
         // It maps route paths to their file paths
         const serverManifest = {};
@@ -649,13 +651,26 @@ console.log('Using standard next start (standalone mode was not detected in earl
           serverManifest[route] = serverPath;
         }
         fs.writeFileSync(serverAppPathsManifest, JSON.stringify(serverManifest, null, 2));
-        console.log('Created server-app-paths-manifest.json from app-paths-manifest.json');
+        console.log('✓ Created server-app-paths-manifest.json from app-paths-manifest.json');
+        console.log('Created manifest with', Object.keys(serverManifest).length, 'routes');
       } catch (e) {
-        console.error('ERROR: Could not create server-app-paths-manifest.json:', e.message);
+        console.error('❌ ERROR: Could not create server-app-paths-manifest.json:', e.message);
       }
+    } else {
+      console.error('❌ ERROR: app-paths-manifest.json not found! Cannot create server-app-paths-manifest.json');
     }
   } else {
     console.log('✓ server-app-paths-manifest.json exists');
+  }
+  
+  // Check if standalone directory exists (might explain the warning)
+  const standaloneDir = '/app/.next/standalone';
+  if (fs.existsSync(standaloneDir)) {
+    console.warn('⚠ WARNING: .next/standalone directory exists!');
+    console.warn('This might cause Next.js to think standalone mode is enabled.');
+    console.warn('Next.js will warn: "next start" does not work with "output: standalone"');
+  } else {
+    console.log('✓ .next/standalone directory does NOT exist (standalone mode disabled)');
   }
   
   const nextProcess = spawn(

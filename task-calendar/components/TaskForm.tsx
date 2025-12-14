@@ -49,6 +49,41 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
     }
   }
 
+  // Format template display text with all relevant information
+  const formatTemplateDisplay = (template: RecurrenceTemplate): string => {
+    const parts: string[] = []
+    
+    // Add child name if available
+    if (template.child?.name) {
+      parts.push(template.child.name)
+    }
+    
+    // Add template name
+    parts.push(template.name)
+    
+    // Add frequency and schedule details
+    if (template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0) {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const selectedDays = template.daysOfWeek
+        .map((day: number) => dayNames[day])
+        .join(', ')
+      parts.push(`Weekly: ${selectedDays}`)
+    } else if (template.frequency === 'monthly' && template.dayOfMonth) {
+      parts.push(`Monthly: Day ${template.dayOfMonth}`)
+    } else if (template.frequency === 'one-time') {
+      parts.push('One-time')
+    } else {
+      parts.push(template.frequency)
+    }
+    
+    // Add description if available
+    if (template.description) {
+      parts.push(`- ${template.description}`)
+    }
+    
+    return parts.join(' | ')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -270,13 +305,42 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
               onChange={(e) => setRecurrenceTemplateId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             >
-              <option value="">None</option>
+              <option value="">None - Create a one-time task</option>
               {recurrenceTemplates.map((template) => (
                 <option key={template.id} value={template.id}>
-                  {template.name} ({template.frequency})
+                  {formatTemplateDisplay(template)}
                 </option>
               ))}
             </select>
+            {selectedTemplate && (
+              <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedTemplate.child?.name && (
+                    <span className="text-blue-700">👤 {selectedTemplate.child.name}</span>
+                  )}
+                  {selectedTemplate.child?.name && selectedTemplate.name && ' • '}
+                  <span className="text-gray-700">{selectedTemplate.name}</span>
+                </p>
+                {selectedTemplate.description && (
+                  <p className="text-xs text-gray-600 mt-1">{selectedTemplate.description}</p>
+                )}
+                <div className="mt-1 text-xs text-gray-600">
+                  {selectedTemplate.frequency === 'weekly' && selectedTemplate.daysOfWeek && selectedTemplate.daysOfWeek.length > 0 && (
+                    <span>
+                      📅 Weekly on: {selectedTemplate.daysOfWeek
+                        .map((day: number) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day])
+                        .join(', ')}
+                    </span>
+                  )}
+                  {selectedTemplate.frequency === 'monthly' && selectedTemplate.dayOfMonth && (
+                    <span>📅 Monthly on day {selectedTemplate.dayOfMonth}</span>
+                  )}
+                  {selectedTemplate.frequency === 'one-time' && (
+                    <span>📅 One-time task</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

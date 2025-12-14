@@ -234,6 +234,14 @@ if (fs.existsSync(testRoutePath)) {
 
 // Next.js needs -H 0.0.0.0 to bind to all interfaces, not just localhost
 // Use absolute path to ensure Next.js finds .next directory
+// Enable verbose logging to see what Next.js is doing
+console.log('Starting Next.js with environment:');
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+console.log('  PORT:', process.env.PORT);
+console.log('  HOSTNAME:', process.env.HOSTNAME);
+console.log('  CWD:', '/app');
+console.log('  .next exists:', fs.existsSync('/app/.next'));
+
 const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '-p', '3000'], {
   cwd: '/app',
   stdio: 'inherit',
@@ -243,6 +251,8 @@ const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
     PORT: '3000',
+    // Enable Next.js debug logging
+    DEBUG: process.env.DEBUG || '',
   }
 });
 

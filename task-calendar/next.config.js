@@ -8,6 +8,8 @@ const nextConfig = {
   swcMinify: true,
   // Disable source maps in production to reduce overhead
   productionBrowserSourceMaps: false,
+  // Ensure trailing slash is handled correctly
+  trailingSlash: false,
   // Disable file watching in production (shouldn't be needed but ensure it's off)
   webpack: (config, { dev, isServer }) => {
     // Only modify config if not in dev mode

@@ -31,7 +31,10 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-    # Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
+# Cache bust before npm install to force fresh install
+ARG CACHE_BUST_NPM=2025-12-14-10-10
+RUN echo "Cache bust npm: ${CACHE_BUST_NPM}"
+# Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
 RUN echo "Installing npm dependencies..." && \
     npm install --include=dev --loglevel=error 2>&1 | tee /tmp/npm-install.log || \
     (echo "npm install failed!" && \

@@ -19,41 +19,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call Home Assistant service directly
-    const response = await fetch(`${homeAssistantUrl}/api/services/automation/trigger`, {
+    // Turn on the input_boolean when all tasks are completed
+    const inputBooleanEntityId = process.env.HOME_ASSISTANT_INPUT_BOOLEAN || 'input_boolean.all_tasks_complete'
+
+    console.log(`[HOME ASSISTANT] Turning on ${inputBooleanEntityId} - All tasks completed for ${date}`)
+
+    // Call Home Assistant service to turn on the input_boolean
+    const response = await fetch(`${homeAssistantUrl}/api/services/input_boolean/turn_on`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${homeAssistantToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        entity_id: 'automation.all_tasks_complete',
-        variables: {
-          date: date,
-        },
+        entity_id: inputBooleanEntityId,
       }),
     })
 
     if (response.ok) {
+      console.log(`[HOME ASSISTANT] Successfully turned on ${inputBooleanEntityId}`)
       return NextResponse.json({
         success: true,
-        message: 'Home Assistant automation triggered successfully',
+        message: `Input boolean ${inputBooleanEntityId} turned on successfully`,
+        date: date,
       })
     } else {
       const errorText = await response.text()
+      console.error(`[HOME ASSISTANT] Failed to turn on ${inputBooleanEntityId}:`, errorText)
       return NextResponse.json(
         {
-          error: 'Failed to trigger Home Assistant',
+          error: 'Failed to turn on input boolean',
           details: errorText,
         },
         { status: response.status }
       )
     }
   } catch (error) {
-    console.error('Error triggering Home Assistant:', error)
+    console.error('Error turning on input boolean:', error)
     return NextResponse.json(
       {
-        error: 'Failed to trigger Home Assistant',
+        error: 'Failed to turn on input boolean',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

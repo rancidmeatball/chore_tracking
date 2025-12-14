@@ -263,20 +263,34 @@ const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', 
 });
 
 // Log ALL stdout/stderr to see everything Next.js is doing
+// This will help us see if requests are reaching Next.js
 if (nextProcess.stdout) {
   nextProcess.stdout.on('data', (data) => {
     const output = data.toString();
     // Log everything - Next.js might not log requests by default
-    console.log('[Next.js stdout]', output.trim());
+    // But we need to see ALL output to debug
+    if (output.trim()) {
+      console.log('[Next.js]', output.trim());
+    }
   });
 }
 
 if (nextProcess.stderr) {
   nextProcess.stderr.on('data', (data) => {
     const output = data.toString();
-    console.error('[Next.js stderr]', output.trim());
+    if (output.trim()) {
+      console.error('[Next.js Error]', output.trim());
+    }
   });
 }
+
+// Also add a simple HTTP test server to verify port mapping works
+console.log('');
+console.log('=== Testing if port 3000 is accessible ===');
+console.log('Next.js should be listening on 0.0.0.0:3000');
+console.log('Home Assistant maps this to port 3700 externally');
+console.log('Access via: http://ha.lan:3700');
+console.log('');
 
 // Handle process exit
 nextProcess.on('exit', (code, signal) => {

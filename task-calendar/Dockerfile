@@ -1,6 +1,8 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
+# Cache bust: 2025-12-14 - Force rebuild to clear Docker cache for Next.js 14.2.36 upgrade
+
 # Install Node.js and build dependencies
 # Home Assistant base images are Alpine Linux
 RUN apk add --no-cache \

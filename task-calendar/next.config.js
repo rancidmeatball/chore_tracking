@@ -2,8 +2,9 @@
 const nextConfig = {
   // Disable React Strict Mode to reduce CPU usage (causes double renders)
   reactStrictMode: false,
-  // Temporarily disable standalone mode to test if next start works without it
-  // output: 'standalone',
+  // Enable standalone mode - this is required for proper app router support in production
+  // The warning "next start" does not work with "output: standalone" means we must use the standalone server
+  output: 'standalone',
   // Optimize for production
   swcMinify: true,
   // Disable source maps in production to reduce overhead

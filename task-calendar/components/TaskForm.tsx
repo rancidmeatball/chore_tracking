@@ -49,7 +49,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
     }
   }
 
-  // Format template display text with all relevant information
+  // Format template display text with all relevant information (concise for dropdown)
   const formatTemplateDisplay = (template: RecurrenceTemplate): string => {
     const parts: string[] = []
     
@@ -59,29 +59,32 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
     }
     
     // Add template name
-    parts.push(template.name)
+    if (template.name) {
+      parts.push(template.name)
+    }
     
-    // Add frequency and schedule details
+    // Add frequency and schedule details (concise)
     if (template.frequency === 'weekly' && template.daysOfWeek && template.daysOfWeek.length > 0) {
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
       const selectedDays = template.daysOfWeek
         .map((day: number) => dayNames[day])
-        .join(', ')
-      parts.push(`Weekly: ${selectedDays}`)
+        .join('')
+      parts.push(`(${selectedDays})`)
     } else if (template.frequency === 'monthly' && template.dayOfMonth) {
-      parts.push(`Monthly: Day ${template.dayOfMonth}`)
+      parts.push(`(Day ${template.dayOfMonth})`)
     } else if (template.frequency === 'one-time') {
-      parts.push('One-time')
-    } else {
-      parts.push(template.frequency)
+      parts.push('(One-time)')
     }
     
-    // Add description if available
+    // Add description if available (truncated to 40 chars)
     if (template.description) {
-      parts.push(`- ${template.description}`)
+      const desc = template.description.length > 40 
+        ? template.description.substring(0, 37) + '...'
+        : template.description
+      parts.push(`- ${desc}`)
     }
     
-    return parts.join(' | ')
+    return parts.join(' ')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

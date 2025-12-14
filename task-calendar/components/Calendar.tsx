@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 
@@ -22,6 +22,8 @@ function Calendar({
   onTaskDelete,
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  // Track last click to handle double-click properly
+  const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
 
   // Memoize month calculations
   const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays, monthYear } = useMemo(() => {
@@ -162,16 +164,39 @@ function Calendar({
                 {dayTasks.slice(0, 3).map((task) => {
                   const bgColor = getTaskBgColor(task)
                   const textColor = getTaskColor(task)
+                  
                   return (
                     <div
                       key={task.id}
                       onClick={(e) => {
                         e.stopPropagation()
-                        // Toggle completion on click
-                        onTaskComplete(task.id, !task.completed)
+                        const now = Date.now()
+                        const lastClick = lastClickRef.current
+                        
+                        // Check if this is a double-click (same task, within 300ms)
+                        if (lastClick && lastClick.taskId === task.id && (now - lastClick.timestamp) < 300) {
+                          // This is a double-click - don't toggle completion
+                          lastClickRef.current = null
+                          return
+                        }
+                        
+                        // Store this click
+                        lastClickRef.current = { taskId: task.id, timestamp: now }
+                        
+                        // Delay the single-click action to allow for double-click detection
+                        setTimeout(() => {
+                          // Only execute if this is still the last click (not a double-click)
+                          if (lastClickRef.current && lastClickRef.current.taskId === task.id && (Date.now() - lastClickRef.current.timestamp) >= 300) {
+                            onTaskComplete(task.id, !task.completed)
+                            lastClickRef.current = null
+                          }
+                        }, 300)
                       }}
                       onDoubleClick={(e) => {
                         e.stopPropagation()
+                        e.preventDefault()
+                        // Clear the last click ref to prevent single-click action
+                        lastClickRef.current = null
                         // Double-click to edit
                         onTaskEdit(task)
                       }}

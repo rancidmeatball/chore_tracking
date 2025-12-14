@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { Task, Child, RecurrenceTemplate } from '@/types'
 import { format } from 'date-fns'

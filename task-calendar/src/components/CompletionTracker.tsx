@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Child } from '@/types'

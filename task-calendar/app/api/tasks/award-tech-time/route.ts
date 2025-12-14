@@ -60,25 +60,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if tech time was already awarded today by checking if there's a completed task
-    // with both categories completed that has a completedAt timestamp from today
-    // This is a simple check - in a more robust system, you'd track awards separately
-    const todayStart = startOfDay(checkDate)
-    const todayEnd = endOfDay(checkDate)
-    
-    // Get all completed tasks for this child today
-    const completedToday = tasks.filter(t => 
-      t.completed && 
-      t.completedAt && 
-      new Date(t.completedAt) >= todayStart &&
-      new Date(t.completedAt) <= todayEnd
-    )
-    
-    // Check if we already have both categories completed today
-    const helpingFamilyCompleted = completedToday.filter(t => t.category === 'helping-family').length > 0
-    const enrichmentCompleted = completedToday.filter(t => t.category === 'enrichment').length > 0
-    
-    // Award 1 hour (60 minutes) of tech time
+    // Check if tech time was already awarded today (prevent duplicates)
+    const existingAward = await prisma.techTimeAward.findUnique({
+      where: {
+        childId_awardDate: {
+          childId,
+          awardDate: start, // Use start of day as the unique key
+        },
+      },
+    })
+
+    if (existingAward) {
+      return NextResponse.json(
+        { 
+          error: 'Tech time already awarded for this date',
+          message: `Tech time was already awarded on ${checkDate.toLocaleDateString()}`,
+          existingAward: {
+            id: existingAward.id,
+            awardDate: existingAward.awardDate,
+            minutes: existingAward.minutes,
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    // Get child info
     const child = await prisma.child.findUnique({
       where: { id: childId },
       select: { timeBalance: true, name: true },
@@ -91,14 +98,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Award 1 hour (60 minutes) of tech time
     const newBalance = (child.timeBalance || 0) + 60
 
-    await prisma.child.update({
-      where: { id: childId },
-      data: {
-        timeBalance: newBalance,
-      },
-    })
+    // Update child balance and create award record in a transaction
+    await prisma.$transaction([
+      prisma.child.update({
+        where: { id: childId },
+        data: {
+          timeBalance: newBalance,
+        },
+      }),
+      prisma.techTimeAward.create({
+        data: {
+          childId,
+          awardDate: start, // Store as start of day for uniqueness
+          minutes: 60,
+        },
+      }),
+    ])
 
     console.log(`[TECH TIME] ✅ Awarded 1 hour (60 min) to ${child.name} for completing both categories on ${checkDate.toLocaleDateString()}`)
     console.log(`[TECH TIME] New balance: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`)

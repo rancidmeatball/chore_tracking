@@ -23,6 +23,8 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
+# Cache bust: Force rebuild by changing this comment
+ARG CACHE_BUST_COPY=2025-12-14-10-08
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -31,22 +33,27 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-# Cache bust before npm install to force fresh install
-ARG CACHE_BUST_NPM=2025-12-14-10-10
-RUN echo "Cache bust npm: ${CACHE_BUST_NPM}"
+# Cache bust before npm install to force fresh install - update timestamp to force rebuild
+ARG CACHE_BUST_NPM=2025-12-14-10-08
+RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
+    echo "Node version:" && node --version && \
+    echo "NPM version:" && npm --version
 # Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
 RUN echo "Installing npm dependencies..." && \
-    npm install --include=dev --loglevel=error 2>&1 | tee /tmp/npm-install.log || \
-    (echo "npm install failed!" && \
-     echo "=== Full npm install error output ===" && \
-     cat /tmp/npm-install.log && \
-     echo "=== package.json contents ===" && \
-     cat package.json && \
-     echo "=== npm version ===" && \
-     npm --version && \
-     echo "=== node version ===" && \
-     node --version && \
-     exit 1)
+    npm install --include=dev 2>&1 | tee /tmp/npm-install.log; EXIT_CODE=$$?; \
+    if [ $$EXIT_CODE -ne 0 ]; then \
+        echo "=== npm install FAILED with exit code $$EXIT_CODE ===" && \
+        echo "=== Full npm install error output ===" && \
+        cat /tmp/npm-install.log && \
+        echo "=== package.json contents ===" && \
+        cat package.json && \
+        echo "=== npm version ===" && \
+        npm --version && \
+        echo "=== node version ===" && \
+        node --version && \
+        exit 1; \
+    fi && \
+    echo "=== npm install SUCCESS ==="
 
 # Verify Next.js is installed
 RUN echo "Verifying Next.js installation..." && \

@@ -218,7 +218,12 @@ if (fs.existsSync('/app/.next/server')) {
 const { spawn } = require('child_process');
 
 console.log('Executing: next start');
+console.log('Current working directory:', process.cwd());
+console.log('.next directory exists:', fs.existsSync('/app/.next'));
+console.log('.next/server/app exists:', fs.existsSync('/app/.next/server/app'));
+
 // Next.js needs -H 0.0.0.0 to bind to all interfaces, not just localhost
+// Also ensure we're in the right directory and Next.js can find .next
 const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0'], {
   cwd: '/app',
   stdio: 'inherit',
@@ -227,6 +232,8 @@ const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0'], 
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
+    // Ensure Next.js can find the build output
+    NEXT_PRIVATE_STANDALONE: 'false',
   }
 });
 

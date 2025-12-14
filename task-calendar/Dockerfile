@@ -80,8 +80,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js application
 # Run build and capture output - show errors on failure
+# CRITICAL: Do NOT use standalone mode - we're using next start, not standalone server
 RUN echo "Building Next.js application..." && \
-    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE}" && \
+    echo "NEXT_PRIVATE_STANDALONE is NOT set (standalone mode disabled)" && \
+    unset NEXT_PRIVATE_STANDALONE && \
     npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
     echo "=== FULL BUILD OUTPUT ==="; \
     cat /tmp/build.log; \

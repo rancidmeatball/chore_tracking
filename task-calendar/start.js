@@ -109,6 +109,8 @@ if (useStandalone) {
   // In standalone mode, we need to ensure static files are accessible
   const standaloneStatic = '/app/.next/standalone/.next/static';
   const mainStatic = '/app/.next/static';
+  const standalonePublic = '/app/.next/standalone/public';
+  const mainPublic = '/app/public';
   
   if (!fs.existsSync(standaloneStatic) && fs.existsSync(mainStatic)) {
     console.log('Copying static files to standalone directory...');
@@ -123,7 +125,35 @@ if (useStandalone) {
     }
   }
   
+  // Copy public directory if it exists
+  if (!fs.existsSync(standalonePublic) && fs.existsSync(mainPublic)) {
+    console.log('Copying public directory to standalone directory...');
+    const { execSync } = require('child_process');
+    try {
+      execSync(`cp -r ${mainPublic} /app/.next/standalone/`, {
+        stdio: 'inherit'
+      });
+      console.log('✓ Public directory copied');
+    } catch (e) {
+      console.error('Error copying public directory:', e.message);
+    }
+  }
+  
+  // Verify standalone server file exists and is readable
+  if (!fs.existsSync(standaloneServer)) {
+    console.error('ERROR: Standalone server file not found at:', standaloneServer);
+    console.error('This should not happen if standalone mode was detected correctly.');
+    process.exit(1);
+  }
+  
   console.log('Starting standalone server...');
+  console.log('Standalone server path:', standaloneServer);
+  console.log('Working directory:', '/app/.next/standalone');
+  console.log('Environment:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  PORT:', process.env.PORT);
+  console.log('  HOSTNAME:', process.env.HOSTNAME);
+  
   const serverProcess = spawn('node', [standaloneServer], {
     cwd: '/app/.next/standalone',
     stdio: 'inherit',

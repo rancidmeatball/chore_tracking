@@ -2,27 +2,21 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Log all requests to help debug routing issues
+  // Log ALL requests including API and static files to debug routing
   const pathname = request.nextUrl.pathname
-  console.log(`[Middleware] ${request.method} ${pathname}`)
+  const url = request.nextUrl.toString()
+  console.log(`[Middleware] ${request.method} ${pathname} (full URL: ${url})`)
   
-  // Don't interfere with static files or API routes - just log
-  if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
-  
+  // Always pass through - don't block anything
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Match ALL paths to see all requests
+     * This will help us debug why routes aren't being found
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/(.*)',
   ],
 }

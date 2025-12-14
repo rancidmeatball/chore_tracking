@@ -4,12 +4,12 @@ import { useState, useRef, useEffect } from 'react'
 import { Child } from '@/types'
 
 interface SettingsMenuProps {
-  childrenList: Child[]
+  childrenList?: Child[]
   onChildUpdated?: () => void
   onCacheCleared?: () => void
 }
 
-export default function SettingsMenu({ childrenList, onChildUpdated, onCacheCleared }: SettingsMenuProps) {
+export default function SettingsMenu({ childrenList = [], onChildUpdated, onCacheCleared }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showChildSettings, setShowChildSettings] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -165,15 +165,19 @@ export default function SettingsMenu({ childrenList, onChildUpdated, onCacheClea
               </button>
             </div>
             <div className="space-y-4">
-              {childrenList.map((child) => (
-                <ChildEditForm
-                  key={child.id}
-                  child={child}
-                  onUpdated={() => {
-                    if (onChildUpdated) onChildUpdated()
-                  }}
-                />
-              ))}
+              {childrenList && childrenList.length > 0 ? (
+                childrenList.map((child) => (
+                  <ChildEditForm
+                    key={child.id}
+                    child={child}
+                    onUpdated={() => {
+                      if (onChildUpdated) onChildUpdated()
+                    }}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-600 text-center py-4">No children added yet. Use "Add Child" button to add children.</p>
+              )}
             </div>
           </div>
         </div>

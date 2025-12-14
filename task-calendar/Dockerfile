@@ -86,6 +86,25 @@ RUN echo "Building Next.js application..." && \
         exit 1; \
     fi && \
     echo "=== BUILD SUCCEEDED ===" && \
+    echo "=== Checking .next directory structure ===" && \
+    echo "Contents of .next:" && \
+    ls -la .next/ && \
+    echo "" && \
+    echo "=== Checking for standalone directory ===" && \
+    if [ -d .next/standalone ]; then \
+        echo "✓ Standalone directory EXISTS" && \
+        ls -la .next/standalone/ && \
+        if [ -f .next/standalone/server.js ]; then \
+            echo "✓ Standalone server.js EXISTS"; \
+        else \
+            echo "✗ Standalone server.js NOT FOUND"; \
+        fi; \
+    else \
+        echo "✗ Standalone directory NOT FOUND" && \
+        echo "WARNING: next.config.js has output: 'standalone' but standalone directory was not created!" && \
+        echo "This means the build did not create standalone output."; \
+    fi && \
+    echo "" && \
     echo "=== Checking .next/server structure ===" && \
     if [ -d .next/server ]; then \
         echo "Server directory exists" && \

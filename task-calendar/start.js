@@ -372,6 +372,8 @@ if (fs.existsSync(testRoutePath)) {
 }
 
 // Also check if middleware was built
+console.log('');
+console.log('=== CHECKING MIDDLEWARE ===');
 const middlewarePath = '/app/.next/server/middleware.js';
 if (fs.existsSync(middlewarePath)) {
   console.log('✓ Middleware file exists at:', middlewarePath);
@@ -380,7 +382,23 @@ if (fs.existsSync(middlewarePath)) {
 } else {
   console.warn('⚠ Middleware file NOT found at:', middlewarePath);
   console.warn('  This might explain why middleware logs aren\'t appearing');
+  // Check for middleware in other locations
+  const altMiddlewarePath = '/app/.next/server/middleware-edge.js';
+  if (fs.existsSync(altMiddlewarePath)) {
+    console.log('  Found middleware-edge.js instead');
+  }
+  // Check middleware manifest
+  const middlewareManifestPath = '/app/.next/server/middleware-manifest.json';
+  if (fs.existsSync(middlewareManifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(middlewareManifestPath, 'utf8'));
+      console.log('  Middleware manifest exists:', JSON.stringify(manifest, null, 2));
+    } catch (e) {
+      console.log('  Could not read middleware manifest:', e.message);
+    }
+  }
 }
+console.log('');
 
 // Check if there's a routes-manifest that Next.js uses
 const routesManifestPath = '/app/.next/routes-manifest.json';

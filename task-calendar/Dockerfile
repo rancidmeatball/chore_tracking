@@ -74,11 +74,14 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 # Build Next.js application
 # Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
+# Force standalone mode to be created
+ENV NEXT_PRIVATE_STANDALONE=true
 # Version 0.1.4 - Removed CSS verification step
 
 # Build Next.js application
 # Run build and capture output - show errors on failure
 RUN echo "Building Next.js application..." && \
+    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE}" && \
     npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
     echo "=== FULL BUILD OUTPUT ==="; \
     cat /tmp/build.log; \

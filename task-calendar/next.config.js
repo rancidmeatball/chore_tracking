@@ -2,8 +2,8 @@
 const nextConfig = {
   // Disable React Strict Mode to reduce CPU usage (causes double renders)
   reactStrictMode: false,
-  // Try standalone mode - it packages everything needed for production
-  output: 'standalone',
+  // Standalone mode disabled - it's not creating the standalone directory
+  // output: 'standalone',
   // Optimize for production
   swcMinify: true,
   // Disable source maps in production to reduce overhead

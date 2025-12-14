@@ -271,6 +271,29 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
 } else {
   buildId = fs.readFileSync('/app/.next/BUILD_ID', 'utf8').trim();
   console.log('Build verified - BUILD_ID:', buildId);
+  
+  // Check if BUILD_ID is valid (should be a hash, not a placeholder)
+  if (buildId === '1BUILD_ID' || buildId.length < 10 || buildId.includes('BUILD_ID')) {
+    console.warn('WARNING: BUILD_ID appears to be invalid or placeholder:', buildId);
+    console.warn('Regenerating BUILD_ID from build artifacts...');
+    
+    const crypto = require('crypto');
+    const buildManifestPath = '/app/.next/build-manifest.json';
+    let buildIdSource = Date.now().toString();
+    
+    if (fs.existsSync(buildManifestPath)) {
+      try {
+        const manifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf8'));
+        buildIdSource = JSON.stringify(manifest);
+      } catch (e) {
+        // Use timestamp if manifest read fails
+      }
+    }
+    
+    buildId = crypto.createHash('md5').update(buildIdSource).digest('hex').substring(0, 20);
+    fs.writeFileSync('/app/.next/BUILD_ID', buildId);
+    console.log('Regenerated BUILD_ID:', buildId);
+  }
 }
 
 // Ensure prerender-manifest.json exists (Next.js requires it for production)

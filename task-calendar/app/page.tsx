@@ -198,7 +198,11 @@ export default function Home() {
               Track chores and tasks for your children
             </p>
           </div>
-          <SettingsMenu />
+          <SettingsMenu 
+            childrenList={children} 
+            onChildUpdated={fetchChildren}
+            onCacheCleared={handleCacheCleared} 
+          />
         </div>
 
         {error && (

@@ -130,8 +130,9 @@ RUN echo "Building Next.js application..." && \
         echo "ERROR: .next/server directory not found!"; \
     fi
 
-# Ensure BUILD_ID exists and is valid (Next.js requires it for production)
-# CRITICAL: Invalid BUILD_ID (like "1BUILD_ID") will cause route matching to fail!
+# Ensure BUILD_ID exists (Next.js requires it for production)
+# Note: BUILD_ID validation and regeneration is handled in start.js at runtime
+# to avoid Docker cache issues and shell syntax complexity
 RUN if [ ! -f .next/BUILD_ID ]; then \
         echo "WARNING: BUILD_ID not found - generating one from build artifacts..." && \
         if [ -f .next/build-manifest.json ]; then \
@@ -148,25 +149,8 @@ RUN if [ ! -f .next/BUILD_ID ]; then \
             echo "Generated BUILD_ID (timestamp-based): $$BUILD_ID"; \
         fi; \
     else \
-        EXISTING_BUILD_ID=$(cat .next/BUILD_ID | tr -d '\n\r ') && \
-        echo "BUILD_ID exists: $$EXISTING_BUILD_ID" && \
-        case "$$EXISTING_BUILD_ID" in \
-            *BUILD_ID*) \
-                echo "ERROR: BUILD_ID is invalid! Regenerating..." && \
-                if [ -f .next/build-manifest.json ]; then \
-                    BUILD_ID=$(md5sum .next/build-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
-                    echo "$$BUILD_ID" > .next/BUILD_ID && \
-                    echo "Regenerated BUILD_ID: $$BUILD_ID"; \
-                else \
-                    BUILD_ID=$(date +%s | md5sum | cut -d' ' -f1 | cut -c1-20) && \
-                    echo "$$BUILD_ID" > .next/BUILD_ID && \
-                    echo "Regenerated BUILD_ID (timestamp-based): $$BUILD_ID"; \
-                fi; \
-                ;; \
-            *) \
-                echo "BUILD_ID is valid: $$EXISTING_BUILD_ID"; \
-                ;; \
-        esac; \
+        echo "BUILD_ID exists: $(cat .next/BUILD_ID)"; \
+        echo "Note: BUILD_ID validation will be performed by start.js at runtime"; \
     fi
 
 # Ensure prerender-manifest.json exists (Next.js requires it for production)

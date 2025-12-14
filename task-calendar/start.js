@@ -629,6 +629,35 @@ console.log('Using standard next start (standalone mode was not detected in earl
     }
   }
   
+  // CRITICAL: Check if Next.js needs server-app-paths-manifest.json
+  // This file is required for Next.js to load app router files
+  const serverAppPathsManifest = '/app/.next/server/server-app-paths-manifest.json';
+  if (!fs.existsSync(serverAppPathsManifest)) {
+    console.warn('WARNING: server-app-paths-manifest.json not found!');
+    console.warn('This might cause appFiles Set(0) - Next.js won\'t load app router files!');
+    // Try to create it from app-paths-manifest.json
+    const appPathsManifest = '/app/.next/server/app-paths-manifest.json';
+    if (fs.existsSync(appPathsManifest)) {
+      try {
+        const appManifest = JSON.parse(fs.readFileSync(appPathsManifest, 'utf8'));
+        // server-app-paths-manifest.json has a different structure
+        // It maps route paths to their file paths
+        const serverManifest = {};
+        for (const [route, filePath] of Object.entries(appManifest)) {
+          // Convert app/page.js to the actual server path
+          const serverPath = filePath.replace(/^app\//, '/app/.next/server/app/');
+          serverManifest[route] = serverPath;
+        }
+        fs.writeFileSync(serverAppPathsManifest, JSON.stringify(serverManifest, null, 2));
+        console.log('Created server-app-paths-manifest.json from app-paths-manifest.json');
+      } catch (e) {
+        console.error('ERROR: Could not create server-app-paths-manifest.json:', e.message);
+      }
+    }
+  } else {
+    console.log('✓ server-app-paths-manifest.json exists');
+  }
+  
   const nextProcess = spawn(
     useDirectNode ? 'node' : nextBin,
     useDirectNode ? [nextServerPath, 'start', '--hostname', '0.0.0.0', '--port', '3000'] : ['start', '--hostname', '0.0.0.0', '--port', '3000'],

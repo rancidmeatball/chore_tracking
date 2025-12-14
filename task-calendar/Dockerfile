@@ -39,20 +39,23 @@ RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version
 # Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
-RUN echo "Installing npm dependencies..." && \
-    npm install --include=dev 2>&1 | tee /tmp/npm-install.log; EXIT_CODE=$$?; \
-    if [ $$EXIT_CODE -ne 0 ]; then \
-        echo "=== npm install FAILED with exit code $$EXIT_CODE ===" && \
-        echo "=== Full npm install error output ===" && \
-        cat /tmp/npm-install.log && \
-        echo "=== package.json contents ===" && \
-        cat package.json && \
-        echo "=== npm version ===" && \
-        npm --version && \
-        echo "=== node version ===" && \
-        node --version && \
-        exit 1; \
-    fi && \
+# Try npm install with explicit error output
+RUN set -x && \
+    echo "=== Starting npm install ===" && \
+    echo "Working directory: $(pwd)" && \
+    echo "package.json exists: $(test -f package.json && echo 'yes' || echo 'no')" && \
+    npm install --include=dev --loglevel=error 2>&1 || \
+    (echo "=== npm install FAILED ===" && \
+     echo "Exit code: $$?" && \
+     echo "=== package.json ===" && \
+     cat package.json && \
+     echo "=== npm version ===" && \
+     npm --version && \
+     echo "=== node version ===" && \
+     node --version && \
+     echo "=== npm config ===" && \
+     npm config list && \
+     exit 1) && \
     echo "=== npm install SUCCESS ==="
 
 # Verify Next.js is installed

@@ -199,8 +199,8 @@ export async function POST(request: NextRequest) {
           title,
           description: description || null,
           dueDate: new Date(dueDate),
+          category: category || 'helping-family',
           childId,
-          recurrenceTemplateId: null,
         },
         include: {
           child: true,

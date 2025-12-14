@@ -1,9 +1,9 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2025-12-14 - Force rebuild to clear Docker cache for Next.js 14.2.36 upgrade
-# Adding ARG to bust cache from this point forward
-ARG CACHE_BUST=2025-12-14-17-15
+# Cache bust: 2025-12-14 - Force rebuild to clear Docker cache
+# Adding ARG to bust cache from this point forward - updating timestamp to force rebuild
+ARG CACHE_BUST=2025-12-14-10-05
 RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Install Node.js and build dependencies

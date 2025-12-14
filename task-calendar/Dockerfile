@@ -105,16 +105,18 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 # Build Next.js application
 # Don't set NODE_ENV=production during build - we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
-# Enable standalone mode - Next.js warning suggests this is expected
-ENV NEXT_PRIVATE_STANDALONE=true
+# Disable standalone mode - Docker cache is preventing it from working
+# We'll fix appFiles Set(0) {} issue directly instead
+# ENV NEXT_PRIVATE_STANDALONE=true
 # Version 0.1.4 - Removed CSS verification step
 
 # Build Next.js application
 # Run build and capture output - show errors on failure
-# CRITICAL: Using standalone mode - Next.js warning suggests this is expected
+# CRITICAL: NOT using standalone mode - Docker cache is preventing it from working
+# We'll fix appFiles Set(0) {} issue directly instead
 RUN echo "Building Next.js application..." && \
     echo "=== PRE-BUILD VERIFICATION ===" && \
-    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}" && \
+    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set (standalone disabled)}" && \
     echo "NODE_ENV=${NODE_ENV:-not set}" && \
     echo "Current directory: $(pwd)" && \
     echo "next.config.js exists: $(test -f next.config.js && echo 'yes' || echo 'no')" && \
@@ -137,42 +139,13 @@ RUN echo "Building Next.js application..." && \
     echo "Contents of .next:" && \
     ls -la .next/ && \
     echo "" && \
-    echo "=== Checking for standalone directory ===" && \
+    echo "=== Checking for standalone directory (should NOT exist - standalone disabled) ===" && \
     if [ -d .next/standalone ]; then \
-        echo "✓ Standalone directory EXISTS" && \
-        echo "Standalone directory contents:" && \
-        ls -la .next/standalone/ && \
-        if [ -f .next/standalone/server.js ]; then \
-            echo "✓ Standalone server.js EXISTS" && \
-            echo "Standalone server.js size: $(stat -c%s .next/standalone/server.js 2>/dev/null || stat -f%z .next/standalone/server.js 2>/dev/null || echo 'unknown') bytes"; \
-        else \
-            echo "✗ Standalone server.js NOT FOUND" && \
-            echo "Files in standalone directory:" && \
-            find .next/standalone -type f | head -20; \
-        fi; \
+        echo "⚠ WARNING: Standalone directory EXISTS but standalone mode is disabled!" && \
+        echo "This might cause confusion. Standalone directory contents:" && \
+        ls -la .next/standalone/ | head -10; \
     else \
-        echo "✗ Standalone directory NOT FOUND" && \
-        echo "ERROR: next.config.js has output: 'standalone' but standalone directory was not created!" && \
-        echo "This means the build did not create standalone output." && \
-        echo "" && \
-        echo "=== DIAGNOSING WHY STANDALONE WAS NOT CREATED ===" && \
-        echo "Checking if build log mentions standalone:" && \
-        (grep -i "standalone" /tmp/build.log || echo "No mention of standalone in build log") && \
-        echo "" && \
-        echo "Checking for errors in build log:" && \
-        (grep -i "error\|warn\|fail" /tmp/build.log | tail -20 || echo "No errors found in build log") && \
-        echo "" && \
-        echo "Checking .next directory structure:" && \
-        find .next -maxdepth 2 -type d | head -20 && \
-        echo "" && \
-        echo "Checking if standalone is mentioned in next.config.js:" && \
-        (grep -i "standalone" next.config.js || echo "standalone NOT found in next.config.js!") && \
-        echo "" && \
-        echo "Checking NEXT_PRIVATE_STANDALONE environment variable:" && \
-        (echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}") && \
-        echo "" && \
-        echo "CRITICAL: Standalone directory was not created. This will cause appFiles Set(0) {} and 404 errors." && \
-        echo "The build must create .next/standalone/ for standalone mode to work."; \
+        echo "✓ Standalone directory does NOT exist (standalone mode disabled - expected)"; \
     fi && \
     echo "" && \
     echo "=== Checking .next/server structure ===" && \

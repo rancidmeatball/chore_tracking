@@ -714,7 +714,7 @@ console.log('Using standard next start (standalone mode was not detected in earl
         // Explicitly set the app directory path
         NEXT_PUBLIC_BASE_PATH: '',
         // Ensure Next.js knows where to find the app
-        NEXT_PRIVATE_STANDALONE: 'true', // Explicitly enable standalone mode
+        NEXT_PRIVATE_STANDALONE: 'false', // Explicitly disable standalone mode
       }
     }
   );

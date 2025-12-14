@@ -2,9 +2,9 @@
 const nextConfig = {
   // Disable React Strict Mode to reduce CPU usage (causes double renders)
   reactStrictMode: false,
-  // Enable standalone mode - Next.js warning suggests this is expected
-  // Standalone mode creates a self-contained server that includes all dependencies
-  output: 'standalone',
+  // Disable standalone mode - Docker cache is preventing it from working
+  // We'll fix appFiles Set(0) {} issue directly instead
+  // output: 'standalone',
   // Optimize for production
   swcMinify: true,
   // Disable source maps in production to reduce overhead

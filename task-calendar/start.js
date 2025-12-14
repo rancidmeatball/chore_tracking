@@ -466,6 +466,14 @@ console.log('Using standard next start (standalone mode was not detected in earl
   console.log('Next.js will look for .next directory at:', '/app/.next');
   console.log('Verifying .next/server/app-paths-manifest.json exists:', fs.existsSync('/app/.next/server/app-paths-manifest.json'));
   
+  // Add explicit debugging to see what Next.js is doing
+  console.log('=== Starting Next.js with next start ===');
+  console.log('Command:', nextBin, 'start --hostname 0.0.0.0 --port 3000');
+  console.log('Working directory:', '/app');
+  console.log('Next.js will look for .next directory at:', '/app/.next');
+  console.log('Verifying .next/server/app-paths-manifest.json exists:', fs.existsSync('/app/.next/server/app-paths-manifest.json'));
+  console.log('Verifying .next/server/app/page.js exists:', fs.existsSync('/app/.next/server/app/page.js'));
+  
   const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
     cwd: '/app',
     stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation

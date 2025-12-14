@@ -477,24 +477,36 @@ console.log('Using standard next start (standalone mode was not detected in earl
   // Set NODE_OPTIONS to help with module resolution
   const nodeOptions = process.env.NODE_OPTIONS || '';
   
-  const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
-    cwd: '/app',
-    stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      NEXT_TELEMETRY_DISABLED: '1',
-      HOSTNAME: '0.0.0.0',
-      HOST: '0.0.0.0',
-      PORT: '3000',
-      // Add debug flag to see what Next.js is doing
-      DEBUG: process.env.DEBUG || '',
-      // Ensure Node.js can resolve modules correctly
-      NODE_OPTIONS: nodeOptions,
-      // Explicitly set the app directory path
-      NEXT_PUBLIC_BASE_PATH: '',
+  // Try using node directly to run Next.js server instead of next start
+  // This might help with route resolution
+  const nextServerPath = '/app/node_modules/next/dist/bin/next';
+  const useDirectNode = fs.existsSync(nextServerPath);
+  
+  console.log('Next.js server path exists:', useDirectNode);
+  console.log('Will use:', useDirectNode ? 'node directly' : 'next start command');
+  
+  const nextProcess = spawn(
+    useDirectNode ? 'node' : nextBin,
+    useDirectNode ? [nextServerPath, 'start', '--hostname', '0.0.0.0', '--port', '3000'] : ['start', '--hostname', '0.0.0.0', '--port', '3000'],
+    {
+      cwd: '/app',
+      stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        NEXT_TELEMETRY_DISABLED: '1',
+        HOSTNAME: '0.0.0.0',
+        HOST: '0.0.0.0',
+        PORT: '3000',
+        // Add debug flag to see what Next.js is doing
+        DEBUG: process.env.DEBUG || '',
+        // Ensure Node.js can resolve modules correctly
+        NODE_OPTIONS: nodeOptions,
+        // Explicitly set the app directory path
+        NEXT_PUBLIC_BASE_PATH: '',
+      }
     }
-  });
+  );
   
   // Handle process exit
   nextProcess.on('exit', (code, signal) => {

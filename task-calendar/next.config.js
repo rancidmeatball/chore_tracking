@@ -25,9 +25,6 @@ const nextConfig = {
   experimental: {
     // Disable any experimental features
   },
-  // Ensure routes are properly configured
-  // This might help with route resolution in production
-  distDir: '.next',
 }
 
 module.exports = nextConfig

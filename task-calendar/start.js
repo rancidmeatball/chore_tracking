@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 
 // Set environment variables from Home Assistant supervisor
 // SUPERVISOR_TOKEN is automatically provided by Home Assistant
@@ -301,9 +302,7 @@ if (fs.existsSync('/app/.next/server')) {
   console.error('ERROR: /app/.next/server directory not found!');
 }
 
-// Use spawn to keep the process running and handle signals properly
-// This ensures the process stays alive and handles SIGTERM/SIGINT correctly
-const { spawn } = require('child_process');
+// spawn is already imported at the top of the file
 
 console.log('Executing: next start');
 console.log('Current working directory:', process.cwd());

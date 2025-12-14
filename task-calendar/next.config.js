@@ -29,6 +29,9 @@ const nextConfig = {
   // Ensure Next.js can find the app directory
   // This might help with app router file resolution
   distDir: '.next',
+  // Explicitly set the app directory (should be default, but being explicit)
+  // This might help Next.js find app router files
+  // appDir: 'app', // This is the default, but being explicit might help
 }
 
 module.exports = nextConfig

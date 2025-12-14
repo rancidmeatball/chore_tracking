@@ -263,6 +263,14 @@ console.log('  PORT:', process.env.PORT);
 console.log('  HOSTNAME:', process.env.HOSTNAME);
 console.log('  CWD:', '/app');
 console.log('  .next exists:', fs.existsSync('/app/.next'));
+console.log('  app directory exists:', fs.existsSync('/app/app'));
+console.log('  app/page.tsx exists:', fs.existsSync('/app/app/page.tsx'));
+console.log('  app/layout.tsx exists:', fs.existsSync('/app/app/layout.tsx'));
+
+// Next.js might need the source app directory at runtime for some operations
+if (!fs.existsSync('/app/app')) {
+  console.error('ERROR: Source app directory not found! Next.js may need it at runtime.');
+}
 
 // Use 'pipe' instead of 'inherit' so we can capture and log requests
 // Try using NODE_OPTIONS to ensure Next.js binds to 0.0.0.0

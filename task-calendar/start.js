@@ -66,6 +66,8 @@ process.env.NODE_ENV = 'production';
 process.env.NEXT_TELEMETRY_DISABLED = '1';
 // Node.js production optimizations
 process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '--max-old-space-size=512';
+// Ensure Next.js binds to all interfaces (0.0.0.0) not just localhost
+process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
 
 console.log('Starting Next.js application...');
 console.log('PORT:', process.env.PORT);
@@ -216,13 +218,15 @@ if (fs.existsSync('/app/.next/server')) {
 const { spawn } = require('child_process');
 
 console.log('Executing: next start');
-const nextProcess = spawn('node_modules/.bin/next', ['start'], {
+// Next.js needs -H 0.0.0.0 to bind to all interfaces, not just localhost
+const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0'], {
   cwd: '/app',
   stdio: 'inherit',
   env: {
     ...process.env,
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
+    HOSTNAME: '0.0.0.0',
   }
 });
 

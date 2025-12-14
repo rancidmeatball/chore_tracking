@@ -72,6 +72,36 @@ console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
+// CRITICAL DEBUG: Check if routes were built
+console.log('');
+console.log('=== CRITICAL: Checking if routes were built ===');
+const serverAppPath = '/app/.next/server/app';
+if (fs.existsSync(serverAppPath)) {
+  console.log('✓ .next/server/app directory EXISTS');
+  try {
+    const files = fs.readdirSync(serverAppPath, { recursive: true, withFileTypes: true });
+    const jsFiles = files.filter(f => f.isFile() && f.name.endsWith('.js'));
+    console.log(`Found ${jsFiles.length} route files in .next/server/app`);
+    if (jsFiles.length > 0) {
+      console.log('Sample files:', jsFiles.slice(0, 5).map(f => f.name).join(', '));
+    } else {
+      console.error('ERROR: No route files found! This is why you get 404s!');
+    }
+  } catch (e) {
+    console.error('Error reading server/app:', e.message);
+  }
+} else {
+  console.error('ERROR: .next/server/app directory DOES NOT EXIST!');
+  console.error('This means routes were not built. Checking .next structure...');
+  if (fs.existsSync('/app/.next/server')) {
+    const serverContents = fs.readdirSync('/app/.next/server');
+    console.log('Contents of .next/server:', serverContents.join(', '));
+  } else {
+    console.error('ERROR: .next/server directory does not exist!');
+  }
+}
+console.log('');
+
 // Verify .next directory exists and has BUILD_ID
 if (!fs.existsSync('/app/.next')) {
   console.error('ERROR: .next directory not found. Build may have failed.');

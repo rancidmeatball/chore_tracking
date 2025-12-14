@@ -132,7 +132,8 @@ RUN echo "Building Next.js application..." && \
 
 # Ensure BUILD_ID exists and is valid (Next.js requires it for production)
 # CRITICAL: Invalid BUILD_ID (like "1BUILD_ID") will cause route matching to fail!
-RUN if [ ! -f .next/BUILD_ID ]; then \
+RUN set -e && \
+    if [ ! -f .next/BUILD_ID ]; then \
         echo "WARNING: BUILD_ID not found - generating one from build artifacts..." && \
         if [ -f .next/build-manifest.json ]; then \
             BUILD_ID=$(md5sum .next/build-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
@@ -150,7 +151,8 @@ RUN if [ ! -f .next/BUILD_ID ]; then \
     else \
         EXISTING_BUILD_ID=$(cat .next/BUILD_ID | tr -d '\n\r ') && \
         echo "BUILD_ID exists: $$EXISTING_BUILD_ID" && \
-        if [ "$$EXISTING_BUILD_ID" = "1BUILD_ID" ] || [ $$(echo -n "$$EXISTING_BUILD_ID" | wc -c) -lt 10 ] || echo "$$EXISTING_BUILD_ID" | grep -q "BUILD_ID"; then \
+        BUILD_ID_LEN=$$(echo -n "$$EXISTING_BUILD_ID" | wc -c) && \
+        if [ "$$EXISTING_BUILD_ID" = "1BUILD_ID" ] || [ "$$BUILD_ID_LEN" -lt 10 ] || echo "$$EXISTING_BUILD_ID" | grep -q "BUILD_ID"; then \
             echo "ERROR: BUILD_ID is invalid! Regenerating..." && \
             if [ -f .next/build-manifest.json ]; then \
                 BUILD_ID=$(md5sum .next/build-manifest.json | cut -d' ' -f1 | cut -c1-20) && \

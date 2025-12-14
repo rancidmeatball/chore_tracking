@@ -271,9 +271,15 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
 } else {
   buildId = fs.readFileSync('/app/.next/BUILD_ID', 'utf8').trim();
   console.log('Build verified - BUILD_ID:', buildId);
+  console.log('BUILD_ID length:', buildId.length);
+  console.log('BUILD_ID includes BUILD_ID:', buildId.includes('BUILD_ID'));
   
   // Check if BUILD_ID is valid (should be a hash, not a placeholder)
-  if (buildId === '1BUILD_ID' || buildId.length < 10 || buildId.includes('BUILD_ID')) {
+  // BUILD_ID should be a 20-character hex string, not a placeholder
+  const isInvalid = buildId === '1BUILD_ID' || buildId.length < 10 || buildId.includes('BUILD_ID');
+  console.log('BUILD_ID is invalid?', isInvalid);
+  
+  if (isInvalid) {
     console.warn('WARNING: BUILD_ID appears to be invalid or placeholder:', buildId);
     console.warn('Regenerating BUILD_ID from build artifacts...');
     
@@ -285,14 +291,19 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
       try {
         const manifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf8'));
         buildIdSource = JSON.stringify(manifest);
+        console.log('Using build-manifest.json for BUILD_ID generation');
       } catch (e) {
-        // Use timestamp if manifest read fails
+        console.log('Could not read build-manifest.json, using timestamp');
       }
+    } else {
+      console.log('build-manifest.json not found, using timestamp');
     }
     
     buildId = crypto.createHash('md5').update(buildIdSource).digest('hex').substring(0, 20);
     fs.writeFileSync('/app/.next/BUILD_ID', buildId);
-    console.log('Regenerated BUILD_ID:', buildId);
+    console.log('✓ Regenerated BUILD_ID:', buildId);
+  } else {
+    console.log('✓ BUILD_ID is valid');
   }
 }
 
@@ -348,6 +359,13 @@ if (fs.existsSync('/app/.next/server')) {
       console.log('Number of routes in manifest:', Object.keys(manifest).length);
       if (Object.keys(manifest).length === 0) {
         console.error('ERROR: app-paths-manifest.json is EMPTY! This is why routes are not matching!');
+      } else {
+        // Check if root route is in manifest
+        if (manifest['/page']) {
+          console.log('✓ Root route (/page) found in manifest:', manifest['/page']);
+        } else {
+          console.error('ERROR: Root route (/page) NOT found in manifest!');
+        }
       }
     } catch (e) {
       console.log('Could not read manifest:', e.message);
@@ -550,6 +568,28 @@ console.log('Using standard next start (standalone mode was not detected in earl
   console.log('Source app directory exists:', fs.existsSync('/app/app'));
   console.log('Source app/page.tsx exists:', fs.existsSync('/app/app/page.tsx'));
   
+  // Verify BUILD_ID one more time before starting
+  const finalBuildId = fs.readFileSync('/app/.next/BUILD_ID', 'utf8').trim();
+  console.log('Final BUILD_ID check:', finalBuildId);
+  if (finalBuildId === '1BUILD_ID' || finalBuildId.length < 10 || finalBuildId.includes('BUILD_ID')) {
+    console.error('ERROR: BUILD_ID is still invalid! This may cause route matching issues!');
+    console.error('Attempting to regenerate BUILD_ID one more time...');
+    const crypto = require('crypto');
+    const buildManifestPath = '/app/.next/build-manifest.json';
+    let buildIdSource = Date.now().toString() + Math.random().toString();
+    if (fs.existsSync(buildManifestPath)) {
+      try {
+        const manifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf8'));
+        buildIdSource = JSON.stringify(manifest);
+      } catch (e) {
+        // Use timestamp if manifest read fails
+      }
+    }
+    const newBuildId = crypto.createHash('md5').update(buildIdSource).digest('hex').substring(0, 20);
+    fs.writeFileSync('/app/.next/BUILD_ID', newBuildId);
+    console.log('✓ Regenerated BUILD_ID to:', newBuildId);
+  }
+  
   // Try to read a small portion of the root page to verify it's valid JavaScript
   if (fs.existsSync('/app/.next/server/app/page.js')) {
     try {
@@ -560,6 +600,20 @@ console.log('Using standard next start (standalone mode was not detected in earl
       }
     } catch (e) {
       console.error('ERROR: Cannot read root page.js:', e.message);
+    }
+  }
+  
+  // Verify the app-paths-manifest one more time
+  const finalManifestPath = '/app/.next/server/app-paths-manifest.json';
+  if (fs.existsSync(finalManifestPath)) {
+    try {
+      const finalManifest = JSON.parse(fs.readFileSync(finalManifestPath, 'utf8'));
+      console.log('Final manifest check - Root route (/page) exists:', !!finalManifest['/page']);
+      if (!finalManifest['/page']) {
+        console.error('ERROR: Root route not in manifest! This will cause 404s!');
+      }
+    } catch (e) {
+      console.error('ERROR: Cannot read final manifest:', e.message);
     }
   }
   

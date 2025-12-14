@@ -271,40 +271,19 @@ const nextBin = '/app/node_modules/.bin/next';
 console.log('Next.js binary exists:', fs.existsSync(nextBin));
 
 // Use explicit hostname and port
+// Use 'inherit' for stdio so Next.js works normally - piping might interfere with routing
 const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
   cwd: '/app',
-  stdio: ['inherit', 'pipe', 'pipe'], // stdin: inherit, stdout/stderr: pipe
+  stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
   env: {
     ...process.env,
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
-    HOST: '0.0.0.0', // Alternative env var
+    HOST: '0.0.0.0',
     PORT: '3000',
   }
 });
-
-// Log ALL stdout/stderr to see everything Next.js is doing
-// This will help us see if requests are reaching Next.js
-if (nextProcess.stdout) {
-  nextProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    // Log everything - Next.js might not log requests by default
-    // But we need to see ALL output to debug
-    if (output.trim()) {
-      console.log('[Next.js]', output.trim());
-    }
-  });
-}
-
-if (nextProcess.stderr) {
-  nextProcess.stderr.on('data', (data) => {
-    const output = data.toString();
-    if (output.trim()) {
-      console.error('[Next.js Error]', output.trim());
-    }
-  });
-}
 
 // Also add a simple HTTP test server to verify port mapping works
 console.log('');

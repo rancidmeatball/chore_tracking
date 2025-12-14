@@ -272,15 +272,22 @@ if (!fs.existsSync('/app/app')) {
   console.error('ERROR: Source app directory not found! Next.js may need it at runtime.');
 }
 
+// Check if standalone mode was used FIRST, before other checks
+// This must be done early because standalone mode changes how we start Next.js
+const standalonePath = '/app/.next/standalone';
+const useStandalone = fs.existsSync(standalonePath);
+
+console.log('=== Checking build mode (early check) ===');
+console.log('Standalone directory exists:', useStandalone);
+if (useStandalone) {
+  console.log('Standalone directory contents:', fs.readdirSync(standalonePath).join(', '));
+}
+
 // Use 'pipe' instead of 'inherit' so we can capture and log requests
 // Try using NODE_OPTIONS to ensure Next.js binds to 0.0.0.0
 // Also try using the full path to next
 const nextBin = '/app/node_modules/.bin/next';
 console.log('Next.js binary exists:', fs.existsSync(nextBin));
-
-// Check if standalone mode was used
-const standalonePath = '/app/.next/standalone';
-const useStandalone = fs.existsSync(standalonePath);
 
 console.log('=== Checking build mode ===');
 console.log('Standalone directory exists:', useStandalone);
@@ -359,21 +366,59 @@ if (useStandalone) {
   }
 }
 
-// Use explicit hostname and port
-// Use 'inherit' for stdio so Next.js works normally - piping might interfere with routing
-console.log('Using standard next start (not standalone mode)');
-const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
-  cwd: '/app',
-  stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
-  env: {
-    ...process.env,
-    NODE_ENV: 'production',
-    NEXT_TELEMETRY_DISABLED: '1',
-    HOSTNAME: '0.0.0.0',
-    HOST: '0.0.0.0',
-    PORT: '3000',
-  }
-});
+// Only use next start if standalone mode is NOT enabled
+if (!useStandalone) {
+  console.log('Using standard next start (not standalone mode)');
+  const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
+    cwd: '/app',
+    stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      NEXT_TELEMETRY_DISABLED: '1',
+      HOSTNAME: '0.0.0.0',
+      HOST: '0.0.0.0',
+      PORT: '3000',
+    }
+  });
+  
+  // Handle process exit
+  nextProcess.on('exit', (code, signal) => {
+    console.error(`Next.js process exited with code ${code} and signal ${signal}`);
+    if (code !== 0 && code !== null) {
+      console.error('Next.js process exited unexpectedly');
+      process.exit(1);
+    }
+  });
+
+  // Handle errors
+  nextProcess.on('error', (error) => {
+    console.error('Failed to start Next.js:', error);
+    process.exit(1);
+  });
+
+  // Forward signals to the Next.js process
+  process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully...');
+    nextProcess.kill('SIGTERM');
+  });
+
+  process.on('SIGINT', () => {
+    console.log('Received SIGINT, shutting down gracefully...');
+    nextProcess.kill('SIGINT');
+  });
+
+  // Keep this process alive
+  process.on('exit', () => {
+    if (nextProcess && !nextProcess.killed) {
+      nextProcess.kill();
+    }
+  });
+} else {
+  console.error('ERROR: Standalone mode detected but standalone server was not started!');
+  console.error('This should not happen - the standalone server should have been started earlier.');
+  process.exit(1);
+}
 
 // Also add a simple HTTP test server to verify port mapping works
 console.log('');

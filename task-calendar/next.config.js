@@ -2,9 +2,9 @@
 const nextConfig = {
   // Disable React Strict Mode to reduce CPU usage (causes double renders)
   reactStrictMode: false,
-  // Disable standalone mode - build is not creating standalone directory
-  // Using next start instead of standalone server
-  // output: 'standalone',
+  // Enable standalone mode - Next.js warning suggests this is expected
+  // Standalone mode creates a self-contained server that includes all dependencies
+  output: 'standalone',
   // Optimize for production
   swcMinify: true,
   // Disable source maps in production to reduce overhead

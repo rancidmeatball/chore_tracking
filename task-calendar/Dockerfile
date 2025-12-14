@@ -1,14 +1,11 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2025-12-14 - Force rebuild to clear Docker cache
-# Adding ARG to bust cache from this point forward - updating timestamp to force rebuild
-# CRITICAL: Update this timestamp every time you want to force a full rebuild
-ARG CACHE_BUST=2025-12-14-19-30
+# Cache bust: 2025-12-14 - Force rebuild for Vite migration
+ARG CACHE_BUST=2025-12-14-20-00
 RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Install Node.js and build dependencies
-# Home Assistant base images are Alpine Linux
 RUN apk add --no-cache \
     nodejs \
     npm \
@@ -24,8 +21,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-# Cache bust: Force rebuild by changing this comment
-ARG CACHE_BUST_COPY=2025-12-14-19-30
+ARG CACHE_BUST_COPY=2025-12-14-20-00
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -34,244 +30,66 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-# Cache bust before npm install to force fresh install - update timestamp to force rebuild
-ARG CACHE_BUST_NPM=2025-12-14-19-30
+ARG CACHE_BUST_NPM=2025-12-14-20-00
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
-    echo "NPM version:" && npm --version
-# Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
-# Try npm install with explicit error output
-RUN set -x && \
+    echo "NPM version:" && npm --version && \
     echo "=== Starting npm install ===" && \
-    echo "Working directory: $(pwd)" && \
-    echo "package.json exists: $(test -f package.json && echo 'yes' || echo 'no')" && \
     npm install --include=dev --loglevel=error 2>&1 || \
     (echo "=== npm install FAILED ===" && \
      echo "Exit code: $$?" && \
-     echo "=== package.json ===" && \
      cat package.json && \
-     echo "=== npm version ===" && \
-     npm --version && \
-     echo "=== node version ===" && \
-     node --version && \
-     echo "=== npm config ===" && \
-     npm config list && \
      exit 1) && \
     echo "=== npm install SUCCESS ==="
-
-# Verify Next.js is installed
-RUN echo "Verifying Next.js installation..." && \
-    npx next --version || (echo "Next.js not found!" && exit 1)
 
 # Verify Prisma is installed
 RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-# Cache bust: Force rebuild by changing this comment - updating timestamp
-ARG CACHE_BUST_COPY_FILES=2025-12-14-19-30
+ARG CACHE_BUST_COPY_FILES=2025-12-14-20-00
 COPY . .
 
 # Verify critical files exist
-RUN test -f next.config.js || (echo "ERROR: next.config.js not found!" && exit 1) && \
+RUN test -f vite.config.ts || (echo "ERROR: vite.config.ts not found!" && exit 1) && \
     test -f tsconfig.json || (echo "ERROR: tsconfig.json not found!" && exit 1) && \
-    test -d app || (echo "ERROR: app directory not found!" && exit 1) && \
-    echo "=== Verifying next.config.js ===" && \
-    cat next.config.js && \
-    echo "=== Checking for output: standalone in config ===" && \
-    (grep -q "output.*standalone" next.config.js && echo "✓ output: standalone found in config" || echo "✗ output: standalone NOT found in config") && \
-    echo "=== Verifying NEXT_PRIVATE_STANDALONE environment variable ===" && \
-    (echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}") && \
-    echo "=== Verifying Node.js and npm versions ===" && \
-    node --version && npm --version
+    test -d src || (echo "ERROR: src directory not found!" && exit 1) && \
+    echo "=== Verifying Vite config ===" && \
+    cat vite.config.ts
 
 # Generate Prisma client
-# Force regeneration to ensure types are up to date
 RUN echo "Generating Prisma client..." && \
     rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true && \
     npx prisma generate || \
-    (echo "Prisma generate failed!" && \
-     echo "Prisma version:" && npx prisma --version && \
-     echo "Schema file:" && cat prisma/schema.prisma && \
-     exit 1)
+    (echo "Prisma generate failed!" && exit 1)
 
 # Verify Prisma client was generated
 RUN if [ ! -d node_modules/.prisma/client ]; then \
-        echo "ERROR: Prisma client not generated!" && \
-        ls -la node_modules/.prisma/ 2>/dev/null || echo "No .prisma directory" && \
-        exit 1; \
+        echo "ERROR: Prisma client not generated!" && exit 1; \
     fi
 
-# Build Next.js application
-# Don't set NODE_ENV=production during build - we need devDependencies
-ENV NEXT_TELEMETRY_DISABLED=1
-# Disable standalone mode - Docker cache is preventing it from working
-# We'll fix appFiles Set(0) {} issue directly instead
-# ENV NEXT_PRIVATE_STANDALONE=true
-# Version 0.1.4 - Removed CSS verification step
-
-# Build Next.js application
-# Run build and capture output - show errors on failure
-# CRITICAL: NOT using standalone mode - Docker cache is preventing it from working
-# We'll fix appFiles Set(0) {} issue directly instead
-RUN echo "Building Next.js application..." && \
-    echo "=== PRE-BUILD VERIFICATION ===" && \
-    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set (standalone disabled)}" && \
-    echo "NODE_ENV=${NODE_ENV:-not set}" && \
-    echo "Current directory: $(pwd)" && \
-    echo "next.config.js exists: $(test -f next.config.js && echo 'yes' || echo 'no')" && \
-    echo "next.config.js contents:" && \
-    cat next.config.js && \
-    echo "" && \
-    echo "=== Starting Next.js build ===" && \
+# Build Vite frontend
+ENV NODE_ENV=production
+RUN echo "Building Vite frontend..." && \
     npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
-    echo "=== FULL BUILD OUTPUT ==="; \
+    echo "=== BUILD OUTPUT ==="; \
     cat /tmp/build.log; \
-    echo "=== END BUILD OUTPUT ==="; \
     if [ $$BUILD_EXIT -ne 0 ]; then \
         echo "=== BUILD FAILED (exit code: $$BUILD_EXIT) ==="; \
-        echo "=== .next directory contents ==="; \
-        ls -la .next/ 2>/dev/null || echo "No .next directory"; \
         exit 1; \
     fi && \
     echo "=== BUILD SUCCEEDED ===" && \
-    echo "=== Checking .next directory structure ===" && \
-    echo "Contents of .next:" && \
-    ls -la .next/ && \
-    echo "" && \
-    echo "=== Checking for standalone directory (should NOT exist - standalone disabled) ===" && \
-    if [ -d .next/standalone ]; then \
-        echo "⚠ WARNING: Standalone directory EXISTS but standalone mode is disabled!" && \
-        echo "This might cause confusion. Standalone directory contents:" && \
-        ls -la .next/standalone/ | head -10; \
-    else \
-        echo "✓ Standalone directory does NOT exist (standalone mode disabled - expected)"; \
-    fi && \
-    echo "" && \
-    echo "=== Checking .next/server structure ===" && \
-    if [ -d .next/server ]; then \
-        echo "Server directory exists" && \
-        ls -la .next/server/ && \
-        if [ -d .next/server/app ]; then \
-            echo "App routes directory exists:" && \
-            find .next/server/app -type f -name "*.js" | head -20; \
-        else \
-            echo "WARNING: .next/server/app directory not found!"; \
-        fi; \
-        if [ -f .next/server/app-paths-manifest.json ]; then \
-            echo "=== App paths manifest ===" && \
-            cat .next/server/app-paths-manifest.json; \
-        fi; \
-    else \
-        echo "ERROR: .next/server directory not found!"; \
-    fi
-
-# Ensure BUILD_ID exists (Next.js requires it for production)
-# Note: BUILD_ID validation and regeneration is handled in start.js at runtime
-# to avoid Docker cache issues and shell syntax complexity
-RUN if [ ! -f .next/BUILD_ID ]; then \
-        echo "WARNING: BUILD_ID not found - generating one from build artifacts..." && \
-        if [ -f .next/build-manifest.json ]; then \
-            BUILD_ID=$(md5sum .next/build-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
-            echo "$$BUILD_ID" > .next/BUILD_ID && \
-            echo "Generated BUILD_ID: $$BUILD_ID"; \
-        elif [ -f .next/routes-manifest.json ]; then \
-            BUILD_ID=$(md5sum .next/routes-manifest.json | cut -d' ' -f1 | cut -c1-20) && \
-            echo "$$BUILD_ID" > .next/BUILD_ID && \
-            echo "Generated BUILD_ID: $$BUILD_ID"; \
-        else \
-            BUILD_ID=$(date +%s | md5sum | cut -d' ' -f1 | cut -c1-20) && \
-            echo "$$BUILD_ID" > .next/BUILD_ID && \
-            echo "Generated BUILD_ID (timestamp-based): $$BUILD_ID"; \
-        fi; \
-    else \
-        echo "BUILD_ID exists: $(cat .next/BUILD_ID)"; \
-        echo "Note: BUILD_ID validation will be performed by start.js at runtime"; \
-    fi
-
-# CRITICAL: Create server-app-paths-manifest.json during build if it doesn't exist
-# Next.js needs this file to load app router files - creating it at runtime might be too late
-RUN if [ -f .next/server/app-paths-manifest.json ] && [ ! -f .next/server/server-app-paths-manifest.json ]; then \
-        echo "Creating server-app-paths-manifest.json from app-paths-manifest.json..." && \
-        cp .next/server/app-paths-manifest.json .next/server/server-app-paths-manifest.json && \
-        echo "✓ Created server-app-paths-manifest.json during build"; \
-    elif [ -f .next/server/server-app-paths-manifest.json ]; then \
-        echo "✓ server-app-paths-manifest.json already exists"; \
-    else \
-        echo "⚠ WARNING: app-paths-manifest.json not found - cannot create server-app-paths-manifest.json"; \
-    fi
-
-# Ensure prerender-manifest.json exists (Next.js requires it for production)
-RUN if [ ! -f .next/prerender-manifest.json ]; then \
-        echo "WARNING: prerender-manifest.json not found - creating minimal manifest..." && \
-        echo '{"version":4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":{"previewModeId":"development-id","previewModeSigningKey":"development-key","previewModeEncryptionKey":"development-key"}}' > .next/prerender-manifest.json && \
-        echo "Created prerender-manifest.json"; \
-    else \
-        echo "prerender-manifest.json exists"; \
-    fi
+    echo "=== Checking dist directory ===" && \
+    ls -la dist/ | head -10
 
 # Verify build output exists
-# Updated 2024-12-14: Accepts any build artifacts (static/, server/, standalone/, BUILD_ID, or routes-manifest.json)
-# BUILD_ID is now ensured to exist above
-RUN set -e && \
-    echo "=== Verifying Next.js build output ===" && \
-    if [ ! -d .next ]; then \
-        echo "ERROR: .next directory not found!" && \
-        ls -la && \
-        exit 1; \
+RUN if [ ! -d dist ]; then \
+        echo "ERROR: dist directory not found!" && exit 1; \
     fi && \
-    echo "✓ .next directory exists" && \
-    ls -la .next/ && \
-    echo "" && \
-    echo "=== Checking for build artifacts ===" && \
-    ( [ -d .next/static ] && echo "✓ Found: .next/static/" ) || true && \
-    ( [ -d .next/server ] && echo "✓ Found: .next/server/" ) || true && \
-    ( [ -d .next/standalone ] && echo "✓ Found: .next/standalone/" ) || true && \
-    ( [ -f .next/BUILD_ID ] && echo "✓ Found: .next/BUILD_ID ($(cat .next/BUILD_ID))" ) || true && \
-    ( [ -f .next/routes-manifest.json ] && echo "✓ Found: .next/routes-manifest.json" ) || true && \
-    if [ -d .next/static ] || [ -d .next/server ] || [ -d .next/standalone ] || [ -f .next/BUILD_ID ] || [ -f .next/routes-manifest.json ]; then \
-        echo "" && \
-        echo "=== Build verification: SUCCESS ===" && \
-        echo "Build completed successfully - found required artifacts"; \
-    else \
-        echo "" && \
-        echo "=== Build verification: FAILED ===" && \
-        echo "ERROR: No build artifacts found!" && \
-        echo "Expected at least one of: static/, server/, standalone/, BUILD_ID, or routes-manifest.json" && \
-        echo "" && \
-        echo "=== .next directory contents ===" && \
-        ls -la .next/ && \
-        echo "" && \
-        echo "=== Directory tree ===" && \
-        find .next -maxdepth 2 | head -20 && \
-        exit 1; \
-    fi
-
-# Verify static files exist (CSS should be here) - non-blocking
-RUN if [ -d .next/static ]; then \
-        echo "Static files found:" && \
-        ls -la .next/static/ && \
-        if [ -d .next/static/css ]; then \
-            echo "CSS directory exists:" && \
-            ls -la .next/static/css/ | head -10 && \
-            echo "CSS files found:" && \
-            find .next/static/css -name "*.css" -type f | head -5 || echo "No CSS files in css directory"; \
-        else \
-            echo "WARNING: .next/static/css directory not found - CSS may not be generated"; \
-        fi; \
-    else \
-        echo "WARNING: .next/static directory not found"; \
-    fi
-
-# Search for CSS files (non-blocking)
-RUN echo "Searching for CSS files:" && \
-    (find .next -name "*.css" -type f | head -10 || echo "No CSS files found")
-
-# Verify static files are readable
-RUN if [ -d .next/static ]; then \
-        echo "Checking static file permissions:" && \
-        ls -la .next/static/css/*.css 2>/dev/null | head -3 || echo "Could not list CSS files"; \
-    fi
+    if [ ! -f dist/index.html ]; then \
+        echo "ERROR: dist/index.html not found!" && exit 1; \
+    fi && \
+    echo "✓ Build output verified"
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true
@@ -281,9 +99,11 @@ ENV HOME_ASSISTANT_URL="http://supervisor/core"
 ENV DATABASE_PATH="/data/task-calendar.db"
 ENV DATABASE_URL="file:/data/task-calendar.db"
 ENV LD_LIBRARY_PATH="/usr/lib:/lib"
+ENV NODE_ENV="production"
+ENV PORT="3001"
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
-# Run node directly
-CMD [ "node", "/app/start.js" ]
+# Run start script
+CMD [ "node", "start.js" ]

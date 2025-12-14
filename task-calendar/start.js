@@ -679,6 +679,26 @@ console.log('Using standard next start (standalone mode was not detected in earl
       const existingManifest = JSON.parse(fs.readFileSync(serverAppPathsManifest, 'utf8'));
       console.log('✓ Verified: Existing manifest has', Object.keys(existingManifest).length, 'routes');
       console.log('Sample entries:', JSON.stringify(Object.fromEntries(Object.entries(existingManifest).slice(0, 3)), null, 2));
+      
+      // CRITICAL: Try to actually require one of the app router files to see if Next.js can load them
+      console.log('=== Testing if Next.js can actually require app router files ===');
+      const testRoutePath = '/app/.next/server/app/page.js';
+      if (fs.existsSync(testRoutePath)) {
+        try {
+          // Try to require the file to see if it's valid and can be loaded
+          delete require.cache[testRoutePath]; // Clear cache if it exists
+          const testModule = require(testRoutePath);
+          console.log('✓ Successfully required app/page.js - file is loadable');
+          console.log('Module type:', typeof testModule);
+          console.log('Module keys:', Object.keys(testModule || {}).slice(0, 5));
+        } catch (requireError) {
+          console.error('❌ ERROR: Could not require app/page.js:', requireError.message);
+          console.error('This might explain why appFiles Set(0) {} - Next.js cannot load the files!');
+          console.error('Error stack:', requireError.stack);
+        }
+      } else {
+        console.error('❌ ERROR: testRoutePath does not exist:', testRoutePath);
+      }
     } catch (e) {
       console.error('❌ ERROR: Existing manifest is not readable:', e.message);
     }

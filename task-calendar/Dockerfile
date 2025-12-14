@@ -67,6 +67,8 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
+# Cache bust: Force rebuild by changing this comment - updating timestamp
+ARG CACHE_BUST_COPY_FILES=2025-12-14-18-35
 COPY . .
 
 # Verify critical files exist
@@ -76,7 +78,11 @@ RUN test -f next.config.js || (echo "ERROR: next.config.js not found!" && exit 1
     echo "=== Verifying next.config.js ===" && \
     cat next.config.js && \
     echo "=== Checking for output: standalone in config ===" && \
-    (grep -q "output.*standalone" next.config.js && echo "✓ output: standalone found in config" || echo "✗ output: standalone NOT found in config")
+    (grep -q "output.*standalone" next.config.js && echo "✓ output: standalone found in config" || echo "✗ output: standalone NOT found in config") && \
+    echo "=== Verifying NEXT_PRIVATE_STANDALONE environment variable ===" && \
+    (echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}") && \
+    echo "=== Verifying Node.js and npm versions ===" && \
+    node --version && npm --version
 
 # Generate Prisma client
 # Force regeneration to ensure types are up to date
@@ -106,7 +112,15 @@ ENV NEXT_PRIVATE_STANDALONE=true
 # Run build and capture output - show errors on failure
 # CRITICAL: Using standalone mode - Next.js warning suggests this is expected
 RUN echo "Building Next.js application..." && \
-    echo "NEXT_PRIVATE_STANDALONE is set (standalone mode enabled)" && \
+    echo "=== PRE-BUILD VERIFICATION ===" && \
+    echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}" && \
+    echo "NODE_ENV=${NODE_ENV:-not set}" && \
+    echo "Current directory: $(pwd)" && \
+    echo "next.config.js exists: $(test -f next.config.js && echo 'yes' || echo 'no')" && \
+    echo "next.config.js contents:" && \
+    cat next.config.js && \
+    echo "" && \
+    echo "=== Starting Next.js build ===" && \
     npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
     echo "=== FULL BUILD OUTPUT ==="; \
     cat /tmp/build.log; \
@@ -125,16 +139,24 @@ RUN echo "Building Next.js application..." && \
     echo "=== Checking for standalone directory ===" && \
     if [ -d .next/standalone ]; then \
         echo "✓ Standalone directory EXISTS" && \
+        echo "Standalone directory contents:" && \
         ls -la .next/standalone/ && \
         if [ -f .next/standalone/server.js ]; then \
-            echo "✓ Standalone server.js EXISTS"; \
+            echo "✓ Standalone server.js EXISTS" && \
+            echo "Standalone server.js size: $(stat -c%s .next/standalone/server.js 2>/dev/null || stat -f%z .next/standalone/server.js 2>/dev/null || echo 'unknown') bytes"; \
         else \
-            echo "✗ Standalone server.js NOT FOUND"; \
+            echo "✗ Standalone server.js NOT FOUND" && \
+            echo "Files in standalone directory:" && \
+            find .next/standalone -type f | head -20; \
         fi; \
     else \
         echo "✗ Standalone directory NOT FOUND" && \
-        echo "WARNING: next.config.js has output: 'standalone' but standalone directory was not created!" && \
-        echo "This means the build did not create standalone output."; \
+        echo "ERROR: next.config.js has output: 'standalone' but standalone directory was not created!" && \
+        echo "This means the build did not create standalone output." && \
+        echo "Checking if build log mentions standalone:" && \
+        grep -i "standalone" /tmp/build.log || echo "No mention of standalone in build log" && \
+        echo "Checking .next directory structure:" && \
+        find .next -maxdepth 2 -type d | head -20; \
     fi && \
     echo "" && \
     echo "=== Checking .next/server structure ===" && \

@@ -155,6 +155,18 @@ RUN if [ ! -f .next/BUILD_ID ]; then \
         echo "Note: BUILD_ID validation will be performed by start.js at runtime"; \
     fi
 
+# CRITICAL: Create server-app-paths-manifest.json during build if it doesn't exist
+# Next.js needs this file to load app router files - creating it at runtime might be too late
+RUN if [ -f .next/server/app-paths-manifest.json ] && [ ! -f .next/server/server-app-paths-manifest.json ]; then \
+        echo "Creating server-app-paths-manifest.json from app-paths-manifest.json..." && \
+        cp .next/server/app-paths-manifest.json .next/server/server-app-paths-manifest.json && \
+        echo "✓ Created server-app-paths-manifest.json during build"; \
+    elif [ -f .next/server/server-app-paths-manifest.json ]; then \
+        echo "✓ server-app-paths-manifest.json already exists"; \
+    else \
+        echo "⚠ WARNING: app-paths-manifest.json not found - cannot create server-app-paths-manifest.json"; \
+    fi
+
 # Ensure prerender-manifest.json exists (Next.js requires it for production)
 RUN if [ ! -f .next/prerender-manifest.json ]; then \
         echo "WARNING: prerender-manifest.json not found - creating minimal manifest..." && \

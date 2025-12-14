@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { minutes } = body
 
@@ -18,7 +19,7 @@ export async function PUT(
 
     // Get current child to calculate new balance
     const child = await prisma.child.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         timeBalance: true,
@@ -38,7 +39,7 @@ export async function PUT(
     const newBalance = currentBalance + minutes
 
     const updatedChild = await prisma.child.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         timeBalance: newBalance,
       },

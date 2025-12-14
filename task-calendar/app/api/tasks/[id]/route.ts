@@ -33,14 +33,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { title, description, dueDate, childId, recurrenceTemplateId, category } = body
 
     const task = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description: description || null }),
@@ -69,15 +70,16 @@ export async function PUT(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { completed } = body
 
     // Get task first for logging
     const existingTask = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         child: true,
       },
@@ -85,7 +87,7 @@ export async function PATCH(
 
     const now = new Date()
     const task = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         completed: completed === true,
         completedAt: completed === true ? now : null,
@@ -117,12 +119,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Get the task first to check if it's part of a recurring series
     const task = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         recurrenceTemplateId: true,
@@ -160,7 +163,7 @@ export async function DELETE(
     } else {
       // Delete just this one task
       await prisma.task.delete({
-        where: { id: params.id },
+        where: { id },
       })
 
       return NextResponse.json({ message: 'Task deleted successfully' })

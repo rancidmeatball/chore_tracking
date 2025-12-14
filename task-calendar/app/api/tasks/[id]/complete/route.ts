@@ -7,12 +7,13 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Get the task first to log details
     const task = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         child: true,
         recurrenceTemplate: true,
@@ -39,7 +40,7 @@ export async function POST(
 
     // Update the task
     const updatedTask = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         completed: completed === true,
         completedAt: completed === true ? now : null,

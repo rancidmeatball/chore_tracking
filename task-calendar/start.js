@@ -354,8 +354,32 @@ if (fs.existsSync(testRoutePath)) {
   } catch (e) {
     console.error('  ERROR reading route file:', e.message);
   }
+  
+  // Try to verify the route file is actually importable
+  try {
+    console.log('  Attempting to require the route file to verify it\'s valid...');
+    // Don't actually require it (it might have side effects), just check syntax
+    const vm = require('vm');
+    const content = fs.readFileSync(testRoutePath, 'utf8');
+    // Just check if it's valid JavaScript by trying to parse it
+    vm.createScript(content);
+    console.log('  ✓ Route file is valid JavaScript');
+  } catch (e) {
+    console.error('  ✗ Route file is NOT valid JavaScript:', e.message);
+  }
 } else {
   console.error('ERROR: Root route file NOT found at:', testRoutePath);
+}
+
+// Also check if middleware was built
+const middlewarePath = '/app/.next/server/middleware.js';
+if (fs.existsSync(middlewarePath)) {
+  console.log('✓ Middleware file exists at:', middlewarePath);
+  const stats = fs.statSync(middlewarePath);
+  console.log('  Middleware file size:', stats.size, 'bytes');
+} else {
+  console.warn('⚠ Middleware file NOT found at:', middlewarePath);
+  console.warn('  This might explain why middleware logs aren\'t appearing');
 }
 
 // Check if there's a routes-manifest that Next.js uses

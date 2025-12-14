@@ -186,6 +186,12 @@ export default function Home() {
     setShowTaskForm(true)
   }
 
+  const handleCacheCleared = () => {
+    // Refresh data after cache is cleared
+    fetchTasks()
+    fetchChildren()
+  }
+
   return (
     <main className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto">

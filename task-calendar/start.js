@@ -243,7 +243,13 @@ console.log('  CWD:', '/app');
 console.log('  .next exists:', fs.existsSync('/app/.next'));
 
 // Use 'pipe' instead of 'inherit' so we can capture and log requests
-const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '-p', '3000'], {
+// Try using NODE_OPTIONS to ensure Next.js binds to 0.0.0.0
+// Also try using the full path to next
+const nextBin = '/app/node_modules/.bin/next';
+console.log('Next.js binary exists:', fs.existsSync(nextBin));
+
+// Use explicit hostname and port
+const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
   cwd: '/app',
   stdio: ['inherit', 'pipe', 'pipe'], // stdin: inherit, stdout/stderr: pipe
   env: {
@@ -251,24 +257,24 @@ const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
+    HOST: '0.0.0.0', // Alternative env var
     PORT: '3000',
   }
 });
 
-// Log stdout/stderr to see Next.js request logs
+// Log ALL stdout/stderr to see everything Next.js is doing
 if (nextProcess.stdout) {
   nextProcess.stdout.on('data', (data) => {
     const output = data.toString();
-    // Log all Next.js output to help debug routing issues
-    if (output.includes('GET') || output.includes('POST') || output.includes('404') || output.includes('200')) {
-      console.log('[Next.js]', output.trim());
-    }
+    // Log everything - Next.js might not log requests by default
+    console.log('[Next.js stdout]', output.trim());
   });
 }
 
 if (nextProcess.stderr) {
   nextProcess.stderr.on('data', (data) => {
-    console.error('[Next.js Error]', data.toString().trim());
+    const output = data.toString();
+    console.error('[Next.js stderr]', output.trim());
   });
 }
 

@@ -106,6 +106,16 @@ try {
   });
 } catch (error) {
   console.error('Failed to start Next.js:', error);
-  process.exit(1);
+  console.error('Error details:', error.message);
+  if (error.stderr) {
+    console.error('stderr:', error.stderr.toString());
+  }
+  if (error.stdout) {
+    console.error('stdout:', error.stdout.toString());
+  }
+  // Wait a bit before exiting to allow logs to flush
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
 }
 

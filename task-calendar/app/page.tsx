@@ -199,7 +199,7 @@ export default function Home() {
             </p>
           </div>
           <SettingsMenu 
-            childrenList={children} 
+            childrenList={children || []} 
             onChildUpdated={fetchChildren}
             onCacheCleared={handleCacheCleared} 
           />

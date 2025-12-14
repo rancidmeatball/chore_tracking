@@ -78,7 +78,26 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 // Standalone mode requires using the standalone server, not "next start"
 const standalonePath = '/app/.next/standalone';
 const standaloneServer = '/app/.next/standalone/server.js';
+
+console.log('');
+console.log('=== CHECKING FOR STANDALONE MODE (EARLY CHECK) ===');
+console.log('Standalone directory path:', standalonePath);
+console.log('Standalone directory exists:', fs.existsSync(standalonePath));
+console.log('Standalone server path:', standaloneServer);
+console.log('Standalone server exists:', fs.existsSync(standaloneServer));
+
+if (fs.existsSync(standalonePath)) {
+  try {
+    const contents = fs.readdirSync(standalonePath);
+    console.log('Standalone directory contents:', contents.join(', '));
+  } catch (e) {
+    console.error('Error reading standalone directory:', e.message);
+  }
+}
+
 const useStandalone = fs.existsSync(standalonePath) && fs.existsSync(standaloneServer);
+console.log('Will use standalone mode:', useStandalone);
+console.log('');
 
 if (useStandalone) {
   console.log('');

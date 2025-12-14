@@ -149,34 +149,51 @@ if (!fs.existsSync(staticPath)) {
   console.warn('WARNING: Static files not found at:', staticPath);
 }
 
-// Use next start directly - more efficient than npm run start
-// execSync will block and keep the process running
-// This is fine for Home Assistant add-ons
-const { execSync } = require('child_process');
-try {
-  console.log('Executing: next start');
-  // Use next start directly instead of npm run start to avoid npm overhead
-  execSync('node_modules/.bin/next start', {
-    cwd: '/app',
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      NEXT_TELEMETRY_DISABLED: '1',
-    }
-  });
-} catch (error) {
-  console.error('Failed to start Next.js:', error);
-  console.error('Error details:', error.message);
-  if (error.stderr) {
-    console.error('stderr:', error.stderr.toString());
+// Use spawn to keep the process running and handle signals properly
+// This ensures the process stays alive and handles SIGTERM/SIGINT correctly
+const { spawn } = require('child_process');
+
+console.log('Executing: next start');
+const nextProcess = spawn('node_modules/.bin/next', ['start'], {
+  cwd: '/app',
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    NODE_ENV: 'production',
+    NEXT_TELEMETRY_DISABLED: '1',
   }
-  if (error.stdout) {
-    console.error('stdout:', error.stdout.toString());
-  }
-  // Wait a bit before exiting to allow logs to flush
-  setTimeout(() => {
+});
+
+// Handle process exit
+nextProcess.on('exit', (code, signal) => {
+  console.error(`Next.js process exited with code ${code} and signal ${signal}`);
+  if (code !== 0 && code !== null) {
+    console.error('Next.js process exited unexpectedly');
     process.exit(1);
-  }, 1000);
-}
+  }
+});
+
+// Handle errors
+nextProcess.on('error', (error) => {
+  console.error('Failed to start Next.js:', error);
+  process.exit(1);
+});
+
+// Forward signals to the Next.js process
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  nextProcess.kill('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  nextProcess.kill('SIGINT');
+});
+
+// Keep this process alive
+process.on('exit', () => {
+  if (nextProcess && !nextProcess.killed) {
+    nextProcess.kill();
+  }
+});
 

@@ -242,19 +242,35 @@ console.log('  HOSTNAME:', process.env.HOSTNAME);
 console.log('  CWD:', '/app');
 console.log('  .next exists:', fs.existsSync('/app/.next'));
 
+// Use 'pipe' instead of 'inherit' so we can capture and log requests
 const nextProcess = spawn('node_modules/.bin/next', ['start', '-H', '0.0.0.0', '-p', '3000'], {
   cwd: '/app',
-  stdio: 'inherit',
+  stdio: ['inherit', 'pipe', 'pipe'], // stdin: inherit, stdout/stderr: pipe
   env: {
     ...process.env,
     NODE_ENV: 'production',
     NEXT_TELEMETRY_DISABLED: '1',
     HOSTNAME: '0.0.0.0',
     PORT: '3000',
-    // Enable Next.js debug logging
-    DEBUG: process.env.DEBUG || '',
   }
 });
+
+// Log stdout/stderr to see Next.js request logs
+if (nextProcess.stdout) {
+  nextProcess.stdout.on('data', (data) => {
+    const output = data.toString();
+    // Log all Next.js output to help debug routing issues
+    if (output.includes('GET') || output.includes('POST') || output.includes('404') || output.includes('200')) {
+      console.log('[Next.js]', output.trim());
+    }
+  });
+}
+
+if (nextProcess.stderr) {
+  nextProcess.stderr.on('data', (data) => {
+    console.error('[Next.js Error]', data.toString().trim());
+  });
+}
 
 // Handle process exit
 nextProcess.on('exit', (code, signal) => {

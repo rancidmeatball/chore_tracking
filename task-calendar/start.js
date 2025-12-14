@@ -345,11 +345,43 @@ if (fs.existsSync('/app/.next/server')) {
     try {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
       console.log('App paths manifest:', JSON.stringify(manifest, null, 2));
+      console.log('Number of routes in manifest:', Object.keys(manifest).length);
+      if (Object.keys(manifest).length === 0) {
+        console.error('ERROR: app-paths-manifest.json is EMPTY! This is why routes are not matching!');
+      }
     } catch (e) {
       console.log('Could not read manifest:', e.message);
     }
   } else {
     console.warn('WARNING: app-paths-manifest.json not found');
+  }
+  
+  // Check if root page.js exists and is readable
+  const rootPagePath = '/app/.next/server/app/page.js';
+  if (fs.existsSync(rootPagePath)) {
+    console.log('✓ Root page.js exists at:', rootPagePath);
+    try {
+      const stats = fs.statSync(rootPagePath);
+      console.log('  File size:', stats.size, 'bytes');
+      if (stats.size === 0) {
+        console.error('ERROR: Root page.js is EMPTY!');
+      }
+    } catch (e) {
+      console.error('ERROR: Cannot stat root page.js:', e.message);
+    }
+  } else {
+    console.error('ERROR: Root page.js NOT FOUND at:', rootPagePath);
+    // Check alternative locations
+    const altPaths = [
+      '/app/.next/server/app/page/index.js',
+      '/app/.next/server/app/(root)/page.js',
+      '/app/.next/server/pages/index.js'
+    ];
+    for (const altPath of altPaths) {
+      if (fs.existsSync(altPath)) {
+        console.log('Found page at alternative location:', altPath);
+      }
+    }
   }
 } else {
   console.error('ERROR: /app/.next/server directory not found!');
@@ -508,11 +540,34 @@ console.log('Using standard next start (standalone mode was not detected in earl
   console.log('Next.js server path exists:', useDirectNode);
   console.log('Will use:', useDirectNode ? 'node directly' : 'next start command');
   
+  // CRITICAL: Ensure Next.js can find the .next directory
+  // Next.js looks for .next relative to cwd, so we must be in /app
+  console.log('=== Final verification before starting Next.js ===');
+  console.log('Current working directory will be:', '/app');
+  console.log('.next directory exists:', fs.existsSync('/app/.next'));
+  console.log('.next/server/app exists:', fs.existsSync('/app/.next/server/app'));
+  console.log('.next/server/app/page.js exists:', fs.existsSync('/app/.next/server/app/page.js'));
+  console.log('Source app directory exists:', fs.existsSync('/app/app'));
+  console.log('Source app/page.tsx exists:', fs.existsSync('/app/app/page.tsx'));
+  
+  // Try to read a small portion of the root page to verify it's valid JavaScript
+  if (fs.existsSync('/app/.next/server/app/page.js')) {
+    try {
+      const pageContent = fs.readFileSync('/app/.next/server/app/page.js', 'utf8');
+      console.log('Root page.js first 200 chars:', pageContent.substring(0, 200));
+      if (pageContent.trim().length === 0) {
+        console.error('ERROR: Root page.js is empty!');
+      }
+    } catch (e) {
+      console.error('ERROR: Cannot read root page.js:', e.message);
+    }
+  }
+  
   const nextProcess = spawn(
     useDirectNode ? 'node' : nextBin,
     useDirectNode ? [nextServerPath, 'start', '--hostname', '0.0.0.0', '--port', '3000'] : ['start', '--hostname', '0.0.0.0', '--port', '3000'],
     {
-      cwd: '/app',
+      cwd: '/app', // CRITICAL: Must be /app so Next.js finds .next directory
       stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation
       env: {
         ...process.env,
@@ -522,11 +577,13 @@ console.log('Using standard next start (standalone mode was not detected in earl
         HOST: '0.0.0.0',
         PORT: '3000',
         // Add debug flag to see what Next.js is doing
-        DEBUG: process.env.DEBUG || '',
+        DEBUG: process.env.DEBUG || 'next:*',
         // Ensure Node.js can resolve modules correctly
         NODE_OPTIONS: nodeOptions,
         // Explicitly set the app directory path
         NEXT_PUBLIC_BASE_PATH: '',
+        // Ensure Next.js knows where to find the app
+        NEXT_PRIVATE_STANDALONE: 'false', // Explicitly disable standalone mode
       }
     }
   );

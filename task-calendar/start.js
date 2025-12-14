@@ -359,16 +359,9 @@ if (!fs.existsSync('/app/app')) {
   console.error('ERROR: Source app directory not found! Next.js may need it at runtime.');
 }
 
-// Check if standalone mode was used FIRST, before other checks
-// This must be done early because standalone mode changes how we start Next.js
-const standalonePath = '/app/.next/standalone';
-const useStandalone = fs.existsSync(standalonePath);
-
-console.log('=== Checking build mode (early check) ===');
-console.log('Standalone directory exists:', useStandalone);
-if (useStandalone) {
-  console.log('Standalone directory contents:', fs.readdirSync(standalonePath).join(', '));
-}
+// Standalone check was already done at the top of the file
+// If we get here, standalone mode was not detected, so use standard next start
+console.log('=== Using standard next start (standalone mode not detected) ===');
 
 // Use 'pipe' instead of 'inherit' so we can capture and log requests
 // Try using NODE_OPTIONS to ensure Next.js binds to 0.0.0.0

@@ -149,6 +149,38 @@ if (!fs.existsSync(staticPath)) {
   console.warn('WARNING: Static files not found at:', staticPath);
 }
 
+// Debug: Check server routes
+console.log('=== Debugging route structure ===');
+if (fs.existsSync('/app/.next/server')) {
+  console.log('Server directory exists');
+  if (fs.existsSync('/app/.next/server/app')) {
+    console.log('App routes directory exists');
+    try {
+      const appFiles = fs.readdirSync('/app/.next/server/app', { recursive: true });
+      console.log('App route files found:', appFiles.slice(0, 20).join(', '));
+    } catch (e) {
+      console.log('Could not list app files:', e.message);
+    }
+  } else {
+    console.error('ERROR: /app/.next/server/app directory not found!');
+  }
+  
+  // Check app-paths-manifest
+  const manifestPath = '/app/.next/server/app-paths-manifest.json';
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      console.log('App paths manifest:', JSON.stringify(manifest, null, 2));
+    } catch (e) {
+      console.log('Could not read manifest:', e.message);
+    }
+  } else {
+    console.warn('WARNING: app-paths-manifest.json not found');
+  }
+} else {
+  console.error('ERROR: /app/.next/server directory not found!');
+}
+
 // Use spawn to keep the process running and handle signals properly
 // This ensures the process stays alive and handles SIGTERM/SIGINT correctly
 const { spawn } = require('child_process');

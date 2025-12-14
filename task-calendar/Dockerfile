@@ -85,7 +85,24 @@ RUN echo "Building Next.js application..." && \
         ls -la .next/ 2>/dev/null || echo "No .next directory"; \
         exit 1; \
     fi && \
-    echo "=== BUILD SUCCEEDED ==="
+    echo "=== BUILD SUCCEEDED ===" && \
+    echo "=== Checking .next/server structure ===" && \
+    if [ -d .next/server ]; then \
+        echo "Server directory exists" && \
+        ls -la .next/server/ && \
+        if [ -d .next/server/app ]; then \
+            echo "App routes directory exists:" && \
+            find .next/server/app -type f -name "*.js" | head -20; \
+        else \
+            echo "WARNING: .next/server/app directory not found!"; \
+        fi; \
+        if [ -f .next/server/app-paths-manifest.json ]; then \
+            echo "=== App paths manifest ===" && \
+            cat .next/server/app-paths-manifest.json; \
+        fi; \
+    else \
+        echo "ERROR: .next/server directory not found!"; \
+    fi
 
 # Ensure BUILD_ID exists (Next.js requires it for production)
 # If Next.js didn't create it, generate one from build artifacts

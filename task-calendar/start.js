@@ -371,9 +371,9 @@ if (fs.existsSync(testRoutePath)) {
   console.error('ERROR: Root route file NOT found at:', testRoutePath);
 }
 
-// Also check if middleware was built
+// Also check if middleware was built - MOVED EARLIER TO ENSURE IT RUNS
 console.log('');
-console.log('=== CHECKING MIDDLEWARE ===');
+console.log('=== CHECKING MIDDLEWARE (BEFORE ROUTES MANIFEST) ===');
 const middlewarePath = '/app/.next/server/middleware.js';
 if (fs.existsSync(middlewarePath)) {
   console.log('✓ Middleware file exists at:', middlewarePath);
@@ -396,6 +396,8 @@ if (fs.existsSync(middlewarePath)) {
     } catch (e) {
       console.log('  Could not read middleware manifest:', e.message);
     }
+  } else {
+    console.warn('  Middleware manifest also not found!');
   }
 }
 console.log('');

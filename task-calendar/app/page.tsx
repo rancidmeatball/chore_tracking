@@ -117,7 +117,24 @@ export default function Home() {
             }
           }
           
-          // Trigger Home Assistant if all tasks complete
+          // Trigger Home Assistant input booleans for children who completed all their tasks
+          if (data.childCompletions && data.childCompletions.length > 0) {
+            for (const childCompletion of data.childCompletions) {
+              if (childCompletion.allComplete && childCompletion.inputBoolean) {
+                // Trigger child-specific input boolean
+                await fetch('/api/home-assistant/trigger-child', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    inputBoolean: childCompletion.inputBoolean,
+                    date: new Date().toISOString() 
+                  }),
+                })
+              }
+            }
+          }
+          
+          // Trigger Home Assistant if all tasks complete (global)
           if (data.allComplete) {
             await fetch('/api/home-assistant/trigger', {
               method: 'POST',

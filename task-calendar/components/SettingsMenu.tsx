@@ -1,13 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { Child } from '@/types'
 
 interface SettingsMenuProps {
+  childrenList: Child[]
+  onChildUpdated?: () => void
   onCacheCleared?: () => void
 }
 
-export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
+export default function SettingsMenu({ childrenList, onChildUpdated, onCacheCleared }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showChildSettings, setShowChildSettings] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close menu when clicking outside
@@ -94,9 +98,32 @@ export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && !showChildSettings && (
         <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div className="py-1">
+            <button
+              onClick={() => {
+                setShowChildSettings(true)
+                setIsOpen(false)
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition flex items-center gap-2 font-medium"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              Manage Children
+            </button>
             <button
               onClick={clearApplicationData}
               className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition flex items-center gap-2 font-medium"
@@ -124,7 +151,112 @@ export default function SettingsMenu({ onCacheCleared }: SettingsMenuProps) {
           </div>
         </div>
       )}
+
+      {showChildSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Manage Children</h2>
+              <button
+                onClick={() => setShowChildSettings(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              {childrenList.map((child) => (
+                <ChildEditForm
+                  key={child.id}
+                  child={child}
+                  onUpdated={() => {
+                    if (onChildUpdated) onChildUpdated()
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => void }) {
+  const [name, setName] = useState(child.name)
+  const [color, setColor] = useState(child.color || '#3B82F6')
+  const [inputBoolean, setInputBoolean] = useState(child.inputBoolean || '')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    try {
+      const response = await fetch(`/api/children/${child.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color, inputBoolean: inputBoolean || null }),
+      })
+
+      if (response.ok) {
+        onUpdated()
+        alert('Child updated successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error || 'Failed to update child'}`)
+      }
+    } catch (error) {
+      console.error('Error updating child:', error)
+      alert('Failed to update child')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-4 border border-gray-200 rounded-lg space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-900 mb-1">Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+        />
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-900 mb-1">Color</label>
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Input Boolean
+          </label>
+          <input
+            type="text"
+            value={inputBoolean}
+            onChange={(e) => setInputBoolean(e.target.value)}
+            placeholder="input_boolean.tasks_complete_..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
+            title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"
+          />
+        </div>
+      </div>
+      <button
+        type="submit"
+        disabled={isSaving}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isSaving ? 'Saving...' : 'Save'}
+      </button>
+    </form>
   )
 }
 

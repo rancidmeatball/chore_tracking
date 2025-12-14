@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, color } = body
+    const { name, color, inputBoolean } = body
 
     if (!name) {
       return NextResponse.json(
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       data: { 
         name,
         color: color || null,
+        inputBoolean: inputBoolean || null,
       },
     })
 

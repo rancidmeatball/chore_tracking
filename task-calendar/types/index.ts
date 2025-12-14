@@ -3,6 +3,7 @@ export interface Child {
   name: string
   timeBalance: number // Time in minutes
   color?: string // Hex color code for calendar display
+  inputBoolean?: string // Home Assistant input_boolean entity_id
   createdAt: string
   updatedAt: string
 }

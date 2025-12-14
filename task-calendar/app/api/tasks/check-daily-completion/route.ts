@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             timeBalance: true,
+            inputBoolean: true,
           },
         },
       },

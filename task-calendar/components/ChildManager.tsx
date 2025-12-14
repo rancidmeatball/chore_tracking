@@ -12,6 +12,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState('#3B82F6') // Default blue
+  const [inputBoolean, setInputBoolean] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,12 +20,13 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
       const response = await fetch('/api/children', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color }),
+        body: JSON.stringify({ name, color, inputBoolean: inputBoolean || null }),
       })
 
       if (response.ok) {
         setName('')
         setColor('#3B82F6') // Reset to default
+        setInputBoolean('')
         setShowForm(false)
         onChildAdded()
       } else {
@@ -58,21 +60,31 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
   return (
     <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="flex gap-2">
+        <div>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Child's name"
             required
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400 mb-2"
           />
+        </div>
+        <div className="flex gap-2">
           <input
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
             className="w-16 h-10 border border-gray-300 rounded-lg cursor-pointer"
             title="Choose color for this child's tasks"
+          />
+          <input
+            type="text"
+            value={inputBoolean}
+            onChange={(e) => setInputBoolean(e.target.value)}
+            placeholder="input_boolean.tasks_complete_..."
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
+            title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"
           />
         </div>
         <div className="flex gap-2">
@@ -88,6 +100,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
               setShowForm(false)
               setName('')
               setColor('#3B82F6')
+              setInputBoolean('')
             }}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
           >

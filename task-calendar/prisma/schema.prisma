@@ -16,6 +16,7 @@ model Child {
   name                String
   timeBalance         Int                  @default(0) // Time in minutes (15-minute increments)
   color               String?              // Hex color code for calendar display (e.g., "#3B82F6")
+  inputBoolean        String?              // Home Assistant input_boolean entity_id (e.g., "input_boolean.tasks_complete_hayden")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   tasks               Task[]

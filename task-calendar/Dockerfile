@@ -31,12 +31,18 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-# Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
+    # Install all dependencies (including dev) for build, but we'll need them at runtime too for next start
 RUN echo "Installing npm dependencies..." && \
-    npm install --include=dev --loglevel=verbose || \
+    npm install --include=dev --loglevel=error 2>&1 | tee /tmp/npm-install.log || \
     (echo "npm install failed!" && \
-     echo "package.json contents:" && cat package.json && \
-     echo "npm version:" && npm --version && \
+     echo "=== Full npm install error output ===" && \
+     cat /tmp/npm-install.log && \
+     echo "=== package.json contents ===" && \
+     cat package.json && \
+     echo "=== npm version ===" && \
+     npm --version && \
+     echo "=== node version ===" && \
+     node --version && \
      exit 1)
 
 # Verify Next.js is installed

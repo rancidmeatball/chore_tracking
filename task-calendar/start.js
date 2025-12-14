@@ -228,8 +228,30 @@ if (fs.existsSync(testRoutePath)) {
   console.log('✓ Root route file exists at:', testRoutePath);
   const stats = fs.statSync(testRoutePath);
   console.log('  File size:', stats.size, 'bytes');
+  
+  // Try to read the first few lines to verify it's a valid JS file
+  try {
+    const content = fs.readFileSync(testRoutePath, 'utf8');
+    const firstLine = content.split('\n')[0];
+    console.log('  First line:', firstLine.substring(0, 100));
+  } catch (e) {
+    console.error('  ERROR reading route file:', e.message);
+  }
 } else {
   console.error('ERROR: Root route file NOT found at:', testRoutePath);
+}
+
+// Check if there's a routes-manifest that Next.js uses
+const routesManifestPath = '/app/.next/routes-manifest.json';
+if (fs.existsSync(routesManifestPath)) {
+  try {
+    const routesManifest = JSON.parse(fs.readFileSync(routesManifestPath, 'utf8'));
+    console.log('Routes manifest found with', Object.keys(routesManifest.dynamicRoutes || {}).length, 'dynamic routes');
+  } catch (e) {
+    console.error('Error reading routes manifest:', e.message);
+  }
+} else {
+  console.warn('WARNING: routes-manifest.json not found');
 }
 
 // Next.js needs -H 0.0.0.0 to bind to all interfaces, not just localhost

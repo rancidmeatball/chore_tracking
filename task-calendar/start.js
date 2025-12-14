@@ -571,11 +571,16 @@ console.log('Using standard next start (standalone mode was not detected in earl
   console.log('Source app directory exists:', fs.existsSync('/app/app'));
   console.log('Source app/page.tsx exists:', fs.existsSync('/app/app/page.tsx'));
   
-  // Verify BUILD_ID one more time before starting
+  // Verify BUILD_ID one more time before starting - CRITICAL FOR ROUTE MATCHING
   const finalBuildId = fs.readFileSync('/app/.next/BUILD_ID', 'utf8').trim();
-  console.log('Final BUILD_ID check:', finalBuildId);
+  console.log('=== FINAL BUILD_ID CHECK (CRITICAL) ===');
+  console.log('Final BUILD_ID value:', finalBuildId);
+  console.log('Final BUILD_ID length:', finalBuildId.length);
+  console.log('Final BUILD_ID contains BUILD_ID:', finalBuildId.includes('BUILD_ID'));
+  
   if (finalBuildId === '1BUILD_ID' || finalBuildId.length < 10 || finalBuildId.includes('BUILD_ID')) {
-    console.error('ERROR: BUILD_ID is still invalid! This may cause route matching issues!');
+    console.error('❌ ERROR: BUILD_ID is STILL INVALID! This WILL cause route matching to fail!');
+    console.error('BUILD_ID value:', JSON.stringify(finalBuildId));
     console.error('Attempting to regenerate BUILD_ID one more time...');
     const crypto = require('crypto');
     const buildManifestPath = '/app/.next/build-manifest.json';
@@ -591,6 +596,10 @@ console.log('Using standard next start (standalone mode was not detected in earl
     const newBuildId = crypto.createHash('md5').update(buildIdSource).digest('hex').substring(0, 20);
     fs.writeFileSync('/app/.next/BUILD_ID', newBuildId);
     console.log('✓ Regenerated BUILD_ID to:', newBuildId);
+    console.log('New BUILD_ID length:', newBuildId.length);
+    console.log('New BUILD_ID is valid:', !newBuildId.includes('BUILD_ID') && newBuildId.length >= 10);
+  } else {
+    console.log('✓ BUILD_ID is VALID - routes should work');
   }
   
   // Try to read a small portion of the root page to verify it's valid JavaScript

@@ -74,6 +74,75 @@ console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
+// CRITICAL: Check for standalone mode FIRST, before any other checks
+// Standalone mode requires using the standalone server, not "next start"
+const standalonePath = '/app/.next/standalone';
+const standaloneServer = '/app/.next/standalone/server.js';
+const useStandalone = fs.existsSync(standalonePath) && fs.existsSync(standaloneServer);
+
+if (useStandalone) {
+  console.log('');
+  console.log('=== STANDALONE MODE DETECTED ===');
+  console.log('Using standalone server (required when output: standalone is set)');
+  console.log('Standalone server path:', standaloneServer);
+  
+  // In standalone mode, we need to ensure static files are accessible
+  const standaloneStatic = '/app/.next/standalone/.next/static';
+  const mainStatic = '/app/.next/static';
+  
+  if (!fs.existsSync(standaloneStatic) && fs.existsSync(mainStatic)) {
+    console.log('Copying static files to standalone directory...');
+    const { execSync } = require('child_process');
+    try {
+      execSync(`mkdir -p /app/.next/standalone/.next && cp -r ${mainStatic} /app/.next/standalone/.next/`, {
+        stdio: 'inherit'
+      });
+      console.log('✓ Static files copied');
+    } catch (e) {
+      console.error('Error copying static files:', e.message);
+    }
+  }
+  
+  console.log('Starting standalone server...');
+  const serverProcess = spawn('node', [standaloneServer], {
+    cwd: '/app/.next/standalone',
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      PORT: '3000',
+      HOSTNAME: '0.0.0.0',
+      HOST: '0.0.0.0',
+    }
+  });
+  
+  serverProcess.on('exit', (code, signal) => {
+    console.error(`Standalone server exited with code ${code} and signal ${signal}`);
+    if (code !== 0 && code !== null) {
+      process.exit(1);
+    }
+  });
+  
+  process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down standalone server...');
+    serverProcess.kill('SIGTERM');
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('Received SIGINT, shutting down standalone server...');
+    serverProcess.kill('SIGINT');
+  });
+  
+  process.on('exit', () => {
+    if (serverProcess && !serverProcess.killed) {
+      serverProcess.kill();
+    }
+  });
+  
+  // Exit early - standalone server is now running
+  return;
+}
+
 // CRITICAL DEBUG: Check if routes were built
 console.log('');
 console.log('=== CRITICAL: Checking if routes were built ===');

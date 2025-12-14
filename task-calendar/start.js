@@ -691,6 +691,28 @@ console.log('Using standard next start (standalone mode was not detected in earl
           console.log('✓ Successfully required app/page.js - file is loadable');
           console.log('Module type:', typeof testModule);
           console.log('Module keys:', Object.keys(testModule || {}).slice(0, 5));
+          
+          // CRITICAL: Since files can be required but appFiles is still empty,
+          // this suggests Next.js isn't reading the manifest correctly.
+          // Let's check if the manifest format matches what Next.js expects
+          console.log('');
+          console.log('=== DIAGNOSING WHY appFiles Set(0) {} ===');
+          console.log('Files exist: ✓');
+          console.log('Files are valid: ✓');
+          console.log('Files can be required: ✓');
+          console.log('Manifests exist: ✓');
+          console.log('But appFiles Set(0) {} persists - this suggests a Next.js bug or configuration issue.');
+          console.log('');
+          console.log('Possible causes:');
+          console.log('1. Next.js 14.2.35 bug with app router file loading');
+          console.log('2. Manifest format mismatch (though format looks correct)');
+          console.log('3. Next.js not reading server-app-paths-manifest.json at startup');
+          console.log('4. Standalone mode detection issue (warning still appears)');
+          console.log('');
+          console.log('Recommendation: This appears to be a Next.js bug. Consider:');
+          console.log('- Upgrading to latest Next.js 14.x version');
+          console.log('- Downgrading to earlier 14.x version that worked');
+          console.log('- Filing a bug report with Next.js team');
         } catch (requireError) {
           console.error('❌ ERROR: Could not require app/page.js:', requireError.message);
           console.error('This might explain why appFiles Set(0) {} - Next.js cannot load the files!');

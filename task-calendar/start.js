@@ -416,11 +416,6 @@ console.log('Using standard next start (standalone mode was not detected in earl
       nextProcess.kill();
     }
   });
-} else {
-  console.error('ERROR: Standalone mode detected but standalone server was not started!');
-  console.error('This should not happen - the standalone server should have been started earlier.');
-  process.exit(1);
-}
 
 // Also add a simple HTTP test server to verify port mapping works
 console.log('');

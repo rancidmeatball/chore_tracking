@@ -282,12 +282,40 @@ console.log('Next.js binary exists:', fs.existsSync(nextBin));
 const standalonePath = '/app/.next/standalone';
 const useStandalone = fs.existsSync(standalonePath);
 
+console.log('=== Checking build mode ===');
+console.log('Standalone directory exists:', useStandalone);
 if (useStandalone) {
-  console.log('Standalone mode detected - using standalone server');
+  console.log('Standalone directory contents:', fs.readdirSync(standalonePath).join(', '));
+}
+
+if (useStandalone) {
+  console.log('✓ Standalone mode detected - using standalone server');
   // In standalone mode, use the standalone server.js
   const standaloneServer = '/app/.next/standalone/server.js';
   if (fs.existsSync(standaloneServer)) {
-    console.log('Starting standalone server...');
+    console.log('✓ Standalone server.js found');
+    
+    // In standalone mode, we need to ensure static files are accessible
+    // Next.js creates a .next/standalone/.next/static symlink or copies files
+    const standaloneStatic = '/app/.next/standalone/.next/static';
+    const mainStatic = '/app/.next/static';
+    
+    if (!fs.existsSync(standaloneStatic) && fs.existsSync(mainStatic)) {
+      console.log('Copying static files to standalone directory...');
+      // Copy static files if they're not already there
+      const { execSync } = require('child_process');
+      try {
+        execSync(`mkdir -p /app/.next/standalone/.next && cp -r ${mainStatic} /app/.next/standalone/.next/`, {
+          stdio: 'inherit'
+        });
+        console.log('✓ Static files copied');
+      } catch (e) {
+        console.error('Error copying static files:', e.message);
+      }
+    }
+    
+    console.log('Starting standalone server from:', '/app/.next/standalone');
+    console.log('Working directory will be:', '/app/.next/standalone');
     const serverProcess = spawn('node', [standaloneServer], {
       cwd: '/app/.next/standalone',
       stdio: 'inherit',

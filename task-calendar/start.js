@@ -715,6 +715,10 @@ console.log('Using standard next start (standalone mode was not detected in earl
         NEXT_PUBLIC_BASE_PATH: '',
         // Ensure Next.js knows where to find the app
         NEXT_PRIVATE_STANDALONE: 'false', // Explicitly disable standalone mode
+        // Try setting NODE_PATH to help Next.js find app router files
+        NODE_PATH: '/app:/app/node_modules',
+        // Try to help Next.js find the app directory
+        NEXT_APP_DIR: '/app/app',
       }
     }
   );

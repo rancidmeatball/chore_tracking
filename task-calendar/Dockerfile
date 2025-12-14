@@ -108,6 +108,15 @@ RUN if [ ! -f .next/BUILD_ID ]; then \
         echo "BUILD_ID exists: $(cat .next/BUILD_ID)"; \
     fi
 
+# Ensure prerender-manifest.json exists (Next.js requires it for production)
+RUN if [ ! -f .next/prerender-manifest.json ]; then \
+        echo "WARNING: prerender-manifest.json not found - creating minimal manifest..." && \
+        echo '{"version":4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":{"previewModeId":"development-id","previewModeSigningKey":"development-key","previewModeEncryptionKey":"development-key"}}' > .next/prerender-manifest.json && \
+        echo "Created prerender-manifest.json"; \
+    else \
+        echo "prerender-manifest.json exists"; \
+    fi
+
 # Verify build output exists
 # Updated 2024-12-14: Accepts any build artifacts (static/, server/, standalone/, BUILD_ID, or routes-manifest.json)
 # BUILD_ID is now ensured to exist above

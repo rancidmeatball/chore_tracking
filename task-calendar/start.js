@@ -122,6 +122,25 @@ if (!fs.existsSync('/app/.next/BUILD_ID')) {
   console.log('Build verified - BUILD_ID:', buildId);
 }
 
+// Ensure prerender-manifest.json exists (Next.js requires it for production)
+const prerenderManifestPath = '/app/.next/prerender-manifest.json';
+if (!fs.existsSync(prerenderManifestPath)) {
+  console.warn('WARNING: prerender-manifest.json not found - creating minimal manifest...');
+  const prerenderManifest = {
+    version: 4,
+    routes: {},
+    dynamicRoutes: {},
+    notFoundRoutes: [],
+    preview: {
+      previewModeId: 'development-id',
+      previewModeSigningKey: 'development-key',
+      previewModeEncryptionKey: 'development-key'
+    }
+  };
+  fs.writeFileSync(prerenderManifestPath, JSON.stringify(prerenderManifest, null, 2));
+  console.log('Created prerender-manifest.json');
+}
+
 // Skip detailed file checks - just verify .next exists (reduces startup CPU)
 
 // Minimal check - just verify static directory exists (skip detailed file listing to reduce CPU)

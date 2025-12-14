@@ -642,17 +642,18 @@ console.log('Using standard next start (standalone mode was not detected in earl
       try {
         const appManifest = JSON.parse(fs.readFileSync(appPathsManifest, 'utf8'));
         console.log('Found app-paths-manifest.json with', Object.keys(appManifest).length, 'routes');
-        // server-app-paths-manifest.json has a different structure
-        // It maps route paths to their file paths
+        // server-app-paths-manifest.json structure for Next.js 14
+        // It should map route paths to their relative paths from .next/server
         const serverManifest = {};
         for (const [route, filePath] of Object.entries(appManifest)) {
-          // Convert app/page.js to the actual server path
-          const serverPath = filePath.replace(/^app\//, '/app/.next/server/app/');
-          serverManifest[route] = serverPath;
+          // Next.js expects relative paths from .next/server, not absolute paths
+          // The format should be like: "app/page.js" not "/app/.next/server/app/page.js"
+          serverManifest[route] = filePath; // Keep the original format
         }
         fs.writeFileSync(serverAppPathsManifest, JSON.stringify(serverManifest, null, 2));
         console.log('✓ Created server-app-paths-manifest.json from app-paths-manifest.json');
         console.log('Created manifest with', Object.keys(serverManifest).length, 'routes');
+        console.log('Sample entries:', JSON.stringify(Object.fromEntries(Object.entries(serverManifest).slice(0, 3)), null, 2));
       } catch (e) {
         console.error('❌ ERROR: Could not create server-app-paths-manifest.json:', e.message);
       }

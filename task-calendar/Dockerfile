@@ -3,7 +3,8 @@ FROM ${BUILD_FROM}
 
 # Cache bust: 2025-12-14 - Force rebuild to clear Docker cache
 # Adding ARG to bust cache from this point forward - updating timestamp to force rebuild
-ARG CACHE_BUST=2025-12-14-18-30
+# CRITICAL: Update this timestamp every time you want to force a full rebuild
+ARG CACHE_BUST=2025-12-14-19-00
 RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Install Node.js and build dependencies
@@ -24,7 +25,7 @@ WORKDIR /app
 
 # Copy package files first for better caching
 # Cache bust: Force rebuild by changing this comment
-ARG CACHE_BUST_COPY=2025-12-14-18-30
+ARG CACHE_BUST_COPY=2025-12-14-19-00
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -34,7 +35,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
 
 # Install dependencies
 # Cache bust before npm install to force fresh install - update timestamp to force rebuild
-ARG CACHE_BUST_NPM=2025-12-14-18-30
+ARG CACHE_BUST_NPM=2025-12-14-19-00
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version
@@ -68,7 +69,7 @@ RUN echo "Verifying Prisma installation..." && \
 
 # Copy all other files needed for build
 # Cache bust: Force rebuild by changing this comment - updating timestamp
-ARG CACHE_BUST_COPY_FILES=2025-12-14-18-35
+ARG CACHE_BUST_COPY_FILES=2025-12-14-19-00
 COPY . .
 
 # Verify critical files exist
@@ -153,10 +154,25 @@ RUN echo "Building Next.js application..." && \
         echo "✗ Standalone directory NOT FOUND" && \
         echo "ERROR: next.config.js has output: 'standalone' but standalone directory was not created!" && \
         echo "This means the build did not create standalone output." && \
+        echo "" && \
+        echo "=== DIAGNOSING WHY STANDALONE WAS NOT CREATED ===" && \
         echo "Checking if build log mentions standalone:" && \
-        grep -i "standalone" /tmp/build.log || echo "No mention of standalone in build log" && \
+        (grep -i "standalone" /tmp/build.log || echo "No mention of standalone in build log") && \
+        echo "" && \
+        echo "Checking for errors in build log:" && \
+        (grep -i "error\|warn\|fail" /tmp/build.log | tail -20 || echo "No errors found in build log") && \
+        echo "" && \
         echo "Checking .next directory structure:" && \
-        find .next -maxdepth 2 -type d | head -20; \
+        find .next -maxdepth 2 -type d | head -20 && \
+        echo "" && \
+        echo "Checking if standalone is mentioned in next.config.js:" && \
+        (grep -i "standalone" next.config.js || echo "standalone NOT found in next.config.js!") && \
+        echo "" && \
+        echo "Checking NEXT_PRIVATE_STANDALONE environment variable:" && \
+        (echo "NEXT_PRIVATE_STANDALONE=${NEXT_PRIVATE_STANDALONE:-not set}") && \
+        echo "" && \
+        echo "CRITICAL: Standalone directory was not created. This will cause appFiles Set(0) {} and 404 errors." && \
+        echo "The build must create .next/standalone/ for standalone mode to work."; \
     fi && \
     echo "" && \
     echo "=== Checking .next/server structure ===" && \

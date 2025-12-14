@@ -369,86 +369,8 @@ console.log('=== Using standard next start (standalone mode not detected) ===');
 const nextBin = '/app/node_modules/.bin/next';
 console.log('Next.js binary exists:', fs.existsSync(nextBin));
 
-console.log('=== Checking build mode ===');
-console.log('Standalone directory exists:', useStandalone);
-if (useStandalone) {
-  console.log('Standalone directory contents:', fs.readdirSync(standalonePath).join(', '));
-}
-
-if (useStandalone) {
-  console.log('✓ Standalone mode detected - using standalone server');
-  // In standalone mode, use the standalone server.js
-  const standaloneServer = '/app/.next/standalone/server.js';
-  if (fs.existsSync(standaloneServer)) {
-    console.log('✓ Standalone server.js found');
-    
-    // In standalone mode, we need to ensure static files are accessible
-    // Next.js creates a .next/standalone/.next/static symlink or copies files
-    const standaloneStatic = '/app/.next/standalone/.next/static';
-    const mainStatic = '/app/.next/static';
-    
-    if (!fs.existsSync(standaloneStatic) && fs.existsSync(mainStatic)) {
-      console.log('Copying static files to standalone directory...');
-      // Copy static files if they're not already there
-      const { execSync } = require('child_process');
-      try {
-        execSync(`mkdir -p /app/.next/standalone/.next && cp -r ${mainStatic} /app/.next/standalone/.next/`, {
-          stdio: 'inherit'
-        });
-        console.log('✓ Static files copied');
-      } catch (e) {
-        console.error('Error copying static files:', e.message);
-      }
-    }
-    
-    console.log('Starting standalone server from:', '/app/.next/standalone');
-    console.log('Working directory will be:', '/app/.next/standalone');
-    const serverProcess = spawn('node', [standaloneServer], {
-      cwd: '/app/.next/standalone',
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        PORT: '3000',
-        HOSTNAME: '0.0.0.0',
-        HOST: '0.0.0.0',
-      }
-    });
-    
-    serverProcess.on('exit', (code, signal) => {
-      console.error(`Standalone server exited with code ${code} and signal ${signal}`);
-      if (code !== 0 && code !== null) {
-        process.exit(1);
-      }
-    });
-    
-    process.on('SIGTERM', () => {
-      console.log('Received SIGTERM, shutting down standalone server...');
-      serverProcess.kill('SIGTERM');
-    });
-    
-    process.on('SIGINT', () => {
-      console.log('Received SIGINT, shutting down standalone server...');
-      serverProcess.kill('SIGINT');
-    });
-    
-    // Keep this process alive
-    process.on('exit', () => {
-      if (serverProcess && !serverProcess.killed) {
-        serverProcess.kill();
-      }
-    });
-    
-    // Don't continue - the standalone server is running
-    return;
-  } else {
-    console.warn('Standalone directory exists but server.js not found, falling back to next start');
-  }
-}
-
-// Only use next start if standalone mode is NOT enabled
-if (!useStandalone) {
-  console.log('Using standard next start (not standalone mode)');
+// Only use next start if standalone mode was NOT detected (early check already handled standalone)
+console.log('Using standard next start (standalone mode was not detected in early check)');
   const nextProcess = spawn(nextBin, ['start', '--hostname', '0.0.0.0', '--port', '3000'], {
     cwd: '/app',
     stdio: 'inherit', // Let Next.js output directly - this is critical for proper operation

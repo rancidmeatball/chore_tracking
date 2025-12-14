@@ -2,7 +2,7 @@ ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 # Cache bust: 2025-12-14 - Force rebuild for Vite migration
-ARG CACHE_BUST=2025-12-14-20-30
+ARG CACHE_BUST=2025-12-14-21-00
 RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Install Node.js and build dependencies
@@ -21,7 +21,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-ARG CACHE_BUST_COPY=2025-12-14-20-30
+ARG CACHE_BUST_COPY=2025-12-14-21-00
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -30,7 +30,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-ARG CACHE_BUST_NPM=2025-12-14-20-30
+ARG CACHE_BUST_NPM=2025-12-14-21-00
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version && \
@@ -47,7 +47,8 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-ARG CACHE_BUST_COPY_FILES=2025-12-14-20-30
+ARG CACHE_BUST_COPY_FILES=2025-12-14-22-00-fixed
+RUN echo "Copy cache bust: ${CACHE_BUST_COPY_FILES}"
 COPY . .
 
 # Verify critical files exist (Vite migration - no Next.js)
@@ -73,31 +74,43 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
     fi
 
 # Build Vite frontend (NOT Next.js)
+# Cache bust timestamp - update this to force rebuild  
+ARG CACHE_BUST_BUILD=2025-12-14-23-00-final
 ENV NODE_ENV=production
-RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
+RUN set -e && \
+    echo "=== Building Vite frontend (migrated from Next.js) ===" && \
+    echo "Build cache bust: ${CACHE_BUST_BUILD}" && \
+    echo "Cache invalidation: v2-$(date +%s)" && \
     echo "This is NOT a Next.js build - it's Vite!" && \
-    npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
-    echo "=== BUILD OUTPUT ==="; \
-    cat /tmp/build.log; \
-    if [ $$BUILD_EXIT -ne 0 ]; then \
-        echo "=== BUILD FAILED (exit code: $$BUILD_EXIT) ==="; \
-        echo "=== Checking for TypeScript errors ==="; \
-        npx tsc --noEmit 2>&1 | head -20 || true; \
+    touch /tmp/build-timestamp-$(date +%s) && \
+    echo "Current directory contents:" && \
+    ls -la . | head -10 && \
+    echo "Running TypeScript check first..." && \
+    npx tsc --noEmit > /tmp/tsc.log 2>&1 && \
+    echo "TypeScript check passed" && \
+    echo "Running: npm run build" && \
+    npm run build > /tmp/build.log 2>&1 && \
+    echo "=== BUILD OUTPUT ===" && \
+    cat /tmp/build.log && \
+    echo "=== Checking build result ===" && \
+    if [ ! -d dist ]; then \
+        echo "ERROR: dist directory not found after build!" && \
+        echo "Build log contents:" && \
+        cat /tmp/build.log && \
+        echo "Current directory:" && \
+        ls -la . && \
+        exit 1; \
+    fi && \
+    if [ ! -f dist/index.html ]; then \
+        echo "ERROR: dist/index.html not found after build!" && \
+        echo "Dist directory contents:" && \
+        ls -la dist/ || echo "dist directory does not exist" && \
         exit 1; \
     fi && \
     echo "=== BUILD SUCCEEDED ===" && \
-    echo "=== Checking dist directory ===" && \
+    echo "Dist directory contents:" && \
     ls -la dist/ | head -10 && \
-    echo "=== Verifying dist/index.html exists ===" && \
-    test -f dist/index.html && echo "✓ dist/index.html exists" || echo "✗ dist/index.html NOT FOUND"
-
-# Verify build output exists
-RUN if [ ! -d dist ]; then \
-        echo "ERROR: dist directory not found!" && exit 1; \
-    fi && \
-    if [ ! -f dist/index.html ]; then \
-        echo "ERROR: dist/index.html not found!" && exit 1; \
-    fi && \
+    echo "✓ dist/index.html exists" && \
     echo "✓ Build output verified"
 
 # Make scripts executable

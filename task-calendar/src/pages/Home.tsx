@@ -6,7 +6,7 @@ import ChildManager from '@/components/ChildManager'
 import TimeTracker from '@/components/TimeTracker'
 import SettingsMenu from '@/components/SettingsMenu'
 import CompletionTracker from '@/components/CompletionTracker'
-import { Task, Child, RecurrenceTemplate } from '@/types'
+import { Task, Child } from '@/types'
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -88,7 +88,7 @@ export default function Home() {
                 })
                 
                 if (awardResponse.ok) {
-                  const awardData = await awardResponse.json()
+                  await awardResponse.json()
                   alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
                   await fetchChildren() // Refresh to show new balance
                 }

@@ -3,7 +3,7 @@ FROM ${BUILD_FROM}
 
 # Cache bust: 2025-12-14 - Force rebuild to clear Docker cache
 # Adding ARG to bust cache from this point forward - updating timestamp to force rebuild
-ARG CACHE_BUST=2025-12-14-10-05
+ARG CACHE_BUST=2025-12-14-18-30
 RUN echo "Cache bust: ${CACHE_BUST}"
 
 # Install Node.js and build dependencies
@@ -24,7 +24,7 @@ WORKDIR /app
 
 # Copy package files first for better caching
 # Cache bust: Force rebuild by changing this comment
-ARG CACHE_BUST_COPY=2025-12-14-10-08
+ARG CACHE_BUST_COPY=2025-12-14-18-30
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -34,7 +34,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
 
 # Install dependencies
 # Cache bust before npm install to force fresh install - update timestamp to force rebuild
-ARG CACHE_BUST_NPM=2025-12-14-10-08
+ARG CACHE_BUST_NPM=2025-12-14-18-30
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version

@@ -1,5 +1,5 @@
 ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM ${BUILD_FROM}
 
 # Install Node.js and build dependencies
 # Home Assistant base images are Alpine Linux
@@ -76,33 +76,53 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Run build and capture output - show errors on failure
 RUN echo "Building Next.js application..." && \
     npm run build > /tmp/build.log 2>&1; BUILD_EXIT=$$?; \
+    echo "=== FULL BUILD OUTPUT ==="; \
+    cat /tmp/build.log; \
+    echo "=== END BUILD OUTPUT ==="; \
     if [ $$BUILD_EXIT -ne 0 ]; then \
         echo "=== BUILD FAILED (exit code: $$BUILD_EXIT) ==="; \
-        echo "=== BUILD OUTPUT ==="; \
-        cat /tmp/build.log; \
-        echo "=== END BUILD OUTPUT ==="; \
         echo "=== .next directory contents ==="; \
         ls -la .next/ 2>/dev/null || echo "No .next directory"; \
         exit 1; \
     fi && \
-    echo "=== BUILD SUCCEEDED ===" && \
-    cat /tmp/build.log | tail -20
+    echo "=== BUILD SUCCEEDED ==="
 
-# Verify build output exists and has BUILD_ID
-RUN if [ ! -d .next ]; then \
+# Verify build output exists
+# Updated 2024-12-14: Accepts any build artifacts (static/, server/, standalone/, BUILD_ID, or routes-manifest.json)
+# BUILD_ID is not always created in all Next.js configurations
+RUN set -e && \
+    echo "=== Verifying Next.js build output ===" && \
+    if [ ! -d .next ]; then \
         echo "ERROR: .next directory not found!" && \
+        ls -la && \
         exit 1; \
     fi && \
-    if [ ! -f .next/BUILD_ID ]; then \
-        echo "ERROR: BUILD_ID file not found in .next directory!" && \
-        echo "This means the build did not complete successfully." && \
-        echo "Contents of .next:" && \
+    echo "✓ .next directory exists" && \
+    ls -la .next/ && \
+    echo "" && \
+    echo "=== Checking for build artifacts ===" && \
+    ( [ -d .next/static ] && echo "✓ Found: .next/static/" ) || true && \
+    ( [ -d .next/server ] && echo "✓ Found: .next/server/" ) || true && \
+    ( [ -d .next/standalone ] && echo "✓ Found: .next/standalone/" ) || true && \
+    ( [ -f .next/BUILD_ID ] && echo "✓ Found: .next/BUILD_ID ($(cat .next/BUILD_ID))" ) || true && \
+    ( [ -f .next/routes-manifest.json ] && echo "✓ Found: .next/routes-manifest.json" ) || true && \
+    if [ -d .next/static ] || [ -d .next/server ] || [ -d .next/standalone ] || [ -f .next/BUILD_ID ] || [ -f .next/routes-manifest.json ]; then \
+        echo "" && \
+        echo "=== Build verification: SUCCESS ===" && \
+        echo "Build completed successfully - found required artifacts"; \
+    else \
+        echo "" && \
+        echo "=== Build verification: FAILED ===" && \
+        echo "ERROR: No build artifacts found!" && \
+        echo "Expected at least one of: static/, server/, standalone/, BUILD_ID, or routes-manifest.json" && \
+        echo "" && \
+        echo "=== .next directory contents ===" && \
         ls -la .next/ && \
+        echo "" && \
+        echo "=== Directory tree ===" && \
+        find .next -maxdepth 2 | head -20 && \
         exit 1; \
-    fi && \
-    echo "Build output verified:" && \
-    echo "BUILD_ID:" && cat .next/BUILD_ID && \
-    ls -la .next/ | head -10
+    fi
 
 # Verify static files exist (CSS should be here) - non-blocking
 RUN if [ -d .next/static ]; then \

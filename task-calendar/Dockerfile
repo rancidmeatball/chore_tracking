@@ -86,12 +86,20 @@ RUN echo "Building Next.js application..." && \
         exit 1; \
     fi
 
-# Verify build output exists
+# Verify build output exists and has BUILD_ID
 RUN if [ ! -d .next ]; then \
         echo "ERROR: .next directory not found!" && \
         exit 1; \
     fi && \
+    if [ ! -f .next/BUILD_ID ]; then \
+        echo "ERROR: BUILD_ID file not found in .next directory!" && \
+        echo "This means the build did not complete successfully." && \
+        echo "Contents of .next:" && \
+        ls -la .next/ && \
+        exit 1; \
+    fi && \
     echo "Build output verified:" && \
+    echo "BUILD_ID:" && cat .next/BUILD_ID && \
     ls -la .next/ | head -10
 
 # Verify static files exist (CSS should be here) - non-blocking

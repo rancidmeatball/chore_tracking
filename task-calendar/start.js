@@ -72,13 +72,24 @@ console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
-// Verify .next directory exists
+// Verify .next directory exists and has BUILD_ID
 if (!fs.existsSync('/app/.next')) {
   console.error('ERROR: .next directory not found. Build may have failed.');
   console.error('Current directory:', process.cwd());
   console.error('Files in /app:', fs.readdirSync('/app').join(', '));
   process.exit(1);
 }
+
+// Verify BUILD_ID exists (required for production builds)
+if (!fs.existsSync('/app/.next/BUILD_ID')) {
+  console.error('ERROR: BUILD_ID file not found in .next directory.');
+  console.error('This means the production build did not complete successfully.');
+  console.error('Contents of .next:', fs.readdirSync('/app/.next').join(', '));
+  console.error('Please check the Docker build logs for build errors.');
+  process.exit(1);
+}
+
+console.log('Build verified - BUILD_ID:', fs.readFileSync('/app/.next/BUILD_ID', 'utf8').trim());
 
 // Skip detailed file checks - just verify .next exists (reduces startup CPU)
 

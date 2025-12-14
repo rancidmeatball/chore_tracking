@@ -654,6 +654,18 @@ console.log('Using standard next start (standalone mode was not detected in earl
         console.log('✓ Created server-app-paths-manifest.json from app-paths-manifest.json');
         console.log('Created manifest with', Object.keys(serverManifest).length, 'routes');
         console.log('Sample entries:', JSON.stringify(Object.fromEntries(Object.entries(serverManifest).slice(0, 3)), null, 2));
+        
+        // Verify the file was created and is readable
+        if (fs.existsSync(serverAppPathsManifest)) {
+          try {
+            const verifyManifest = JSON.parse(fs.readFileSync(serverAppPathsManifest, 'utf8'));
+            console.log('✓ Verified: server-app-paths-manifest.json is readable with', Object.keys(verifyManifest).length, 'routes');
+          } catch (e) {
+            console.error('❌ ERROR: Created file is not readable:', e.message);
+          }
+        } else {
+          console.error('❌ ERROR: File was not created!');
+        }
       } catch (e) {
         console.error('❌ ERROR: Could not create server-app-paths-manifest.json:', e.message);
       }
@@ -662,6 +674,14 @@ console.log('Using standard next start (standalone mode was not detected in earl
     }
   } else {
     console.log('✓ server-app-paths-manifest.json exists');
+    // Verify it's readable and has content
+    try {
+      const existingManifest = JSON.parse(fs.readFileSync(serverAppPathsManifest, 'utf8'));
+      console.log('✓ Verified: Existing manifest has', Object.keys(existingManifest).length, 'routes');
+      console.log('Sample entries:', JSON.stringify(Object.fromEntries(Object.entries(existingManifest).slice(0, 3)), null, 2));
+    } catch (e) {
+      console.error('❌ ERROR: Existing manifest is not readable:', e.message);
+    }
   }
   
   // Check if standalone directory exists (might explain the warning)

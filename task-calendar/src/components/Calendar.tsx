@@ -9,6 +9,7 @@ interface CalendarProps {
   onTaskComplete: (taskId: string, completed: boolean) => void
   onTaskEdit: (task: Task) => void
   onTaskDelete: (taskId: string, deleteSeries?: boolean) => void
+  children?: Array<{ id: string; name: string }>
 }
 
 function Calendar({
@@ -18,10 +19,13 @@ function Calendar({
   onTaskComplete,
   onTaskEdit,
   onTaskDelete,
+  children = [],
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   // Track last click to handle double-click properly
   const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
+  // Track days with tech time awards (both categories completed)
+  const [techTimeDays, setTechTimeDays] = useState<Set<string>>(new Set())
 
   // Memoize month calculations
   const { daysInMonth, emptyDays, monthYear } = useMemo(() => {
@@ -104,6 +108,37 @@ function Calendar({
     return tasksByDate.get(dateKey) || []
   }
 
+  // Check if any child completed both categories on a specific date
+  const hasBothCategoriesComplete = (date: Date) => {
+    const dayTasks = getTasksForDate(date)
+    const tasksByChild = new Map<string, { helpingFamily: Task[], enrichment: Task[] }>()
+    
+    for (const task of dayTasks) {
+      if (!tasksByChild.has(task.childId)) {
+        tasksByChild.set(task.childId, { helpingFamily: [], enrichment: [] })
+      }
+      const childTasks = tasksByChild.get(task.childId)!
+      if (task.category === 'helping-family') {
+        childTasks.helpingFamily.push(task)
+      } else if (task.category === 'enrichment') {
+        childTasks.enrichment.push(task)
+      }
+    }
+    
+    // Check if any child has both categories complete
+    for (const [childId, childTasks] of tasksByChild.entries()) {
+      const hasBoth = childTasks.helpingFamily.length > 0 && 
+                      childTasks.enrichment.length > 0
+      const bothComplete = hasBoth &&
+                          childTasks.helpingFamily.every(t => t.completed) && 
+                          childTasks.enrichment.every(t => t.completed)
+      if (bothComplete) {
+        return true
+      }
+    }
+    return false
+  }
+
 
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
@@ -156,6 +191,7 @@ function Calendar({
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
           const dayNumber = day.getDate()
+          const bothCategoriesComplete = hasBothCategoriesComplete(day)
 
           return (
             <div
@@ -168,9 +204,16 @@ function Calendar({
               `}
             >
               <div className="flex justify-between items-start mb-0.5 sm:mb-1">
-                <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
-                  {dayNumber}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
+                    {dayNumber}
+                  </span>
+                  {bothCategoriesComplete && (
+                    <span className="text-yellow-500 text-xs sm:text-sm" title="Both categories completed - Tech time awarded!">
+                      ⭐
+                    </span>
+                  )}
+                </div>
                 {completion && (
                   <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded ${
                     completion.completed === completion.total

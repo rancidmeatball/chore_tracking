@@ -76,21 +76,25 @@ export default function Home() {
           // Check for tech time rewards
           if (data.techTimeRewards && data.techTimeRewards.length > 0) {
             for (const reward of data.techTimeRewards) {
-              if (!reward.awarded) {
-                // Award tech time for this child
-                const awardResponse = await fetch('/api/tasks/award-tech-time', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    childId: reward.childId,
-                    date: new Date().toISOString(),
-                  }),
-                })
-                
-                if (awardResponse.ok) {
-                  await awardResponse.json()
-                  alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
-                  await fetchChildren() // Refresh to show new balance
+              // Always try to award - the API will check if already awarded
+              const awardResponse = await fetch('/api/tasks/award-tech-time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  childId: reward.childId,
+                  date: new Date().toISOString(),
+                }),
+              })
+              
+              if (awardResponse.ok) {
+                const awardData = await awardResponse.json()
+                alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
+                await fetchChildren() // Refresh to show new balance
+              } else {
+                const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
+                // Only show error if it's not "already awarded"
+                if (!errorData.error?.includes('already awarded')) {
+                  console.error('Error awarding tech time:', errorData)
                 }
               }
             }
@@ -244,6 +248,7 @@ export default function Home() {
           onTaskComplete={handleTaskComplete}
           onTaskEdit={handleEditTask}
           onTaskDelete={handleTaskDelete}
+          children={children}
         />
 
         {showTaskForm && (

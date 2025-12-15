@@ -75,7 +75,7 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 
 # Build Vite frontend (NOT Next.js)
 # Cache bust timestamp - update this to force rebuild  
-ARG CACHE_BUST_BUILD=2025-12-14-23-00-final
+ARG CACHE_BUST_BUILD=2025-12-14-23-30-force-rebuild
 ENV NODE_ENV=production
 RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \

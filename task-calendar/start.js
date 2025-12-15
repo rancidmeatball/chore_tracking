@@ -34,15 +34,48 @@ if (existsSync(dirname(dbPath))) {
 
 // Initialize/update database schema
 console.log('Initializing/updating database schema...');
+const dbExists = existsSync(dbPath);
+console.log('Database file exists before migration:', dbExists);
+if (dbExists) {
+  const stats = statSync(dbPath);
+  console.log('Existing database size:', stats.size, 'bytes');
+}
+
 try {
-  execSync('npx prisma db push --accept-data-loss', {
+  // Use db push without --accept-data-loss to preserve existing data
+  // This will only add new tables/columns, not drop existing data
+  execSync('npx prisma db push', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || 'file:/data/task-calendar.db' }
   });
   console.log('Database schema initialized/updated successfully');
+  
+  // Verify database still exists and has data
+  if (existsSync(dbPath)) {
+    const stats = statSync(dbPath);
+    console.log('Database file exists after migration, size:', stats.size, 'bytes');
+  } else {
+    console.warn('WARNING: Database file does not exist after migration!');
+  }
 } catch (error) {
   console.error('Error initializing database:', error.message);
-  process.exit(1);
+  // If it's just a schema mismatch, try with --accept-data-loss as fallback
+  // but only if database doesn't exist
+  if (!dbExists && error.message.includes('schema')) {
+    console.log('Database does not exist, creating with --accept-data-loss...');
+    try {
+      execSync('npx prisma db push --accept-data-loss', {
+        stdio: 'inherit',
+        env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL || 'file:/data/task-calendar.db' }
+      });
+      console.log('Database created successfully');
+    } catch (retryError) {
+      console.error('Error creating database:', retryError.message);
+      process.exit(1);
+    }
+  } else {
+    process.exit(1);
+  }
 }
 
 // Generate Prisma client if needed

@@ -77,30 +77,44 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 # Cache bust timestamp - update this to force rebuild  
 ARG CACHE_BUST_BUILD=2025-12-14-23-00-final
 ENV NODE_ENV=production
-RUN set -e && \
-    echo "=== Building Vite frontend (migrated from Next.js) ===" && \
+RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \
     echo "Cache invalidation: v2-$(date +%s)" && \
     echo "This is NOT a Next.js build - it's Vite!" && \
     touch /tmp/build-timestamp-$(date +%s) && \
     echo "Current directory contents:" && \
     ls -la . | head -10 && \
-    echo "Running TypeScript check first..." && \
-    npx tsc --noEmit > /tmp/tsc.log 2>&1 && \
+    echo "=== Running TypeScript check ===" && \
+    npx tsc --noEmit 2>&1 | tee /tmp/tsc.log; TSC_STATUS=$$? && \
+    if [ $$TSC_STATUS -ne 0 ]; then \
+        echo "=== TYPESCRIPT CHECK FAILED (exit code: $$TSC_STATUS) ===" && \
+        cat /tmp/tsc.log && \
+        exit 1; \
+    fi && \
     echo "TypeScript check passed" && \
-    echo "Running: npm run build" && \
-    npm run build > /tmp/build.log 2>&1 && \
+    echo "=== Running npm run build ===" && \
+    npm run build 2>&1 | tee /tmp/build.log; BUILD_STATUS=$$? && \
+    if [ $$BUILD_STATUS -ne 0 ]; then \
+        echo "=== BUILD FAILED (exit code: $$BUILD_STATUS) ===" && \
+        cat /tmp/build.log && \
+        exit 1; \
+    fi && \
     echo "=== BUILD OUTPUT ===" && \
     cat /tmp/build.log && \
     echo "=== Checking build result ===" && \
+    echo "Current working directory: $(pwd)" && \
+    echo "Listing current directory:" && \
+    ls -la . && \
     if [ ! -d dist ]; then \
         echo "ERROR: dist directory not found after build!" && \
-        echo "Build log contents:" && \
-        cat /tmp/build.log && \
-        echo "Current directory:" && \
-        ls -la . && \
+        echo "Build log (last 50 lines):" && \
+        tail -50 /tmp/build.log && \
+        echo "Checking if vite build created any output:" && \
+        find . -name "index.html" -o -name "dist" -type d 2>/dev/null | head -10 && \
         exit 1; \
     fi && \
+    echo "Dist directory found, contents:" && \
+    ls -la dist/ && \
     if [ ! -f dist/index.html ]; then \
         echo "ERROR: dist/index.html not found after build!" && \
         echo "Dist directory contents:" && \

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Child } from '@/types'
 
 interface ChildManagerProps {

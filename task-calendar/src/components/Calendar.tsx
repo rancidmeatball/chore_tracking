@@ -24,14 +24,14 @@ function Calendar({
   const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
 
   // Memoize month calculations
-  const { monthStart, monthEnd, daysInMonth, firstDayOfWeek, emptyDays, monthYear } = useMemo(() => {
+  const { daysInMonth, emptyDays, monthYear } = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
     const days = eachDayOfInterval({ start, end })
     const firstDay = start.getDay()
     const empty = Array(firstDay).fill(null)
     const monthYearStr = format(currentMonth, 'MMMM yyyy')
-    return { monthStart: start, monthEnd: end, daysInMonth: days, firstDayOfWeek: firstDay, emptyDays: empty, monthYear: monthYearStr }
+    return { daysInMonth: days, emptyDays: empty, monthYear: monthYearStr }
   }, [currentMonth])
 
   // Simple task lookup map - only recalculate when tasks change
@@ -242,7 +242,6 @@ function Calendar({
             }
             return selectedDateTasks.map((task) => {
               const bgColor = getTaskBgColor(task)
-              const textColor = getTaskColor(task)
               return (
               <div
                 key={task.id}

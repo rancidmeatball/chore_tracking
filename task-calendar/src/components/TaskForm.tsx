@@ -102,7 +102,7 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
         const [year, month, day] = dueDate.split('-').map(Number)
         const localDate = new Date(year, month - 1, day, 0, 0, 0, 0)
         taskDueDate = localDate.toISOString()
-        console.log(`Creating task with dueDate: ${dueDate} -> ${taskDueDate} (local: ${localDate.toLocaleString()})`)
+        console.log(`${task ? 'Updating' : 'Creating'} task with dueDate: ${dueDate} -> ${taskDueDate} (local: ${localDate.toLocaleString()})`)
       }
 
       const response = await fetch(url, {

@@ -102,8 +102,12 @@ export default function Home() {
 
       // If the task was just marked incomplete, attempt to revoke any tech time for that child/date
       if (!completed) {
+        console.log('[COMPLETION] ===== TASK UNCOMPLETED =====')
         console.log('[COMPLETION] Task uncompleted, attempting to revoke tech time if previously awarded')
+        console.log('[COMPLETION] childId:', targetTask.childId)
+        console.log('[COMPLETION] date:', taskDateIso)
         try {
+          console.log('[COMPLETION] Calling /api/tasks/revoke-tech-time...')
           const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -113,17 +117,18 @@ export default function Home() {
             }),
           })
 
+          console.log('[COMPLETION] Revoke response status:', revokeResponse.status, revokeResponse.ok)
           if (revokeResponse.ok) {
             const revokeData = await revokeResponse.json()
-            console.log('[COMPLETION] Tech time revoked:', revokeData)
+            console.log('[COMPLETION] ✅ Tech time revoked successfully:', revokeData)
             await fetchChildren()
           } else {
             const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
             // It's okay if there's nothing to revoke; just log it.
-            console.log('[COMPLETION] No tech time to revoke or revoke failed:', revokeError)
+            console.log('[COMPLETION] ⚠️ No tech time to revoke or revoke failed:', revokeError)
           }
         } catch (revokeErr) {
-          console.error('[COMPLETION] Error revoking tech time:', revokeErr)
+          console.error('[COMPLETION] ❌ Error revoking tech time:', revokeErr)
         }
 
         // Also turn OFF the child's input_boolean if configured

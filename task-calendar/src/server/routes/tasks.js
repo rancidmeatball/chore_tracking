@@ -923,16 +923,21 @@ router.post('/award-tech-time', async (req, res) => {
 // This subtracts the award and removes the TechTimeAward record for that day.
 router.post('/revoke-tech-time', async (req, res) => {
   try {
+    console.log('[REVOKE] ===== ENTRY POINT =====');
+    console.log('[REVOKE] Request body:', req.body);
     const { startOfDay, endOfDay } = await import('date-fns');
     const { childId, date } = req.body;
 
     if (!childId) {
+      console.log('[REVOKE] ❌ Missing childId');
       return res.status(400).json({ error: 'childId is required' });
     }
 
+    console.log('[REVOKE] childId:', childId, 'date:', date);
     const checkDate = date ? getUtcDateOnly(date) : new Date();
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
+    console.log('[REVOKE] Normalized checkDate:', checkDate.toISOString(), 'start:', start.toISOString());
 
     const existingAward = await prisma.techTimeAward.findUnique({
       where: {
@@ -943,9 +948,21 @@ router.post('/revoke-tech-time', async (req, res) => {
       },
     });
 
+    console.log('[REVOKE] Existing award found:', !!existingAward);
+    if (existingAward) {
+      console.log('[REVOKE] Award details:', {
+        id: existingAward.id,
+        childId: existingAward.childId,
+        awardDate: existingAward.awardDate.toISOString(),
+        minutes: existingAward.minutes,
+      });
+    }
+
     if (!existingAward) {
+      console.log('[REVOKE] ⚠️ No tech time award found for childId:', childId, 'date:', start.toISOString());
       return res.status(400).json({
         error: 'No tech time award found for this date',
+        message: `No tech time was awarded to this child on ${checkDate.toLocaleDateString()}`,
       });
     }
 

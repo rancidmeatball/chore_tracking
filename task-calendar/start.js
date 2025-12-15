@@ -111,10 +111,21 @@ const serverProcess = spawn('node', ['server.js'], {
 });
 
 serverProcess.on('exit', (code, signal) => {
-  console.error(`Server process exited with code ${code} and signal ${signal}`);
+  console.log(`Server process exited with code ${code} and signal ${signal}`);
+  // If it was a graceful shutdown (SIGTERM/SIGINT), don't exit with error
+  if (signal === 'SIGTERM' || signal === 'SIGINT') {
+    console.log('Server shutdown gracefully, exiting...');
+    process.exit(0);
+  }
+  // If it exited with an error code, exit with error
   if (code !== 0 && code !== null) {
     console.error('Server process exited unexpectedly');
     process.exit(1);
+  }
+  // If code is 0, exit successfully
+  if (code === 0) {
+    console.log('Server process exited successfully');
+    process.exit(0);
   }
 });
 

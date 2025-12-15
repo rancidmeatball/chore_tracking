@@ -15,6 +15,12 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 // Import API routes
 import tasksRoutes from './src/server/routes/tasks.js';
 import childrenRoutes from './src/server/routes/children.js';
@@ -31,18 +37,37 @@ app.use('/health', healthRoutes);
 
 // Serve static files from Vite build in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, 'dist')));
+  const distPath = join(__dirname, 'dist');
+  console.log(`Setting up static file serving from: ${distPath}`);
+  
+  app.use(express.static(distPath, {
+    index: false, // Don't serve index.html automatically, we'll handle it explicitly
+    extensions: ['html', 'js', 'css', 'json', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+  }));
   
   // Serve index.html for all non-API routes (SPA routing)
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
       return next();
     }
-    res.sendFile(join(__dirname, 'dist', 'index.html'));
+    const indexPath = join(distPath, 'index.html');
+    console.log(`Serving index.html for path: ${req.path}`);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`Error serving index.html:`, err);
+        res.status(500).send('Error loading page');
+      }
+    });
   });
 }
 
-// Error handling middleware
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  console.log(`404: API route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ error: 'API route not found' });
+});
+
+// Error handling middleware (must be last)
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ error: 'Internal server error', details: err.message });

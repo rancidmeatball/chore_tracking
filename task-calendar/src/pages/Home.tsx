@@ -60,7 +60,20 @@ export default function Home() {
   const handleTaskComplete = async (taskId: string, completed: boolean) => {
     // Capture the task context (date/child) so we can award for the correct day
     const targetTask = tasks.find((t) => t.id === taskId)
-    const taskDateIso = targetTask ? new Date(targetTask.dueDate).toISOString() : new Date().toISOString()
+    if (!targetTask) {
+      console.error('Task not found:', taskId)
+      return
+    }
+
+    // Normalize the task's due date to local midnight for consistent date handling
+    const taskDate = new Date(targetTask.dueDate)
+    const year = taskDate.getFullYear()
+    const month = taskDate.getMonth()
+    const day = taskDate.getDate()
+    const localMidnight = new Date(year, month, day, 0, 0, 0, 0)
+    const taskDateIso = localMidnight.toISOString()
+
+    console.log(`[COMPLETION] Toggling task ${taskId} to ${completed}, date: ${taskDateIso}`)
 
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
@@ -68,19 +81,35 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed }),
       })
-      if (response.ok) {
-        await fetchTasks()
-        await fetchChildren() // Refresh children to get updated time balance
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Failed to update task:', errorData)
+        alert(`Failed to update task: ${errorData.error || 'Unknown error'}`)
+        return
+      }
+
+      // Wait for the update to complete, then refresh tasks
+      await fetchTasks()
+      await fetchChildren() // Refresh children to get updated time balance
+      
+      // Small delay to ensure database is updated
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Check if all tasks for the relevant day are complete
+      console.log(`[COMPLETION] Checking daily completion for date: ${taskDateIso}`)
+      const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
+      
+      if (completionResponse.ok) {
+        const data = await completionResponse.json()
+        console.log('[COMPLETION] Daily completion data:', data)
         
-        // Check if all tasks for the relevant day are complete
-        const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
-        if (completionResponse.ok) {
-          const data = await completionResponse.json()
-          
-          // Check for tech time rewards
-          if (data.techTimeRewards && data.techTimeRewards.length > 0) {
-            for (const reward of data.techTimeRewards) {
-              // Always try to award - the API will check if already awarded
+        // Check for tech time rewards
+        if (data.techTimeRewards && data.techTimeRewards.length > 0) {
+          for (const reward of data.techTimeRewards) {
+            // Only award if not already awarded
+            if (!reward.awarded) {
+              console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${taskDateIso}`)
               const awardResponse = await fetch('/api/tasks/award-tech-time', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -92,47 +121,63 @@ export default function Home() {
               
               if (awardResponse.ok) {
                 const awardData = await awardResponse.json()
+                console.log('[COMPLETION] Tech time awarded:', awardData)
                 alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
                 await fetchChildren() // Refresh to show new balance
               } else {
                 const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
+                console.error('[COMPLETION] Error awarding tech time:', errorData)
                 // Only show error if it's not "already awarded"
                 if (!errorData.error?.includes('already awarded')) {
-                  console.error('Error awarding tech time:', errorData)
+                  alert(`Error awarding tech time: ${errorData.error || 'Unknown error'}`)
                 }
               }
+            } else {
+              console.log(`[COMPLETION] Tech time already awarded to ${reward.childName} for this date`)
             }
           }
-          
-          // Trigger Home Assistant input booleans for children who completed all their tasks
-          if (data.childCompletions && data.childCompletions.length > 0) {
-            for (const childCompletion of data.childCompletions) {
-              if (childCompletion.allComplete && childCompletion.inputBoolean) {
-                // Trigger child-specific input boolean
-                await fetch('/api/home-assistant/trigger-child', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    inputBoolean: childCompletion.inputBoolean,
-                    date: taskDateIso, 
-                  }),
-                })
+        }
+        
+        // Trigger Home Assistant input booleans for children who completed all their tasks
+        if (data.childCompletions && data.childCompletions.length > 0) {
+          for (const childCompletion of data.childCompletions) {
+            if (childCompletion.allComplete && childCompletion.inputBoolean) {
+              console.log(`[COMPLETION] Triggering input boolean ${childCompletion.inputBoolean} for ${childCompletion.childName}`)
+              const triggerResponse = await fetch('/api/home-assistant/trigger-child', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  inputBoolean: childCompletion.inputBoolean,
+                  date: taskDateIso, 
+                }),
+              })
+              
+              if (triggerResponse.ok) {
+                console.log(`[COMPLETION] Successfully triggered ${childCompletion.inputBoolean}`)
+              } else {
+                const errorData = await triggerResponse.json().catch(() => ({ error: 'Unknown error' }))
+                console.error('[COMPLETION] Error triggering input boolean:', errorData)
               }
             }
           }
-          
-          // Trigger Home Assistant if all tasks complete (global)
-          if (data.allComplete) {
-            await fetch('/api/home-assistant/trigger', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: taskDateIso }),
-            })
-          }
         }
+        
+        // Trigger Home Assistant if all tasks complete (global)
+        if (data.allComplete) {
+          console.log('[COMPLETION] All tasks complete, triggering global input boolean')
+          await fetch('/api/home-assistant/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: taskDateIso }),
+          })
+        }
+      } else {
+        const errorData = await completionResponse.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[COMPLETION] Error checking daily completion:', errorData)
       }
     } catch (error) {
-      console.error('Error updating task:', error)
+      console.error('[COMPLETION] Error updating task:', error)
+      alert(`Error updating task: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -162,8 +207,10 @@ export default function Home() {
     }
   }
 
-  const handleTaskSaved = () => {
-    fetchTasks()
+  const handleTaskSaved = async () => {
+    // Force a full refresh of tasks to ensure calendar updates
+    await fetchTasks()
+    await fetchChildren() // Also refresh children in case time balance changed
     setShowTaskForm(false)
     setSelectedTask(null)
   }

@@ -11,6 +11,33 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
   const [name, setName] = useState('')
   const [color, setColor] = useState('#3B82F6') // Default blue
   const [inputBoolean, setInputBoolean] = useState('')
+  const [inputBooleanOptions, setInputBooleanOptions] = useState<Array<{ entity_id: string; name: string; state: string }>>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isLoadingEntities, setIsLoadingEntities] = useState(false)
+
+  const fetchInputBooleans = async () => {
+    if (inputBooleanOptions.length > 0 || isLoadingEntities) return
+    setIsLoadingEntities(true)
+    try {
+      const response = await fetch('/api/home-assistant/input-booleans')
+      if (response.ok) {
+        const data = await response.json()
+        setInputBooleanOptions(data.inputBooleans || [])
+      } else {
+        console.error('Failed to fetch input booleans')
+      }
+    } catch (error) {
+      console.error('Error fetching input booleans:', error)
+    } finally {
+      setIsLoadingEntities(false)
+    }
+  }
+
+  const filteredOptions = inputBooleanOptions.filter((opt) => {
+    if (!inputBoolean) return true
+    const query = inputBoolean.toLowerCase()
+    return opt.entity_id.toLowerCase().includes(query) || opt.name?.toLowerCase().includes(query)
+  }).slice(0, 10)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +52,7 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
         setName('')
         setColor('#3B82F6') // Reset to default
         setInputBoolean('')
+        setShowSuggestions(false)
         setShowForm(false)
         onChildAdded()
       } else {
@@ -76,14 +104,50 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
             className="w-16 h-10 border border-gray-300 rounded-lg cursor-pointer"
             title="Choose color for this child's tasks"
           />
-          <input
-            type="text"
-            value={inputBoolean}
-            onChange={(e) => setInputBoolean(e.target.value)}
-            placeholder="input_boolean.tasks_complete_..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
-            title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"
-          />
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={inputBoolean}
+              onChange={(e) => {
+                setInputBoolean(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onFocus={() => {
+                setShowSuggestions(true)
+                fetchInputBooleans()
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow clicking on them
+                setTimeout(() => setShowSuggestions(false), 200)
+              }}
+              placeholder="input_boolean.tasks_complete_..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
+              title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"
+            />
+            {isLoadingEntities && (
+              <div className="text-xs text-gray-500 mt-1">Loading input booleans…</div>
+            )}
+            {showSuggestions && filteredOptions.length > 0 && (
+              <div className="absolute z-50 mt-1 w-full border border-gray-200 rounded-lg bg-white shadow-lg max-h-40 overflow-y-auto">
+                {filteredOptions.map((opt) => (
+                  <button
+                    key={opt.entity_id}
+                    type="button"
+                    onClick={() => {
+                      setInputBoolean(opt.entity_id)
+                      setShowSuggestions(false)
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-900"
+                  >
+                    <div className="font-medium">{opt.entity_id}</div>
+                    {opt.name && opt.name !== opt.entity_id && (
+                      <div className="text-xs text-gray-600">{opt.name}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <button

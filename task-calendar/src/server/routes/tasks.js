@@ -618,8 +618,12 @@ router.get('/check-daily-completion', async (req, res) => {
     const dateParam = req.query.date;
     const checkDate = dateParam ? new Date(dateParam) : new Date();
 
+    console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam}`);
+
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
+    
+    console.log(`[CHECK-DAILY] Date range: ${start.toISOString()} to ${end.toISOString()}`);
 
     const tasks = await prisma.task.findMany({
       where: {
@@ -643,6 +647,8 @@ router.get('/check-daily-completion', async (req, res) => {
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter((t) => t.completed).length;
     const allComplete = totalTasks > 0 && completedTasks === totalTasks;
+    
+    console.log(`[CHECK-DAILY] Found ${totalTasks} tasks, ${completedTasks} completed`);
 
     const techTimeRewards = [];
     const tasksByChild = tasks.reduce((acc, task) => {
@@ -675,6 +681,7 @@ router.get('/check-daily-completion', async (req, res) => {
         childData.enrichment.completed === childData.enrichment.total;
 
       if (bothComplete) {
+        console.log(`[CHECK-DAILY] Child ${childData.childName} has both categories complete`);
         // Check if tech time was already awarded for this date
         const existingAward = await prisma.techTimeAward.findUnique({
           where: {
@@ -684,6 +691,8 @@ router.get('/check-daily-completion', async (req, res) => {
             },
           },
         });
+
+        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName}`);
 
         techTimeRewards.push({
           childId: childData.childId,

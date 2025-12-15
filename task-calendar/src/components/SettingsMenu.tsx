@@ -279,6 +279,10 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
               setShowSuggestions(true)
               fetchInputBooleans()
             }}
+            onBlur={() => {
+              // Delay hiding suggestions to allow clicking on them
+              setTimeout(() => setShowSuggestions(false), 200)
+            }}
             placeholder="input_boolean.tasks_complete_..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
             title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"

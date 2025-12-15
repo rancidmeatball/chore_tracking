@@ -205,23 +205,58 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT /api/tasks/:id
-router.put('/:id', async (req, res) => {
+// PATCH /api/tasks/:id (for partial updates like completion status)
+router.patch('/:id', async (req, res) => {
   try {
-    const { title, description, dueDate, childId, recurrenceTemplateId, category } = req.body;
+    const { completed, completedAt } = req.body;
+    console.log(`PATCH /api/tasks/${req.params.id} - Updating completion:`, { completed, completedAt });
+
+    const updateData = {};
+    if (completed !== undefined) {
+      updateData.completed = completed;
+      updateData.completedAt = completed ? (completedAt ? new Date(completedAt) : new Date()) : null;
+    }
 
     const task = await prisma.task.update({
       where: { id: req.params.id },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description: description || null }),
-        ...(dueDate && { dueDate: new Date(dueDate) }),
-        ...(childId && { childId }),
-        ...(category && { category }),
-        ...(recurrenceTemplateId !== undefined && {
-          recurrenceTemplateId: recurrenceTemplateId || null,
-        }),
+      data: updateData,
+      include: {
+        child: true,
+        recurrenceTemplate: true,
       },
+    });
+
+    console.log(`Task ${req.params.id} updated: completed=${task.completed}`);
+    res.json(task);
+  } catch (error) {
+    console.error('Error updating task completion:', error);
+    res.status(500).json({ error: 'Failed to update task', details: error?.message });
+  }
+});
+
+// PUT /api/tasks/:id (for full updates)
+router.put('/:id', async (req, res) => {
+  try {
+    const { title, description, dueDate, childId, recurrenceTemplateId, category, completed, completedAt } = req.body;
+
+    const updateData = {
+      ...(title && { title }),
+      ...(description !== undefined && { description: description || null }),
+      ...(dueDate && { dueDate: new Date(dueDate) }),
+      ...(childId && { childId }),
+      ...(category && { category }),
+      ...(recurrenceTemplateId !== undefined && {
+        recurrenceTemplateId: recurrenceTemplateId || null,
+      }),
+      ...(completed !== undefined && { 
+        completed,
+        completedAt: completed ? (completedAt ? new Date(completedAt) : new Date()) : null,
+      }),
+    };
+
+    const task = await prisma.task.update({
+      where: { id: req.params.id },
+      data: updateData,
       include: {
         child: true,
         recurrenceTemplate: true,

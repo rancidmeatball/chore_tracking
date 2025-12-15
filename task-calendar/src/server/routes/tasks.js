@@ -30,6 +30,8 @@ router.post('/', async (req, res) => {
   try {
     const { title, description, dueDate, childId, recurrenceTemplateId, category } = req.body;
 
+    console.log('POST /api/tasks - Creating task:', { title, dueDate, childId, category, recurrenceTemplateId });
+
     if (recurrenceTemplateId) {
       // Don't require childId here - it might come from the template
     } else if (!title || !dueDate || !childId) {

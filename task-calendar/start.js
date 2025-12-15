@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { spawn, execSync } from 'child_process';
+import { existsSync, statSync } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 console.log('Starting Task Calendar application...');
 console.log('PORT:', process.env.PORT || '3001');
@@ -13,12 +17,12 @@ console.log('NODE_ENV:', process.env.NODE_ENV || 'production');
 console.log('Checking database...');
 const dbPath = process.env.DATABASE_PATH || '/data/task-calendar.db';
 console.log('Database path:', dbPath);
-console.log('Database exists:', fs.existsSync(dbPath));
+console.log('Database exists:', existsSync(dbPath));
 
-if (fs.existsSync(path.dirname(dbPath))) {
+if (existsSync(dirname(dbPath))) {
   console.log('Data directory exists:', true);
   try {
-    const stats = fs.statSync(dbPath);
+    const stats = statSync(dbPath);
     console.log('Database file exists, size:', stats.size, 'bytes');
     console.log('Database last modified:', stats.mtime.toISOString());
   } catch (e) {
@@ -30,7 +34,6 @@ if (fs.existsSync(path.dirname(dbPath))) {
 
 // Initialize/update database schema
 console.log('Initializing/updating database schema...');
-const { execSync } = require('child_process');
 try {
   execSync('npx prisma db push --accept-data-loss', {
     stdio: 'inherit',

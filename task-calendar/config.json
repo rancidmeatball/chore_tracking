@@ -1,6 +1,6 @@
 {
   "name": "Task Calendar",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "slug": "task-calendar",
   "description": "Chore tracker for children with Home Assistant integration",
   "url": "https://github.com/rancidmeatball/chore_tracking",

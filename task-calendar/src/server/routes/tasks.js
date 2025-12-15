@@ -116,7 +116,7 @@ router.post('/', async (req, res) => {
           const taskDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayToUse, 12, 0, 0, 0);
           
           if (taskDate >= startDate && taskDate <= endDate) {
-            taskDate.setHours(0, 0, 0, 0);
+            // Keep at midday (already set above) to avoid timezone issues
             tasks.push({
               title,
               description: description || null,
@@ -257,11 +257,20 @@ router.put('/:id', async (req, res) => {
       hasDueDate: !!dueDate 
     });
 
+    // Helper to normalize a "due date" string to a date-only UTC value at midday.
+    const normalizeDueDate = (value) => {
+      const base = new Date(value);
+      const year = base.getUTCFullYear();
+      const month = base.getUTCMonth();
+      const day = base.getUTCDate();
+      return new Date(Date.UTC(year, month, day, 12, 0, 0, 0));
+    };
+
     const updateData = {
       ...(title && { title }),
       ...(description !== undefined && { description: description || null }),
       ...(dueDate !== undefined && dueDate !== null && { 
-        dueDate: new Date(dueDate),
+        dueDate: normalizeDueDate(dueDate),
       }),
       ...(childId && { childId }),
       ...(category && { category }),
@@ -714,10 +723,18 @@ router.get('/check-daily-completion', async (req, res) => {
 
     // If a date is provided, normalize it. If not, use "today" but strip time
     // so we consistently check a single calendar day.
-    const baseDate = dateParam ? new Date(dateParam) : new Date();
-    const checkDate = getUtcDateOnly(baseDate.toISOString());
+    let checkDate;
+    if (dateParam) {
+      // Frontend sent a date - normalize it to UTC midday
+      checkDate = getUtcDateOnly(dateParam);
+    } else {
+      // No date param (old frontend code) - use today at UTC midday
+      const now = new Date();
+      checkDate = getUtcDateOnly(now.toISOString());
+      console.log(`[CHECK-DAILY] WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
+    }
 
-    console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam}`);
+    console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);
 
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);

@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync, readdirSync } from 'fs';
 import cors from 'cors';
 import { prisma } from './lib/prisma.js';
 
@@ -47,8 +48,50 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error', details: err.message });
 });
 
+// Verify dist directory exists before starting
+if (process.env.NODE_ENV === 'production') {
+  const distPath = join(__dirname, 'dist');
+  const indexPath = join(distPath, 'index.html');
+  
+  console.log('Checking for dist directory...');
+  console.log('__dirname:', __dirname);
+  console.log('distPath:', distPath);
+  
+  if (!existsSync(distPath)) {
+    console.error(`ERROR: dist directory not found at ${distPath}`);
+    console.error('Current __dirname:', __dirname);
+    console.error('Listing current directory:');
+    try {
+      const files = readdirSync(__dirname);
+      console.error('Files in __dirname:', files);
+    } catch (e) {
+      console.error('Error listing directory:', e.message);
+    }
+    process.exit(1);
+  }
+  
+  if (!existsSync(indexPath)) {
+    console.error(`ERROR: dist/index.html not found at ${indexPath}`);
+    console.error('Dist directory contents:');
+    try {
+      const files = readdirSync(distPath);
+      console.error('Files in dist:', files);
+    } catch (e) {
+      console.error('Error listing dist directory:', e.message);
+    }
+    process.exit(1);
+  }
+  
+  console.log(`✓ Dist directory found at ${distPath}`);
+  console.log(`✓ index.html found at ${indexPath}`);
+}
+
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✓ Server running on port ${PORT}`);
+  console.log(`✓ Server accessible at http://0.0.0.0:${PORT}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`✓ Serving static files from ${join(__dirname, 'dist')}`);
+  }
 });
 
 export default app;

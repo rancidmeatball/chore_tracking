@@ -105,17 +105,25 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
         console.log(`${task ? 'Updating' : 'Creating'} task with dueDate: ${dueDate} -> ${taskDueDate} (local: ${localDate.toLocaleString()})`)
       }
 
+      const requestBody: any = {
+        title,
+        description,
+        category,
+        childId,
+        recurrenceTemplateId: recurrenceTemplateId || null,
+      }
+      
+      // Always include dueDate if it's set (for both create and update)
+      if (taskDueDate) {
+        requestBody.dueDate = taskDueDate
+      }
+      
+      console.log(`${method} ${url} - Request body:`, requestBody)
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          description,
-          dueDate: taskDueDate,
-          category,
-          childId,
-          recurrenceTemplateId: recurrenceTemplateId || null,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {

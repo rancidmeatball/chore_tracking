@@ -250,7 +250,7 @@ router.put('/:id', async (req, res) => {
     const updateData = {
       ...(title && { title }),
       ...(description !== undefined && { description: description || null }),
-      ...(dueDate && { 
+      ...(dueDate !== undefined && dueDate !== null && { 
         dueDate: new Date(dueDate),
       }),
       ...(childId && { childId }),

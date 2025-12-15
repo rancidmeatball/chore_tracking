@@ -239,14 +239,15 @@ function Calendar({
                   </span>
                 )}
               </div>
-              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto max-h-8 sm:max-h-12 md:max-h-16">
-                {dayTasks.slice(0, 3).map((task) => {
+              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto" style={{ maxHeight: '60px' }}>
+                {dayTasks.map((task) => {
                   const bgColor = getTaskBgColor(task)
                   const textColor = getTaskColor(task)
                   
                   return (
                     <div
                       key={task.id}
+                      className="relative z-10 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation()
                         const now = Date.now()
@@ -299,11 +300,6 @@ function Calendar({
                     </div>
                   )
                 })}
-                {dayTasks.length > 3 && (
-                  <div className="text-xs text-gray-700">
-                    +{dayTasks.length - 3} more
-                  </div>
-                )}
               </div>
             </div>
           )
@@ -324,7 +320,14 @@ function Calendar({
             if (selectedDateTasks.length === 0) {
               return <p className="text-gray-700">No tasks for this date</p>
             }
-            return selectedDateTasks.map((task) => {
+            // Sort: completed tasks first, then by title
+            const sortedTasks = [...selectedDateTasks].sort((a, b) => {
+              if (a.completed !== b.completed) {
+                return a.completed ? -1 : 1 // Completed first
+              }
+              return a.title.localeCompare(b.title)
+            })
+            return sortedTasks.map((task) => {
               const bgColor = getTaskBgColor(task)
               return (
               <div

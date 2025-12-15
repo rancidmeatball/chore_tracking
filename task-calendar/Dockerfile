@@ -1,10 +1,10 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2025-12-15 - Force rebuild for version 0.1.23
-ARG CACHE_BUST=2025-12-15-06-00-v0.1.23
+# Cache bust: 2025-12-15 - Force rebuild for version 0.1.24
+ARG CACHE_BUST=2025-12-15-06-15-v0.1.24
 RUN echo "Cache bust: ${CACHE_BUST}" && \
-    echo "Building version 0.1.23 - Show all tasks in calendar cells (scrollable), sort daily list (completed first)"
+    echo "Building version 0.1.24 - Sort daily list (completed tasks at bottom)"
 
 # Install Node.js and build dependencies
 RUN apk add --no-cache \
@@ -22,7 +22,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-ARG CACHE_BUST_COPY=2025-12-15-06-00-v0.1.23
+ARG CACHE_BUST_COPY=2025-12-15-06-15-v0.1.24
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -31,7 +31,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-ARG CACHE_BUST_NPM=2025-12-15-06-00-v0.1.23
+ARG CACHE_BUST_NPM=2025-12-15-06-15-v0.1.24
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version && \
@@ -48,7 +48,7 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-ARG CACHE_BUST_COPY_FILES=2025-12-15-06-00-v0.1.23
+ARG CACHE_BUST_COPY_FILES=2025-12-15-06-15-v0.1.24
 RUN echo "Copy cache bust: ${CACHE_BUST_COPY_FILES}"
 COPY . .
 
@@ -76,7 +76,7 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 
 # Build Vite frontend (NOT Next.js)
 # Cache bust timestamp - update this to force rebuild  
-ARG CACHE_BUST_BUILD=2025-12-15-06-00-v0.1.23-complete
+ARG CACHE_BUST_BUILD=2025-12-15-06-15-v0.1.24-complete
 ENV NODE_ENV=production
 RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \

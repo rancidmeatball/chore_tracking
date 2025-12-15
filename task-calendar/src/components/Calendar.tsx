@@ -320,10 +320,10 @@ function Calendar({
             if (selectedDateTasks.length === 0) {
               return <p className="text-gray-700">No tasks for this date</p>
             }
-            // Sort: completed tasks first, then by title
+            // Sort: incomplete tasks first, then completed tasks at bottom, both by title
             const sortedTasks = [...selectedDateTasks].sort((a, b) => {
               if (a.completed !== b.completed) {
-                return a.completed ? -1 : 1 // Completed first
+                return a.completed ? 1 : -1 // Incomplete first, completed at bottom
               }
               return a.title.localeCompare(b.title)
             })

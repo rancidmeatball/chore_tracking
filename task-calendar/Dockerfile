@@ -1,10 +1,10 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2025-12-15 - Force rebuild for version 0.1.20
-ARG CACHE_BUST=2025-12-15-05-15-v0.1.20
+# Cache bust: 2025-12-15 - Force rebuild for version 0.1.21
+ARG CACHE_BUST=2025-12-15-05-30-v0.1.21
 RUN echo "Cache bust: ${CACHE_BUST}" && \
-    echo "Building version 0.1.20 - Fixed revoke flow, improved scrolling, added completion stats logging"
+    echo "Building version 0.1.21 - Fixed bothComplete logic (at least one per category), improved scrolling"
 
 # Install Node.js and build dependencies
 RUN apk add --no-cache \

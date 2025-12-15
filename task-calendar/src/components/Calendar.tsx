@@ -131,9 +131,10 @@ function Calendar({
     for (const [childId, childTasks] of tasksByChild.entries()) {
       const hasBoth = childTasks.helpingFamily.length > 0 && 
                       childTasks.enrichment.length > 0
+      // A child gets a star if they have at least ONE completed task in each category
       const bothComplete = hasBoth &&
-                          childTasks.helpingFamily.every(t => t.completed) && 
-                          childTasks.enrichment.every(t => t.completed)
+                          childTasks.helpingFamily.some(t => t.completed) && 
+                          childTasks.enrichment.some(t => t.completed)
       if (bothComplete) {
         // Use the child's color from any of their tasks on this day
         const sampleTask = dayTasks.find(t => t.childId === childId)

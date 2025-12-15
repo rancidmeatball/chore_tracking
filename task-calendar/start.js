@@ -56,12 +56,22 @@ try {
 
 // Start Express server
 console.log('Starting Express server...');
+const databaseUrl = process.env.DATABASE_URL || 'file:/data/task-calendar.db';
+const databasePath = process.env.DATABASE_PATH || '/data/task-calendar.db';
+
+console.log('Server environment variables:');
+console.log('  DATABASE_URL:', databaseUrl);
+console.log('  DATABASE_PATH:', databasePath);
+console.log('  PORT:', process.env.PORT || '3001');
+
 const serverProcess = spawn('node', ['server.js'], {
   stdio: 'inherit',
   env: {
     ...process.env,
     NODE_ENV: 'production',
     PORT: process.env.PORT || '3001',
+    DATABASE_URL: databaseUrl,
+    DATABASE_PATH: databasePath,
     HOSTNAME: '0.0.0.0',
     HOST: '0.0.0.0',
   }

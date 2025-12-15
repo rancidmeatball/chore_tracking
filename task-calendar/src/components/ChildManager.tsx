@@ -14,10 +14,12 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
   const [inputBooleanOptions, setInputBooleanOptions] = useState<Array<{ entity_id: string; name: string; state: string }>>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isLoadingEntities, setIsLoadingEntities] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const fetchInputBooleans = async () => {
     if (inputBooleanOptions.length > 0 || isLoadingEntities) return
     setIsLoadingEntities(true)
+    setLoadError(null)
     try {
       const response = await fetch('/api/home-assistant/input-booleans')
       if (response.ok) {
@@ -25,9 +27,11 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
         setInputBooleanOptions(data.inputBooleans || [])
       } else {
         console.error('Failed to fetch input booleans')
+        setLoadError('Failed to load Home Assistant input booleans')
       }
     } catch (error) {
       console.error('Error fetching input booleans:', error)
+      setLoadError('Error loading Home Assistant input booleans')
     } finally {
       setIsLoadingEntities(false)
     }
@@ -126,6 +130,9 @@ export default function ChildManager({ childrenList, onChildAdded }: ChildManage
             />
             {isLoadingEntities && (
               <div className="text-xs text-gray-500 mt-1">Loading input booleans…</div>
+            )}
+            {loadError && !isLoadingEntities && (
+              <div className="text-xs text-red-600 mt-1">{loadError}</div>
             )}
             {showSuggestions && filteredOptions.length > 0 && (
               <div className="absolute z-50 mt-1 w-full border border-gray-200 rounded-lg bg-white shadow-lg max-h-40 overflow-y-auto">

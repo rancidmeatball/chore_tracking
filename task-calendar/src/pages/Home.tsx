@@ -121,6 +121,28 @@ export default function Home() {
         } catch (revokeErr) {
           console.error('[COMPLETION] Error revoking tech time:', revokeErr)
         }
+
+        // Also turn OFF the child's input_boolean if configured
+        const child = children.find((c) => c.id === targetTask.childId)
+        if (child?.inputBoolean) {
+          try {
+            const resetResponse = await fetch('/api/home-assistant/reset-child', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                inputBoolean: child.inputBoolean,
+                date: taskDateIso,
+              }),
+            })
+            if (!resetResponse.ok) {
+              const resetError = await resetResponse.json().catch(() => ({ error: 'Unknown error' }))
+              console.error('[COMPLETION] Error turning OFF child input boolean:', resetError)
+            }
+          } catch (resetErr) {
+            console.error('[COMPLETION] Error calling reset-child for Home Assistant:', resetErr)
+          }
+        }
+
         return
       }
       

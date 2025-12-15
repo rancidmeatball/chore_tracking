@@ -161,30 +161,9 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
       if (!confirm(`Are you sure you want to delete "${task.title}"?`)) return
     }
 
-    try {
-      const url = deleteSeries 
-        ? `/api/tasks/${task.id}?deleteSeries=true`
-        : `/api/tasks/${task.id}`
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        if (result.deletedCount && result.deletedCount > 1) {
-          console.log(`Deleted ${result.deletedCount} tasks from series`)
-        }
-        onDelete(task.id, deleteSeries)
-        onCancel()
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to delete task'}`)
-      }
-    } catch (error) {
-      console.error('Error deleting task:', error)
-      alert('Failed to delete task')
-    }
+    // Delegate actual deletion to the parent handler, which already calls the API.
+    onDelete(task.id, deleteSeries)
+    onCancel()
   }
 
   return (

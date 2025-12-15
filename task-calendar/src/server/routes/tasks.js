@@ -32,6 +32,16 @@ router.post('/', async (req, res) => {
 
     console.log('POST /api/tasks - Creating task:', { title, dueDate, childId, category, recurrenceTemplateId });
 
+    // Helper to normalize a \"due date\" string to a date-only UTC value at midday.
+    // This keeps the calendar date stable across timezones (e.g. Pacific vs UTC).
+    const normalizeDueDate = (value) => {
+      const base = new Date(value);
+      const year = base.getUTCFullYear();
+      const month = base.getUTCMonth();
+      const day = base.getUTCDate();
+      return new Date(Date.UTC(year, month, day, 12, 0, 0, 0));
+    };
+
     if (recurrenceTemplateId) {
       // Don't require childId here - it might come from the template
     } else if (!title || !dueDate || !childId) {
@@ -73,7 +83,8 @@ router.post('/', async (req, res) => {
           const dayOfWeek = currentDate.getDay();
           if (daysOfWeek.includes(dayOfWeek)) {
             const taskDate = new Date(currentDate);
-            taskDate.setHours(0, 0, 0, 0);
+            // store as midday to avoid timezone off-by-one
+            taskDate.setHours(12, 0, 0, 0);
             tasks.push({
               title,
               description: description || null,
@@ -102,7 +113,7 @@ router.post('/', async (req, res) => {
         for (let i = 0; i < 12 && currentDate <= endDate; i++) {
           const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
           const dayToUse = Math.min(template.dayOfMonth, lastDayOfMonth);
-          const taskDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayToUse);
+          const taskDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayToUse, 12, 0, 0, 0);
           
           if (taskDate >= startDate && taskDate <= endDate) {
             taskDate.setHours(0, 0, 0, 0);
@@ -120,8 +131,7 @@ router.post('/', async (req, res) => {
           currentDate.setDate(dayToUse);
         }
       } else {
-        const oneTimeDate = new Date(dueDate);
-        oneTimeDate.setHours(0, 0, 0, 0);
+        const oneTimeDate = normalizeDueDate(dueDate);
         tasks.push({
           title,
           description: description || null,
@@ -165,7 +175,7 @@ router.post('/', async (req, res) => {
         data: {
           title,
           description: description || null,
-          dueDate: new Date(dueDate),
+          dueDate: normalizeDueDate(dueDate),
           category: category || 'helping-family',
           childId,
         },
@@ -501,7 +511,7 @@ router.get('/completions', async (req, res) => {
 });
 
 // Helper to normalize an incoming date (which may be an ISO string)
-// to a \"date-only\" value in UTC so we can safely use startOfDay/endOfDay
+// to a date-only value in UTC so we can safely use startOfDay/endOfDay
 // without Pacific vs UTC causing off-by-one issues.
 function getUtcDateOnly(dateString) {
   const base = new Date(dateString);
@@ -521,7 +531,7 @@ router.post('/award-tech-time', async (req, res) => {
       return res.status(400).json({ error: 'childId is required' });
     }
 
-    const checkDate = date ? getUtcDateOnly(date) : new Date();
+    const checkDate = date ? getUtcDateOnly(date) : getUtcDateOnly(new Date().toISOString());
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
 
@@ -698,7 +708,11 @@ router.get('/check-daily-completion', async (req, res) => {
   try {
     const { startOfDay, endOfDay } = await import('date-fns');
     const dateParam = req.query.date;
-    const checkDate = dateParam ? getUtcDateOnly(dateParam) : new Date();
+
+    // If a date is provided, normalize it. If not, use "today" but strip time
+    // so we consistently check a single calendar day.
+    const baseDate = dateParam ? new Date(dateParam) : new Date();
+    const checkDate = getUtcDateOnly(baseDate.toISOString());
 
     console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam}`);
 

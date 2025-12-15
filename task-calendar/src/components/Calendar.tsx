@@ -317,7 +317,7 @@ function Calendar({
             return selectedDateTasks.length
           })()})
         </h3>
-        <div className="space-y-2 max-h-[400px] sm:max-h-[500px] overflow-y-auto overflow-x-hidden pr-2" style={{ maxHeight: '400px' }}>
+        <div className="space-y-2 overflow-y-auto overflow-x-hidden pr-2" style={{ maxHeight: '400px', minHeight: '100px' }}>
           {(() => {
             const selectedDateTasks = getTasksForDate(selectedDate)
             if (selectedDateTasks.length === 0) {

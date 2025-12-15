@@ -295,11 +295,12 @@ router.get('/check-daily-completion', async (req, res) => {
     for (const childData of Object.values(tasksByChild)) {
       const hasHelpingFamily = childData.helpingFamily.total > 0;
       const hasEnrichment = childData.enrichment.total > 0;
+      // A child gets the reward if they have at least ONE completed task in each category
       const bothComplete = 
         hasHelpingFamily && 
         hasEnrichment && 
-        childData.helpingFamily.completed === childData.helpingFamily.total &&
-        childData.enrichment.completed === childData.enrichment.total;
+        childData.helpingFamily.completed > 0 &&
+        childData.enrichment.completed > 0;
 
       console.log(`[CHECK-DAILY] Child ${childData.childName}: hasHelpingFamily=${hasHelpingFamily} (${childData.helpingFamily.completed}/${childData.helpingFamily.total}), hasEnrichment=${hasEnrichment} (${childData.enrichment.completed}/${childData.enrichment.total}), bothComplete=${bothComplete}`);
 
@@ -358,8 +359,8 @@ router.get('/check-daily-completion', async (req, res) => {
         bothComplete: 
           child.helpingFamily.total > 0 && 
           child.enrichment.total > 0 && 
-          child.helpingFamily.completed === child.helpingFamily.total &&
-          child.enrichment.completed === child.enrichment.total,
+          child.helpingFamily.completed > 0 &&
+          child.enrichment.completed > 0,
       })),
     });
   } catch (error) {
@@ -835,10 +836,11 @@ router.post('/award-tech-time', async (req, res) => {
     const enrichmentTasks = tasks.filter(t => t.category === 'enrichment');
 
     const hasBothCategories = helpingFamilyTasks.length > 0 && enrichmentTasks.length > 0;
+    // A child gets the reward if they have at least ONE completed task in each category
     const bothComplete = 
       hasBothCategories &&
-      helpingFamilyTasks.every(t => t.completed) &&
-      enrichmentTasks.every(t => t.completed);
+      helpingFamilyTasks.some(t => t.completed) &&
+      enrichmentTasks.some(t => t.completed);
 
     if (!bothComplete) {
       return res.status(400).json({ 

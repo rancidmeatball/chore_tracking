@@ -318,7 +318,7 @@ function Calendar({
             return selectedDateTasks.length
           })()})
         </h3>
-        <div className="space-y-2 overflow-y-auto overflow-x-hidden pr-2" style={{ maxHeight: '400px', minHeight: '100px' }}>
+        <div className="space-y-2 overflow-y-auto overflow-x-hidden pr-2 relative" style={{ maxHeight: '400px', minHeight: '100px' }}>
           {(() => {
             const selectedDateTasks = getTasksForDate(selectedDate)
             if (selectedDateTasks.length === 0) {
@@ -329,7 +329,7 @@ function Calendar({
               return (
               <div
                 key={task.id}
-                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg"
+                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg relative z-10"
                 style={task.completed ? {} : { backgroundColor: bgColor + '40', borderLeft: `4px solid ${bgColor}` }}
               >
                 <input

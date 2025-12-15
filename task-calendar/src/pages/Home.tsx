@@ -93,61 +93,82 @@ export default function Home() {
         return
       }
 
-      // If the task was just marked incomplete, attempt to revoke any tech time for that child/date FIRST
-      // Do this before refreshing to ensure we have the correct task state
+      // If the task was just marked incomplete, check if we need to revoke tech time
+      // Only revoke if the child no longer has both categories complete
       if (!completed) {
         console.log('[COMPLETION] ===== TASK UNCOMPLETED =====')
-        console.log('[COMPLETION] Task uncompleted, attempting to revoke tech time if previously awarded')
+        console.log('[COMPLETION] Task uncompleted, checking if tech time should be revoked')
         console.log('[COMPLETION] childId:', targetTask.childId)
         console.log('[COMPLETION] date:', taskDateIso)
-        try {
-          console.log('[COMPLETION] Calling /api/tasks/revoke-tech-time...')
-          const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              childId: targetTask.childId,
-              date: taskDateIso,
-            }),
-          })
+        
+        // Refresh tasks first to get current state
+        await fetchTasks()
+        
+        // Check if child still has both categories complete after unchecking
+        const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
+        if (completionResponse.ok) {
+          const data = await completionResponse.json()
+          console.log('[COMPLETION] Daily completion check after uncheck:', data)
+          
+          // Find this child in the category breakdown
+          const childBreakdown = data.categoryBreakdown?.find((cb: any) => cb.childId === targetTask.childId)
+          const stillHasBothComplete = childBreakdown?.bothComplete === true
+          
+          console.log('[COMPLETION] Child still has both categories complete:', stillHasBothComplete)
+          
+          // Only revoke if they no longer have both categories complete
+          if (!stillHasBothComplete) {
+            try {
+              console.log('[COMPLETION] Calling /api/tasks/revoke-tech-time...')
+              const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  childId: targetTask.childId,
+                  date: taskDateIso,
+                }),
+              })
 
-          console.log('[COMPLETION] Revoke response status:', revokeResponse.status, revokeResponse.ok)
-          if (revokeResponse.ok) {
-            const revokeData = await revokeResponse.json()
-            console.log('[COMPLETION] ✅ Tech time revoked successfully:', revokeData)
-            await fetchChildren()
-          } else {
-            const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
-            // It's okay if there's nothing to revoke; just log it.
-            console.log('[COMPLETION] ⚠️ No tech time to revoke or revoke failed:', revokeError)
-          }
-        } catch (revokeErr) {
-          console.error('[COMPLETION] ❌ Error revoking tech time:', revokeErr)
-        }
-
-        // Also turn OFF the child's input_boolean if configured
-        const child = children.find((c) => c.id === targetTask.childId)
-        if (child?.inputBoolean) {
-          try {
-            const resetResponse = await fetch('/api/home-assistant/reset-child', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                inputBoolean: child.inputBoolean,
-                date: taskDateIso,
-              }),
-            })
-            if (!resetResponse.ok) {
-              const resetError = await resetResponse.json().catch(() => ({ error: 'Unknown error' }))
-              console.error('[COMPLETION] Error turning OFF child input boolean:', resetError)
+              console.log('[COMPLETION] Revoke response status:', revokeResponse.status, revokeResponse.ok)
+              if (revokeResponse.ok) {
+                const revokeData = await revokeResponse.json()
+                console.log('[COMPLETION] ✅ Tech time revoked successfully:', revokeData)
+                alert(`⏰ Tech time revoked from ${revokeData.childName || 'child'}. New balance: ${Math.round(revokeData.newBalance / 60 * 10) / 10} hours`)
+              } else {
+                const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
+                // It's okay if there's nothing to revoke; just log it.
+                console.log('[COMPLETION] ⚠️ No tech time to revoke or revoke failed:', revokeError)
+              }
+            } catch (revokeErr) {
+              console.error('[COMPLETION] ❌ Error revoking tech time:', revokeErr)
             }
-          } catch (resetErr) {
-            console.error('[COMPLETION] Error calling reset-child for Home Assistant:', resetErr)
+
+            // Also turn OFF the child's input_boolean if configured
+            const child = children.find((c) => c.id === targetTask.childId)
+            if (child?.inputBoolean) {
+              try {
+                const resetResponse = await fetch('/api/home-assistant/reset-child', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    inputBoolean: child.inputBoolean,
+                    date: taskDateIso,
+                  }),
+                })
+                if (!resetResponse.ok) {
+                  const resetError = await resetResponse.json().catch(() => ({ error: 'Unknown error' }))
+                  console.error('[COMPLETION] Error turning OFF child input boolean:', resetError)
+                }
+              } catch (resetErr) {
+                console.error('[COMPLETION] Error calling reset-child for Home Assistant:', resetErr)
+              }
+            }
+          } else {
+            console.log('[COMPLETION] Child still has both categories complete, no revocation needed')
           }
         }
         
         // Refresh after revoke attempt
-        await fetchTasks()
         await fetchChildren()
         return
       }

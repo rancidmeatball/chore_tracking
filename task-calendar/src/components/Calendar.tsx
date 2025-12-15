@@ -47,10 +47,17 @@ function Calendar({
       // Create a new date at local midnight (not UTC)
       const localMidnight = new Date(year, month, day, 0, 0, 0, 0)
       const dateKey = format(localMidnight, 'yyyy-MM-dd')
+      
+      // Debug logging (remove in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Task ${task.id}: dueDate=${task.dueDate}, dateKey=${dateKey}, localMidnight=${localMidnight.toISOString()}`)
+      }
+      
       const existing = map.get(dateKey) || []
       existing.push(task)
       map.set(dateKey, existing)
     }
+    console.log('Tasks by date map:', Array.from(map.entries()).map(([key, tasks]) => `${key}: ${tasks.length} tasks`))
     return map
   }, [tasks])
 
@@ -82,7 +89,18 @@ function Calendar({
 
   // Simple inline function
   const getTasksForDate = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd')
+    // Normalize the input date to local midnight for consistent comparison
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const day = date.getDate()
+    const localMidnight = new Date(year, month, day, 0, 0, 0, 0)
+    const dateKey = format(localMidnight, 'yyyy-MM-dd')
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`getTasksForDate: date=${date.toISOString()}, dateKey=${dateKey}, tasks found=${tasksByDate.get(dateKey)?.length || 0}`)
+    }
+    
     return tasksByDate.get(dateKey) || []
   }
 

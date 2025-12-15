@@ -659,10 +659,20 @@ router.get('/check-daily-completion', async (req, res) => {
         childData.enrichment.completed === childData.enrichment.total;
 
       if (bothComplete) {
+        // Check if tech time was already awarded for this date
+        const existingAward = await prisma.techTimeAward.findUnique({
+          where: {
+            childId_awardDate: {
+              childId: childData.childId,
+              awardDate: start,
+            },
+          },
+        });
+
         techTimeRewards.push({
           childId: childData.childId,
           childName: childData.childName,
-          awarded: false,
+          awarded: !!existingAward,
         });
       }
     }

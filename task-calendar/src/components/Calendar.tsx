@@ -312,9 +312,12 @@ function Calendar({
       {/* Selected Date Tasks Detail */}
       <div className="mt-3 sm:mt-6 border-t pt-3 sm:pt-6">
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
-          Tasks for {format(selectedDate, 'MMMM d, yyyy')}
+          Tasks for {format(selectedDate, 'MMMM d, yyyy')} ({(() => {
+            const selectedDateTasks = getTasksForDate(selectedDate)
+            return selectedDateTasks.length
+          })()})
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-96 sm:max-h-[500px] overflow-y-auto pr-2">
           {(() => {
             const selectedDateTasks = getTasksForDate(selectedDate)
             if (selectedDateTasks.length === 0) {

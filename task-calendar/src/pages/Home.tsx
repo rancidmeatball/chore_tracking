@@ -58,6 +58,10 @@ export default function Home() {
   }
 
   const handleTaskComplete = async (taskId: string, completed: boolean) => {
+    // Capture the task context (date/child) so we can award for the correct day
+    const targetTask = tasks.find((t) => t.id === taskId)
+    const taskDateIso = targetTask ? new Date(targetTask.dueDate).toISOString() : new Date().toISOString()
+
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -68,8 +72,8 @@ export default function Home() {
         await fetchTasks()
         await fetchChildren() // Refresh children to get updated time balance
         
-        // Check if all tasks for the day are complete
-        const completionResponse = await fetch('/api/tasks/check-daily-completion')
+        // Check if all tasks for the relevant day are complete
+        const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
         if (completionResponse.ok) {
           const data = await completionResponse.json()
           
@@ -82,7 +86,7 @@ export default function Home() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                   childId: reward.childId,
-                  date: new Date().toISOString(),
+                  date: taskDateIso,
                 }),
               })
               
@@ -110,7 +114,7 @@ export default function Home() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
                     inputBoolean: childCompletion.inputBoolean,
-                    date: new Date().toISOString() 
+                    date: taskDateIso, 
                   }),
                 })
               }
@@ -122,7 +126,7 @@ export default function Home() {
             await fetch('/api/home-assistant/trigger', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: new Date().toISOString() }),
+              body: JSON.stringify({ date: taskDateIso }),
             })
           }
         }

@@ -171,11 +171,15 @@ router.post('/', async (req, res) => {
       console.log(`Returning ${createdTaskIds.length} created tasks (expected ${tasks.length})`);
       return res.status(201).json(createdTaskIds);
     } else {
+      // Normalize the due date to midday UTC to avoid timezone issues
+      const normalizedDueDate = normalizeDueDate(dueDate);
+      console.log(`[POST /api/tasks] Normalizing dueDate: ${dueDate} -> ${normalizedDueDate.toISOString()}`);
+      
       const task = await prisma.task.create({
         data: {
           title,
           description: description || null,
-          dueDate: normalizeDueDate(dueDate),
+          dueDate: normalizedDueDate,
           category: category || 'helping-family',
           childId,
         },
@@ -185,6 +189,7 @@ router.post('/', async (req, res) => {
         },
       });
 
+      console.log(`[POST /api/tasks] Created task ${task.id} with dueDate: ${task.dueDate.toISOString()}`);
       return res.status(201).json(task);
     }
   } catch (error) {
@@ -718,6 +723,10 @@ router.post('/revoke-tech-time', async (req, res) => {
 // GET /api/tasks/check-daily-completion
 router.get('/check-daily-completion', async (req, res) => {
   try {
+    console.log(`[CHECK-DAILY] ===== ENTRY POINT =====`);
+    console.log(`[CHECK-DAILY] Request received at ${new Date().toISOString()}`);
+    console.log(`[CHECK-DAILY] Query params:`, req.query);
+    
     const { startOfDay, endOfDay } = await import('date-fns');
     const dateParam = req.query.date;
 
@@ -726,12 +735,14 @@ router.get('/check-daily-completion', async (req, res) => {
     let checkDate;
     if (dateParam) {
       // Frontend sent a date - normalize it to UTC midday
+      console.log(`[CHECK-DAILY] Date parameter provided: ${dateParam}`);
       checkDate = getUtcDateOnly(dateParam);
+      console.log(`[CHECK-DAILY] Normalized to: ${checkDate.toISOString()}`);
     } else {
       // No date param (old frontend code) - use today at UTC midday
       const now = new Date();
       checkDate = getUtcDateOnly(now.toISOString());
-      console.log(`[CHECK-DAILY] WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
+      console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
     }
 
     console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);
@@ -740,6 +751,7 @@ router.get('/check-daily-completion', async (req, res) => {
     const end = endOfDay(checkDate);
     
     console.log(`[CHECK-DAILY] Date range: ${start.toISOString()} to ${end.toISOString()}`);
+    console.log(`[CHECK-DAILY] Searching for tasks with dueDate between ${start.toISOString()} and ${end.toISOString()}`);
 
     const tasks = await prisma.task.findMany({
       where: {

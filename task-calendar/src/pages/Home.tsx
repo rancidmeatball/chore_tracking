@@ -93,14 +93,8 @@ export default function Home() {
         return
       }
 
-      // Wait for the update to complete, then refresh tasks/children
-      await fetchTasks()
-      await fetchChildren() // Refresh children to get updated time balance
-      
-      // Small delay to ensure database is updated
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // If the task was just marked incomplete, attempt to revoke any tech time for that child/date
+      // If the task was just marked incomplete, attempt to revoke any tech time for that child/date FIRST
+      // Do this before refreshing to ensure we have the correct task state
       if (!completed) {
         console.log('[COMPLETION] ===== TASK UNCOMPLETED =====')
         console.log('[COMPLETION] Task uncompleted, attempting to revoke tech time if previously awarded')
@@ -151,11 +145,17 @@ export default function Home() {
             console.error('[COMPLETION] Error calling reset-child for Home Assistant:', resetErr)
           }
         }
-
+        
+        // Refresh after revoke attempt
+        await fetchTasks()
+        await fetchChildren()
         return
       }
       
       // From here on, we're in the \"completed\" path.
+      // Wait for the update to complete, then refresh tasks/children
+      await fetchTasks()
+      await fetchChildren() // Refresh children to get updated time balance
       // Check if all tasks for the relevant day are complete
       console.log(`[COMPLETION] Checking daily completion for date: ${taskDateIso}`)
       const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)

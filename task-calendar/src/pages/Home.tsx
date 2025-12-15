@@ -58,7 +58,7 @@ export default function Home() {
   }
 
   const handleTaskComplete = async (taskId: string, completed: boolean) => {
-    // Capture the task context (date/child) so we can award for the correct day
+    // Capture the task context (date/child) so we can award/revoke for the correct day
     const targetTask = tasks.find((t) => t.id === taskId)
     if (!targetTask) {
       console.error('Task not found:', taskId)
@@ -89,13 +89,42 @@ export default function Home() {
         return
       }
 
-      // Wait for the update to complete, then refresh tasks
+      // Wait for the update to complete, then refresh tasks/children
       await fetchTasks()
       await fetchChildren() // Refresh children to get updated time balance
       
       // Small delay to ensure database is updated
       await new Promise(resolve => setTimeout(resolve, 100))
+
+      // If the task was just marked incomplete, attempt to revoke any tech time for that child/date
+      if (!completed) {
+        console.log('[COMPLETION] Task uncompleted, attempting to revoke tech time if previously awarded')
+        try {
+          const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              childId: targetTask.childId,
+              date: taskDateIso,
+            }),
+          })
+
+          if (revokeResponse.ok) {
+            const revokeData = await revokeResponse.json()
+            console.log('[COMPLETION] Tech time revoked:', revokeData)
+            await fetchChildren()
+          } else {
+            const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
+            // It's okay if there's nothing to revoke; just log it.
+            console.log('[COMPLETION] No tech time to revoke or revoke failed:', revokeError)
+          }
+        } catch (revokeErr) {
+          console.error('[COMPLETION] Error revoking tech time:', revokeErr)
+        }
+        return
+      }
       
+      // From here on, we're in the \"completed\" path.
       // Check if all tasks for the relevant day are complete
       console.log(`[COMPLETION] Checking daily completion for date: ${taskDateIso}`)
       const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
@@ -127,7 +156,7 @@ export default function Home() {
               } else {
                 const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
                 console.error('[COMPLETION] Error awarding tech time:', errorData)
-                // Only show error if it's not "already awarded"
+                // Only show error if it's not \"already awarded\"
                 if (!errorData.error?.includes('already awarded')) {
                   alert(`Error awarding tech time: ${errorData.error || 'Unknown error'}`)
                 }

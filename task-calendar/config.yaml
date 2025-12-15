@@ -1,5 +1,5 @@
 name: Task Calendar
-version: "0.1.11"
+version: "0.1.12"
 slug: task-calendar
 description: Chore tracker for children with Home Assistant integration
 url: https://github.com/rancidmeatball/chore_tracking
@@ -13,9 +13,9 @@ init: false
 startup: application
 boot: auto
 ports:
-  "3000/tcp": 3700
+  "3001/tcp": 3700
 ports_description:
-  "3000/tcp": Web interface
+  "3001/tcp": Web interface
 map:
   - config:rw
 persistent:
@@ -24,4 +24,3 @@ options:
   database_path: /data/task-calendar.db
 schema:
   database_path: str
-

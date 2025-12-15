@@ -500,6 +500,17 @@ router.get('/completions', async (req, res) => {
   }
 });
 
+// Helper to normalize an incoming date (which may be an ISO string)
+// to a \"date-only\" value in UTC so we can safely use startOfDay/endOfDay
+// without Pacific vs UTC causing off-by-one issues.
+function getUtcDateOnly(dateString) {
+  const base = new Date(dateString);
+  const year = base.getUTCFullYear();
+  const month = base.getUTCMonth();
+  const day = base.getUTCDate();
+  return new Date(Date.UTC(year, month, day));
+}
+
 // POST /api/tasks/award-tech-time
 router.post('/award-tech-time', async (req, res) => {
   try {
@@ -510,7 +521,7 @@ router.post('/award-tech-time', async (req, res) => {
       return res.status(400).json({ error: 'childId is required' });
     }
 
-    const checkDate = date ? new Date(date) : new Date();
+    const checkDate = date ? getUtcDateOnly(date) : new Date();
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
 
@@ -611,12 +622,83 @@ router.post('/award-tech-time', async (req, res) => {
   }
 });
 
+// POST /api/tasks/revoke-tech-time
+// Used when a task is un-completed after tech time was already awarded.
+// This subtracts the award and removes the TechTimeAward record for that day.
+router.post('/revoke-tech-time', async (req, res) => {
+  try {
+    const { startOfDay, endOfDay } = await import('date-fns');
+    const { childId, date } = req.body;
+
+    if (!childId) {
+      return res.status(400).json({ error: 'childId is required' });
+    }
+
+    const checkDate = date ? getUtcDateOnly(date) : new Date();
+    const start = startOfDay(checkDate);
+    const end = endOfDay(checkDate);
+
+    const existingAward = await prisma.techTimeAward.findUnique({
+      where: {
+        childId_awardDate: {
+          childId,
+          awardDate: start,
+        },
+      },
+    });
+
+    if (!existingAward) {
+      return res.status(400).json({
+        error: 'No tech time award found for this date',
+      });
+    }
+
+    const child = await prisma.child.findUnique({
+      where: { id: childId },
+      select: { timeBalance: true, name: true },
+    });
+
+    if (!child) {
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const previousBalance = child.timeBalance || 0;
+    const newBalance = Math.max(0, previousBalance - (existingAward.minutes || 60));
+
+    await prisma.$transaction([
+      prisma.child.update({
+        where: { id: childId },
+        data: {
+          timeBalance: newBalance,
+        },
+      }),
+      prisma.techTimeAward.delete({
+        where: { id: existingAward.id },
+      }),
+    ]);
+
+    console.log(`[TECH TIME] ❌ Revoked ${existingAward.minutes || 60} minutes from ${child.name} for ${checkDate.toLocaleDateString()}`);
+    console.log(`[TECH TIME] New balance: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
+
+    res.json({
+      success: true,
+      message: `Revoked ${existingAward.minutes || 60} minutes of tech time from ${child.name}`,
+      newBalance,
+      previousBalance,
+      date: checkDate.toISOString(),
+    });
+  } catch (error) {
+    console.error('Error revoking tech time:', error);
+    res.status(500).json({ error: 'Failed to revoke tech time' });
+  }
+});
+
 // GET /api/tasks/check-daily-completion
 router.get('/check-daily-completion', async (req, res) => {
   try {
     const { startOfDay, endOfDay } = await import('date-fns');
     const dateParam = req.query.date;
-    const checkDate = dateParam ? new Date(dateParam) : new Date();
+    const checkDate = dateParam ? getUtcDateOnly(dateParam) : new Date();
 
     console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam}`);
 

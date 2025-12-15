@@ -108,8 +108,8 @@ function Calendar({
     return tasksByDate.get(dateKey) || []
   }
 
-  // Check if any child completed both categories on a specific date
-  const hasBothCategoriesComplete = (date: Date) => {
+  // Get list of children who completed both categories on a specific date
+  const getChildrenWithBothCategoriesComplete = (date: Date) => {
     const dayTasks = getTasksForDate(date)
     const tasksByChild = new Map<string, { helpingFamily: Task[], enrichment: Task[] }>()
     
@@ -125,7 +125,9 @@ function Calendar({
       }
     }
     
-    // Check if any child has both categories complete
+    const completedChildren: Array<{ childId: string; color: string }> = []
+
+    // Check each child to see if they have both categories complete
     for (const [childId, childTasks] of tasksByChild.entries()) {
       const hasBoth = childTasks.helpingFamily.length > 0 && 
                       childTasks.enrichment.length > 0
@@ -133,10 +135,13 @@ function Calendar({
                           childTasks.helpingFamily.every(t => t.completed) && 
                           childTasks.enrichment.every(t => t.completed)
       if (bothComplete) {
-        return true
+        // Use the child's color from any of their tasks on this day
+        const sampleTask = dayTasks.find(t => t.childId === childId)
+        const color = sampleTask?.child?.color || '#facc15' // default yellow-400
+        completedChildren.push({ childId, color })
       }
     }
-    return false
+    return completedChildren
   }
 
 
@@ -191,7 +196,7 @@ function Calendar({
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
           const dayNumber = day.getDate()
-          const bothCategoriesComplete = hasBothCategoriesComplete(day)
+          const completedChildren = getChildrenWithBothCategoriesComplete(day)
 
           return (
             <div
@@ -208,10 +213,19 @@ function Calendar({
                   <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
                     {dayNumber}
                   </span>
-                  {bothCategoriesComplete && (
-                    <span className="text-yellow-500 text-xs sm:text-sm" title="Both categories completed - Tech time awarded!">
-                      ⭐
-                    </span>
+                  {completedChildren.length > 0 && (
+                    <div className="flex items-center gap-0.5">
+                      {completedChildren.map(childInfo => (
+                        <span
+                          key={childInfo.childId}
+                          className="text-xs sm:text-sm"
+                          style={{ color: childInfo.color || '#facc15' }}
+                          title="Both categories completed - Tech time awarded!"
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 {completion && (

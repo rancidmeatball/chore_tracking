@@ -97,12 +97,13 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
         // Open-ended: use a far future date (10 years from now)
         taskDueDate = new Date(new Date().setFullYear(new Date().getFullYear() + 10)).toISOString()
       } else {
-        // Create date at local midnight to avoid timezone issues
-        // Parse the date string (yyyy-MM-dd) and create a date at local midnight
+        // To avoid off-by-one issues across timezones (Pacific vs UTC),
+        // store due dates at local *midday* instead of midnight.
+        // This keeps the calendar date stable regardless of UTC conversion.
         const [year, month, day] = dueDate.split('-').map(Number)
-        const localDate = new Date(year, month - 1, day, 0, 0, 0, 0)
-        taskDueDate = localDate.toISOString()
-        console.log(`${task ? 'Updating' : 'Creating'} task with dueDate: ${dueDate} -> ${taskDueDate} (local: ${localDate.toLocaleString()})`)
+        const localNoon = new Date(year, month - 1, day, 12, 0, 0, 0)
+        taskDueDate = localNoon.toISOString()
+        console.log(`${task ? 'Updating' : 'Creating'} task with dueDate: ${dueDate} -> ${taskDueDate} (local noon: ${localNoon.toLocaleString()})`)
       }
 
       const requestBody: any = {

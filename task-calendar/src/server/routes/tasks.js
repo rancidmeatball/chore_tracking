@@ -198,6 +198,275 @@ router.post('/', async (req, res) => {
   }
 });
 
+// IMPORTANT: Specific routes must come BEFORE parameterized routes like /:id
+// Otherwise /check-daily-completion gets matched by /:id
+
+// GET /api/tasks/check-daily-completion
+router.get('/check-daily-completion', async (req, res) => {
+  try {
+    console.log(`[CHECK-DAILY] ===== ENTRY POINT =====`);
+    console.log(`[CHECK-DAILY] Request received at ${new Date().toISOString()}`);
+    console.log(`[CHECK-DAILY] Query params:`, req.query);
+    
+    const { startOfDay, endOfDay } = await import('date-fns');
+    const dateParam = req.query.date;
+
+    // If a date is provided, normalize it. If not, use "today" but strip time
+    // so we consistently check a single calendar day.
+    let checkDate;
+    if (dateParam) {
+      // Frontend sent a date - normalize it to UTC midday
+      console.log(`[CHECK-DAILY] Date parameter provided: ${dateParam}`);
+      checkDate = getUtcDateOnly(dateParam);
+      console.log(`[CHECK-DAILY] Normalized to: ${checkDate.toISOString()}`);
+    } else {
+      // No date param (old frontend code) - use today at UTC midday
+      const now = new Date();
+      checkDate = getUtcDateOnly(now.toISOString());
+      console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
+    }
+
+    console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);
+
+    const start = startOfDay(checkDate);
+    const end = endOfDay(checkDate);
+    
+    console.log(`[CHECK-DAILY] Date range: ${start.toISOString()} to ${end.toISOString()}`);
+    console.log(`[CHECK-DAILY] Searching for tasks with dueDate between ${start.toISOString()} and ${end.toISOString()}`);
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        dueDate: {
+          gte: start,
+          lte: end,
+        },
+      },
+      include: {
+        child: {
+          select: {
+            id: true,
+            name: true,
+            timeBalance: true,
+            inputBoolean: true,
+          },
+        },
+      },
+    });
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((t) => t.completed).length;
+    const allComplete = totalTasks > 0 && completedTasks === totalTasks;
+    
+    console.log(`[CHECK-DAILY] Found ${totalTasks} tasks, ${completedTasks} completed`);
+    
+    // Log task details for debugging
+    if (tasks.length > 0) {
+      console.log(`[CHECK-DAILY] Task details:`);
+      tasks.forEach(t => {
+        console.log(`  - ${t.id}: ${t.title} (${t.category}), child: ${t.child.name}, completed: ${t.completed}, dueDate: ${t.dueDate.toISOString()}`);
+      });
+    } else {
+      console.log(`[CHECK-DAILY] WARNING: No tasks found for date range ${start.toISOString()} to ${end.toISOString()}`);
+    }
+
+    const techTimeRewards = [];
+    const tasksByChild = tasks.reduce((acc, task) => {
+      if (!acc[task.childId]) {
+        acc[task.childId] = {
+          childId: task.childId,
+          childName: task.child.name,
+          helpingFamily: { total: 0, completed: 0 },
+          enrichment: { total: 0, completed: 0 },
+        };
+      }
+      const childTasks = acc[task.childId];
+      if (task.category === 'helping-family') {
+        childTasks.helpingFamily.total++;
+        if (task.completed) childTasks.helpingFamily.completed++;
+      } else if (task.category === 'enrichment') {
+        childTasks.enrichment.total++;
+        if (task.completed) childTasks.enrichment.completed++;
+      }
+      return acc;
+    }, {});
+    
+    console.log(`[CHECK-DAILY] Tasks by child breakdown:`, JSON.stringify(tasksByChild, null, 2));
+
+    for (const childData of Object.values(tasksByChild)) {
+      const hasHelpingFamily = childData.helpingFamily.total > 0;
+      const hasEnrichment = childData.enrichment.total > 0;
+      const bothComplete = 
+        hasHelpingFamily && 
+        hasEnrichment && 
+        childData.helpingFamily.completed === childData.helpingFamily.total &&
+        childData.enrichment.completed === childData.enrichment.total;
+
+      console.log(`[CHECK-DAILY] Child ${childData.childName}: hasHelpingFamily=${hasHelpingFamily} (${childData.helpingFamily.completed}/${childData.helpingFamily.total}), hasEnrichment=${hasEnrichment} (${childData.enrichment.completed}/${childData.enrichment.total}), bothComplete=${bothComplete}`);
+
+      if (bothComplete) {
+        console.log(`[CHECK-DAILY] ✅ Child ${childData.childName} has both categories complete!`);
+        // Check if tech time was already awarded for this date
+        const existingAward = await prisma.techTimeAward.findUnique({
+          where: {
+            childId_awardDate: {
+              childId: childData.childId,
+              awardDate: start,
+            },
+          },
+        });
+
+        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName} (awardDate: ${start.toISOString()})`);
+
+        techTimeRewards.push({
+          childId: childData.childId,
+          childName: childData.childName,
+          awarded: !!existingAward,
+        });
+      } else {
+        console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);
+      }
+    }
+
+    const childCompletions = [];
+    for (const childData of Object.values(tasksByChild)) {
+      const childTasks = tasks.filter(t => t.childId === childData.childId);
+      const childTotal = childTasks.length;
+      const childCompleted = childTasks.filter(t => t.completed).length;
+      const childAllComplete = childTotal > 0 && childCompleted === childTotal;
+      const childInputBoolean = childTasks.length > 0 ? childTasks[0].child.inputBoolean : null;
+      
+      childCompletions.push({
+        childId: childData.childId,
+        childName: childData.childName,
+        inputBoolean: childInputBoolean,
+        allComplete: childAllComplete,
+      });
+    }
+
+    res.json({
+      date: checkDate.toISOString(),
+      totalTasks,
+      completedTasks,
+      allComplete,
+      techTimeRewards,
+      childCompletions,
+      categoryBreakdown: Object.values(tasksByChild).map(child => ({
+        childId: child.childId,
+        childName: child.childName,
+        helpingFamily: child.helpingFamily,
+        enrichment: child.enrichment,
+        bothComplete: 
+          child.helpingFamily.total > 0 && 
+          child.enrichment.total > 0 && 
+          child.helpingFamily.completed === child.helpingFamily.total &&
+          child.enrichment.completed === child.enrichment.total,
+      })),
+    });
+  } catch (error) {
+    console.error('[CHECK-DAILY] Error checking daily completion:', error);
+    res.status(500).json({ error: 'Failed to check daily completion' });
+  }
+});
+
+// GET /api/tasks/completions
+router.get('/completions', async (req, res) => {
+  try {
+    const { subDays } = await import('date-fns');
+    const days = parseInt(req.query.days || '30');
+    const childId = req.query.childId;
+    const startDate = subDays(new Date(), days);
+
+    const where = {
+      completed: true,
+      completedAt: {
+        gte: startDate,
+      },
+      ...(childId && { childId }),
+    };
+
+    const completedTasks = await prisma.task.findMany({
+      where,
+      include: {
+        child: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+      },
+      orderBy: {
+        completedAt: 'desc',
+      },
+    });
+
+    const totalCompleted = completedTasks.length;
+    const onTimeCount = completedTasks.filter(task => {
+      if (!task.completedAt) return false;
+      return new Date(task.completedAt) <= new Date(task.dueDate);
+    }).length;
+    const lateCount = totalCompleted - onTimeCount;
+
+    const byChild = completedTasks.reduce((acc, task) => {
+      const childName = task.child.name;
+      if (!acc[childName]) {
+        acc[childName] = {
+          childId: task.child.id,
+          childName,
+          childColor: task.child.color,
+          count: 0,
+          onTime: 0,
+          late: 0,
+        };
+      }
+      acc[childName].count++;
+      if (task.completedAt && new Date(task.completedAt) <= new Date(task.dueDate)) {
+        acc[childName].onTime++;
+      } else {
+        acc[childName].late++;
+      }
+      return acc;
+    }, {});
+
+    const byDate = completedTasks.reduce((acc, task) => {
+      if (!task.completedAt) return acc;
+      const dateKey = new Date(task.completedAt).toISOString().split('T')[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push({
+        id: task.id,
+        title: task.title,
+        childName: task.child.name,
+        completedAt: task.completedAt,
+        dueDate: task.dueDate,
+        isOnTime: new Date(task.completedAt) <= new Date(task.dueDate),
+      });
+      return acc;
+    }, {});
+
+    res.json({
+      period: {
+        startDate: startDate.toISOString(),
+        endDate: new Date().toISOString(),
+        days,
+      },
+      statistics: {
+        totalCompleted,
+        onTimeCount,
+        lateCount,
+        onTimePercentage: totalCompleted > 0 ? Math.round((onTimeCount / totalCompleted) * 100) : 0,
+      },
+      byChild: Object.values(byChild),
+      byDate,
+      recentCompletions: completedTasks.slice(0, 20),
+    });
+  } catch (error) {
+    console.error('Error fetching completion statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch completion statistics' });
+  }
+});
+
 // GET /api/tasks/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -717,173 +986,6 @@ router.post('/revoke-tech-time', async (req, res) => {
   } catch (error) {
     console.error('Error revoking tech time:', error);
     res.status(500).json({ error: 'Failed to revoke tech time' });
-  }
-});
-
-// GET /api/tasks/check-daily-completion
-router.get('/check-daily-completion', async (req, res) => {
-  try {
-    console.log(`[CHECK-DAILY] ===== ENTRY POINT =====`);
-    console.log(`[CHECK-DAILY] Request received at ${new Date().toISOString()}`);
-    console.log(`[CHECK-DAILY] Query params:`, req.query);
-    
-    const { startOfDay, endOfDay } = await import('date-fns');
-    const dateParam = req.query.date;
-
-    // If a date is provided, normalize it. If not, use "today" but strip time
-    // so we consistently check a single calendar day.
-    let checkDate;
-    if (dateParam) {
-      // Frontend sent a date - normalize it to UTC midday
-      console.log(`[CHECK-DAILY] Date parameter provided: ${dateParam}`);
-      checkDate = getUtcDateOnly(dateParam);
-      console.log(`[CHECK-DAILY] Normalized to: ${checkDate.toISOString()}`);
-    } else {
-      // No date param (old frontend code) - use today at UTC midday
-      const now = new Date();
-      checkDate = getUtcDateOnly(now.toISOString());
-      console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
-    }
-
-    console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);
-
-    const start = startOfDay(checkDate);
-    const end = endOfDay(checkDate);
-    
-    console.log(`[CHECK-DAILY] Date range: ${start.toISOString()} to ${end.toISOString()}`);
-    console.log(`[CHECK-DAILY] Searching for tasks with dueDate between ${start.toISOString()} and ${end.toISOString()}`);
-
-    const tasks = await prisma.task.findMany({
-      where: {
-        dueDate: {
-          gte: start,
-          lte: end,
-        },
-      },
-      include: {
-        child: {
-          select: {
-            id: true,
-            name: true,
-            timeBalance: true,
-            inputBoolean: true,
-          },
-        },
-      },
-    });
-
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((t) => t.completed).length;
-    const allComplete = totalTasks > 0 && completedTasks === totalTasks;
-    
-    console.log(`[CHECK-DAILY] Found ${totalTasks} tasks, ${completedTasks} completed`);
-    
-    // Log task details for debugging
-    if (tasks.length > 0) {
-      console.log(`[CHECK-DAILY] Task details:`);
-      tasks.forEach(t => {
-        console.log(`  - ${t.id}: ${t.title} (${t.category}), child: ${t.child.name}, completed: ${t.completed}, dueDate: ${t.dueDate.toISOString()}`);
-      });
-    } else {
-      console.log(`[CHECK-DAILY] WARNING: No tasks found for date range ${start.toISOString()} to ${end.toISOString()}`);
-    }
-
-    const techTimeRewards = [];
-    const tasksByChild = tasks.reduce((acc, task) => {
-      if (!acc[task.childId]) {
-        acc[task.childId] = {
-          childId: task.childId,
-          childName: task.child.name,
-          helpingFamily: { total: 0, completed: 0 },
-          enrichment: { total: 0, completed: 0 },
-        };
-      }
-      const childTasks = acc[task.childId];
-      if (task.category === 'helping-family') {
-        childTasks.helpingFamily.total++;
-        if (task.completed) childTasks.helpingFamily.completed++;
-      } else if (task.category === 'enrichment') {
-        childTasks.enrichment.total++;
-        if (task.completed) childTasks.enrichment.completed++;
-      }
-      return acc;
-    }, {});
-    
-    console.log(`[CHECK-DAILY] Tasks by child breakdown:`, JSON.stringify(tasksByChild, null, 2));
-
-    for (const childData of Object.values(tasksByChild)) {
-      const hasHelpingFamily = childData.helpingFamily.total > 0;
-      const hasEnrichment = childData.enrichment.total > 0;
-      const bothComplete = 
-        hasHelpingFamily && 
-        hasEnrichment && 
-        childData.helpingFamily.completed === childData.helpingFamily.total &&
-        childData.enrichment.completed === childData.enrichment.total;
-
-      console.log(`[CHECK-DAILY] Child ${childData.childName}: hasHelpingFamily=${hasHelpingFamily} (${childData.helpingFamily.completed}/${childData.helpingFamily.total}), hasEnrichment=${hasEnrichment} (${childData.enrichment.completed}/${childData.enrichment.total}), bothComplete=${bothComplete}`);
-
-      if (bothComplete) {
-        console.log(`[CHECK-DAILY] ✅ Child ${childData.childName} has both categories complete!`);
-        // Check if tech time was already awarded for this date
-        const existingAward = await prisma.techTimeAward.findUnique({
-          where: {
-            childId_awardDate: {
-              childId: childData.childId,
-              awardDate: start,
-            },
-          },
-        });
-
-        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName} (awardDate: ${start.toISOString()})`);
-
-        techTimeRewards.push({
-          childId: childData.childId,
-          childName: childData.childName,
-          awarded: !!existingAward,
-        });
-      } else {
-        console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);
-      }
-    }
-
-    const childCompletions = [];
-    for (const childData of Object.values(tasksByChild)) {
-      const childTasks = tasks.filter(t => t.childId === childData.childId);
-      const childTotal = childTasks.length;
-      const childCompleted = childTasks.filter(t => t.completed).length;
-      const childAllComplete = childTotal > 0 && childCompleted === childTotal;
-      const childInputBoolean = childTasks.length > 0 ? childTasks[0].child.inputBoolean : null;
-      
-      childCompletions.push({
-        childId: childData.childId,
-        childName: childData.childName,
-        inputBoolean: childInputBoolean,
-        allComplete: childAllComplete,
-      });
-    }
-
-    res.json({
-      date: checkDate.toISOString(),
-      totalTasks,
-      completedTasks,
-      allComplete,
-      techTimeRewards,
-      childCompletions,
-      categoryBreakdown: Object.values(tasksByChild).map(child => ({
-        childId: child.childId,
-        childName: child.childName,
-        helpingFamily: child.helpingFamily,
-        enrichment: child.enrichment,
-        bothComplete: 
-          child.helpingFamily.total > 0 && 
-          child.enrichment.total > 0 && 
-          child.helpingFamily.completed === child.helpingFamily.total &&
-          child.enrichment.completed === child.enrichment.total,
-      })),
-    });
-  } catch (error) {
-    console.error('Error checking daily completion:', error);
-    res.status(500).json({ error: 'Failed to check daily completion' });
   }
 });
 

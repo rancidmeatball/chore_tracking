@@ -6,14 +6,17 @@ const router = express.Router();
 // GET /api/children
 router.get('/', async (req, res) => {
   try {
+    console.log('GET /api/children - Fetching children from database...');
     const children = await prisma.child.findMany({
       orderBy: {
         name: 'asc',
       },
     });
+    console.log(`GET /api/children - Found ${children.length} children`);
     res.json(children);
   } catch (error) {
     console.error('Error fetching children:', error);
+    console.error('Error stack:', error?.stack);
     if (error?.code === 'P2021' || error?.message?.includes('does not exist')) {
       return res.status(503).json({ error: 'Database not initialized. Please restart the add-on.' });
     }

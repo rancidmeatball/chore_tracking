@@ -199,17 +199,23 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
     setIsLoadingEntities(true)
     setLoadError(null)
     try {
+      console.log('[AUTOCOMPLETE] Fetching input booleans from Home Assistant...')
       const response = await fetch('/api/home-assistant/input-booleans')
       if (response.ok) {
         const data = await response.json()
+        console.log(`[AUTOCOMPLETE] Received ${data.inputBooleans?.length || 0} input booleans`)
         setInputBooleanOptions(data.inputBooleans || [])
+        if (data.inputBooleans && data.inputBooleans.length === 0) {
+          setLoadError('No input_boolean entities found in Home Assistant')
+        }
       } else {
-        console.error('Failed to fetch input booleans')
-        setLoadError('Failed to load Home Assistant input booleans')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[AUTOCOMPLETE] Failed to fetch input booleans:', errorData)
+        setLoadError(`Failed to load: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error fetching input booleans:', error)
-      setLoadError('Error loading Home Assistant input booleans')
+      console.error('[AUTOCOMPLETE] Error fetching input booleans:', error)
+      setLoadError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoadingEntities(false)
     }

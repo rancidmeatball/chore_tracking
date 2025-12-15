@@ -75,7 +75,9 @@ export default function Home() {
     const utcMidday = new Date(Date.UTC(year, month, day, 12, 0, 0, 0))
     const taskDateIso = utcMidday.toISOString()
 
-    console.log(`[COMPLETION] Toggling task ${taskId} to ${completed}, date: ${taskDateIso}`)
+    console.log(`[COMPLETION] Toggling task ${taskId} (${targetTask.title}) to ${completed}`)
+    console.log(`[COMPLETION] Task dueDate from DB: ${targetTask.dueDate}`)
+    console.log(`[COMPLETION] Normalized date for check: ${taskDateIso} (UTC midday)`)
 
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {

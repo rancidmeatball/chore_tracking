@@ -179,7 +179,12 @@ router.get('/input-booleans', async (req, res) => {
     const homeAssistantUrl = process.env.HOME_ASSISTANT_URL || 'http://supervisor/core';
     const homeAssistantToken = process.env.HOME_ASSISTANT_TOKEN || process.env.SUPERVISOR_TOKEN;
 
+    console.log('[HOME ASSISTANT] Fetching input_boolean entities...');
+    console.log(`[HOME ASSISTANT] URL: ${homeAssistantUrl}`);
+    console.log(`[HOME ASSISTANT] Token available: ${!!homeAssistantToken}`);
+
     if (!homeAssistantToken) {
+      console.error('[HOME ASSISTANT] No token available - SUPERVISOR_TOKEN not set');
       return res.status(500).json({
         error: 'Home Assistant token missing',
         message: 'SUPERVISOR_TOKEN not available',
@@ -196,7 +201,7 @@ router.get('/input-booleans', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[HOME ASSISTANT] Failed to fetch states:', errorText);
+      console.error('[HOME ASSISTANT] Failed to fetch states:', response.status, errorText);
       return res.status(response.status).json({
         error: 'Failed to fetch states',
         details: errorText,
@@ -204,6 +209,8 @@ router.get('/input-booleans', async (req, res) => {
     }
 
     const states = await response.json();
+    console.log(`[HOME ASSISTANT] Received ${states.length} total entities from HA`);
+    
     const inputBooleans = states
       .filter((entity) => entity.entity_id?.startsWith('input_boolean.'))
       .map((entity) => ({
@@ -212,9 +219,10 @@ router.get('/input-booleans', async (req, res) => {
         state: entity.state,
       }));
 
+    console.log(`[HOME ASSISTANT] Filtered to ${inputBooleans.length} input_boolean entities`);
     res.json({ inputBooleans });
   } catch (error) {
-    console.error('Error fetching input booleans:', error);
+    console.error('[HOME ASSISTANT] Error fetching input booleans:', error);
     return res.status(500).json({
       error: 'Failed to fetch input booleans',
       message: error instanceof Error ? error.message : 'Unknown error',

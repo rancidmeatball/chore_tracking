@@ -765,6 +765,16 @@ router.get('/check-daily-completion', async (req, res) => {
     const allComplete = totalTasks > 0 && completedTasks === totalTasks;
     
     console.log(`[CHECK-DAILY] Found ${totalTasks} tasks, ${completedTasks} completed`);
+    
+    // Log task details for debugging
+    if (tasks.length > 0) {
+      console.log(`[CHECK-DAILY] Task details:`);
+      tasks.forEach(t => {
+        console.log(`  - ${t.id}: ${t.title} (${t.category}), child: ${t.child.name}, completed: ${t.completed}, dueDate: ${t.dueDate.toISOString()}`);
+      });
+    } else {
+      console.log(`[CHECK-DAILY] WARNING: No tasks found for date range ${start.toISOString()} to ${end.toISOString()}`);
+    }
 
     const techTimeRewards = [];
     const tasksByChild = tasks.reduce((acc, task) => {
@@ -786,6 +796,8 @@ router.get('/check-daily-completion', async (req, res) => {
       }
       return acc;
     }, {});
+    
+    console.log(`[CHECK-DAILY] Tasks by child breakdown:`, JSON.stringify(tasksByChild, null, 2));
 
     for (const childData of Object.values(tasksByChild)) {
       const hasHelpingFamily = childData.helpingFamily.total > 0;
@@ -796,8 +808,10 @@ router.get('/check-daily-completion', async (req, res) => {
         childData.helpingFamily.completed === childData.helpingFamily.total &&
         childData.enrichment.completed === childData.enrichment.total;
 
+      console.log(`[CHECK-DAILY] Child ${childData.childName}: hasHelpingFamily=${hasHelpingFamily} (${childData.helpingFamily.completed}/${childData.helpingFamily.total}), hasEnrichment=${hasEnrichment} (${childData.enrichment.completed}/${childData.enrichment.total}), bothComplete=${bothComplete}`);
+
       if (bothComplete) {
-        console.log(`[CHECK-DAILY] Child ${childData.childName} has both categories complete`);
+        console.log(`[CHECK-DAILY] ✅ Child ${childData.childName} has both categories complete!`);
         // Check if tech time was already awarded for this date
         const existingAward = await prisma.techTimeAward.findUnique({
           where: {
@@ -808,13 +822,15 @@ router.get('/check-daily-completion', async (req, res) => {
           },
         });
 
-        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName}`);
+        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName} (awardDate: ${start.toISOString()})`);
 
         techTimeRewards.push({
           childId: childData.childId,
           childName: childData.childName,
           awarded: !!existingAward,
         });
+      } else {
+        console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);
       }
     }
 

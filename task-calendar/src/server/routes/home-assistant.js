@@ -114,4 +114,53 @@ router.post('/trigger-child', async (req, res) => {
   }
 });
 
+// GET /api/home-assistant/input-booleans
+router.get('/input-booleans', async (req, res) => {
+  try {
+    const homeAssistantUrl = process.env.HOME_ASSISTANT_URL || 'http://supervisor/core';
+    const homeAssistantToken = process.env.HOME_ASSISTANT_TOKEN || process.env.SUPERVISOR_TOKEN;
+
+    if (!homeAssistantToken) {
+      return res.status(500).json({
+        error: 'Home Assistant token missing',
+        message: 'SUPERVISOR_TOKEN not available',
+      });
+    }
+
+    const response = await fetch(`${homeAssistantUrl}/api/states`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${homeAssistantToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[HOME ASSISTANT] Failed to fetch states:', errorText);
+      return res.status(response.status).json({
+        error: 'Failed to fetch states',
+        details: errorText,
+      });
+    }
+
+    const states = await response.json();
+    const inputBooleans = states
+      .filter((entity) => entity.entity_id?.startsWith('input_boolean.'))
+      .map((entity) => ({
+        entity_id: entity.entity_id,
+        name: entity.attributes?.friendly_name || entity.entity_id,
+        state: entity.state,
+      }));
+
+    res.json({ inputBooleans });
+  } catch (error) {
+    console.error('Error fetching input booleans:', error);
+    return res.status(500).json({
+      error: 'Failed to fetch input booleans',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;

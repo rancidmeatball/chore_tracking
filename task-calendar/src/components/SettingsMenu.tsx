@@ -189,6 +189,33 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
   const [color, setColor] = useState(child.color || '#3B82F6')
   const [inputBoolean, setInputBoolean] = useState(child.inputBoolean || '')
   const [isSaving, setIsSaving] = useState(false)
+  const [inputBooleanOptions, setInputBooleanOptions] = useState<Array<{ entity_id: string; name: string; state: string }>>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isLoadingEntities, setIsLoadingEntities] = useState(false)
+
+  const fetchInputBooleans = async () => {
+    if (inputBooleanOptions.length > 0 || isLoadingEntities) return
+    setIsLoadingEntities(true)
+    try {
+      const response = await fetch('/api/home-assistant/input-booleans')
+      if (response.ok) {
+        const data = await response.json()
+        setInputBooleanOptions(data.inputBooleans || [])
+      } else {
+        console.error('Failed to fetch input booleans')
+      }
+    } catch (error) {
+      console.error('Error fetching input booleans:', error)
+    } finally {
+      setIsLoadingEntities(false)
+    }
+  }
+
+  const filteredOptions = inputBooleanOptions.filter((opt) => {
+    if (!inputBoolean) return true
+    const query = inputBoolean.toLowerCase()
+    return opt.entity_id.toLowerCase().includes(query) || opt.name?.toLowerCase().includes(query)
+  }).slice(0, 10)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -244,11 +271,41 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
           <input
             type="text"
             value={inputBoolean}
-            onChange={(e) => setInputBoolean(e.target.value)}
+            onChange={(e) => {
+              setInputBoolean(e.target.value)
+              setShowSuggestions(true)
+            }}
+            onFocus={() => {
+              setShowSuggestions(true)
+              fetchInputBooleans()
+            }}
             placeholder="input_boolean.tasks_complete_..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-400"
             title="Home Assistant input_boolean entity (e.g., input_boolean.tasks_complete_hayden)"
           />
+          {isLoadingEntities && (
+            <div className="text-xs text-gray-500 mt-1">Loading input booleans…</div>
+          )}
+          {showSuggestions && filteredOptions.length > 0 && (
+            <div className="mt-1 border border-gray-200 rounded-lg bg-white shadow max-h-40 overflow-y-auto z-10">
+              {filteredOptions.map((opt) => (
+                <button
+                  key={opt.entity_id}
+                  type="button"
+                  onClick={() => {
+                    setInputBoolean(opt.entity_id)
+                    setShowSuggestions(false)
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-gray-900"
+                >
+                  <div className="font-medium">{opt.entity_id}</div>
+                  {opt.name && opt.name !== opt.entity_id && (
+                    <div className="text-xs text-gray-600">{opt.name}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <button

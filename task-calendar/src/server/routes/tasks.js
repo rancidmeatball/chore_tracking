@@ -330,10 +330,11 @@ router.delete('/:id', async (req, res) => {
         deletedCount: deletedCount.count,
       });
     } else {
-      await prisma.task.delete({
+      const deletedTask = await prisma.task.delete({
         where: { id: req.params.id },
       });
 
+      console.log(`[DELETE] Successfully deleted task ${req.params.id}: ${deletedTask.title}`);
       return res.json({ message: 'Task deleted successfully' });
     }
   } catch (error) {
@@ -511,14 +512,16 @@ router.get('/completions', async (req, res) => {
 });
 
 // Helper to normalize an incoming date (which may be an ISO string)
-// to a date-only value in UTC so we can safely use startOfDay/endOfDay
+// to a date-only value in UTC at midday (12:00 UTC) so we can safely use startOfDay/endOfDay
 // without Pacific vs UTC causing off-by-one issues.
+// This matches how tasks are stored (midday UTC).
 function getUtcDateOnly(dateString) {
   const base = new Date(dateString);
   const year = base.getUTCFullYear();
   const month = base.getUTCMonth();
   const day = base.getUTCDate();
-  return new Date(Date.UTC(year, month, day));
+  // Return midday UTC to match task storage format
+  return new Date(Date.UTC(year, month, day, 12, 0, 0, 0));
 }
 
 // POST /api/tasks/award-tech-time

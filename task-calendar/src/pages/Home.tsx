@@ -65,13 +65,15 @@ export default function Home() {
       return
     }
 
-    // Normalize the task's due date to local midnight for consistent date handling
+    // Normalize the task's due date to UTC date-only (midday) for consistent date handling
+    // This matches how tasks are stored in the database (midday UTC)
     const taskDate = new Date(targetTask.dueDate)
-    const year = taskDate.getFullYear()
-    const month = taskDate.getMonth()
-    const day = taskDate.getDate()
-    const localMidnight = new Date(year, month, day, 0, 0, 0, 0)
-    const taskDateIso = localMidnight.toISOString()
+    const year = taskDate.getUTCFullYear()
+    const month = taskDate.getUTCMonth()
+    const day = taskDate.getUTCDate()
+    // Create a date at UTC midday (12:00 UTC) to represent "this calendar day"
+    const utcMidday = new Date(Date.UTC(year, month, day, 12, 0, 0, 0))
+    const taskDateIso = utcMidday.toISOString()
 
     console.log(`[COMPLETION] Toggling task ${taskId} to ${completed}, date: ${taskDateIso}`)
 

@@ -97,7 +97,11 @@ export default function TaskForm({ task, childrenList, onSave, onCancel, onDelet
         // Open-ended: use a far future date (10 years from now)
         taskDueDate = new Date(new Date().setFullYear(new Date().getFullYear() + 10)).toISOString()
       } else {
-        taskDueDate = new Date(dueDate).toISOString()
+        // Create date at local midnight to avoid timezone issues
+        // Parse the date string (yyyy-MM-dd) and create a date at local midnight
+        const [year, month, day] = dueDate.split('-').map(Number)
+        const localDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+        taskDueDate = localDate.toISOString()
       }
 
       const response = await fetch(url, {

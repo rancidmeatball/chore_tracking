@@ -105,7 +105,9 @@ export default function Home() {
         await fetchTasks()
         
         // Check if child still has both categories complete after unchecking
-        const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
+        const completionUrl = `/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`
+        console.log(`[COMPLETION] Fetching revoke check: ${completionUrl}`)
+        const completionResponse = await fetch(completionUrl)
         if (completionResponse.ok) {
           const data = await completionResponse.json()
           console.log('[COMPLETION] Daily completion check after uncheck:', data)
@@ -184,7 +186,9 @@ export default function Home() {
       await fetchChildren() // Refresh children to get updated time balance
       // Check if all tasks for the relevant day are complete
       console.log(`[COMPLETION] Checking daily completion for date: ${taskDateIso}`)
-      const completionResponse = await fetch(`/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`)
+      const completionUrl = `/api/tasks/check-daily-completion?date=${encodeURIComponent(taskDateIso)}`
+      console.log(`[COMPLETION] Fetching: ${completionUrl}`)
+      const completionResponse = await fetch(completionUrl)
       
       if (completionResponse.ok) {
         const data = await completionResponse.json()

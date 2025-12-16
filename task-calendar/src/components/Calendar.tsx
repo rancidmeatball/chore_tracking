@@ -239,8 +239,8 @@ function Calendar({
                   </span>
                 )}
               </div>
-              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto overflow-x-hidden" style={{ maxHeight: '80px', pointerEvents: 'auto' }}>
-                {dayTasks.map((task) => {
+              <div className="space-y-0 overflow-y-auto overflow-x-hidden" style={{ maxHeight: '80px', pointerEvents: 'auto' }}>
+                {dayTasks.slice(0, 4).map((task) => {
                   const bgColor = getTaskBgColor(task)
                   const textColor = getTaskColor(task)
                   
@@ -282,22 +282,23 @@ function Calendar({
                         onTaskEdit(task)
                       }}
                       className={`
-                        text-[10px] sm:text-xs p-0.5 sm:p-1 rounded truncate cursor-pointer relative group touch-manipulation
+                        text-[9px] p-0.5 rounded truncate cursor-pointer relative group touch-manipulation
                         ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
                         hover:opacity-90 active:opacity-80 transition-opacity
                       `}
                       style={{
                         ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
                         pointerEvents: 'auto',
-                        zIndex: 10
+                        zIndex: 10,
+                        lineHeight: '1.2'
                       }}
                       title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
                     >
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         {task.completed && (
-                          <span className="text-green-700 font-bold flex-shrink-0">✓</span>
+                          <span className="text-green-700 font-bold flex-shrink-0 text-[8px]">✓</span>
                         )}
-                        <span className="text-[8px] sm:text-[10px] opacity-75 flex-shrink-0">
+                        <span className="text-[7px] opacity-75 flex-shrink-0">
                           {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
                         </span>
                         <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
@@ -305,6 +306,11 @@ function Calendar({
                     </div>
                   )
                 })}
+                {dayTasks.length > 4 && (
+                  <div className="text-[8px] text-gray-500 pt-0.5">
+                    +{dayTasks.length - 4} more
+                  </div>
+                )}
               </div>
             </div>
           )

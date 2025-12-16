@@ -118,9 +118,19 @@ export default function Home() {
         url.searchParams.set('date', taskDateIso)
         const completionUrl = url.toString()
         
-        console.log(`[COMPLETION] Fetching revoke check: ${completionUrl}`)
+        console.log(`[COMPLETION] ===== FETCHING REVOKE CHECK =====`)
+        console.log(`[COMPLETION] taskDateIso: ${taskDateIso}`)
+        console.log(`[COMPLETION] Full URL: ${completionUrl}`)
         console.log(`[COMPLETION] URL search params: ${url.searchParams.toString()}`)
-        const completionResponse = await fetch(completionUrl)
+        console.log(`[COMPLETION] URL.search: ${url.search}`)
+        
+        const completionResponse = await fetch(completionUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache', // Prevent caching
+        })
         console.log(`[COMPLETION] Revoke check response status: ${completionResponse.status}`)
         if (completionResponse.ok) {
           const data = await completionResponse.json()
@@ -213,9 +223,20 @@ export default function Home() {
       url.searchParams.set('date', taskDateIso)
       const completionUrl = url.toString()
       
-      console.log(`[COMPLETION] Fetching: ${completionUrl}`)
+      console.log(`[COMPLETION] ===== FETCHING CHECK-DAILY-COMPLETION =====`)
+      console.log(`[COMPLETION] taskDateIso: ${taskDateIso}`)
+      console.log(`[COMPLETION] Full URL: ${completionUrl}`)
       console.log(`[COMPLETION] URL search params: ${url.searchParams.toString()}`)
-      const completionResponse = await fetch(completionUrl)
+      console.log(`[COMPLETION] URL.search: ${url.search}`)
+      
+      // Use the full URL to ensure query params are sent
+      const completionResponse = await fetch(completionUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-cache', // Prevent caching
+      })
       console.log(`[COMPLETION] Response status: ${completionResponse.status}`)
       
       if (completionResponse.ok) {

@@ -592,8 +592,11 @@ router.delete('/:id', async (req, res) => {
       },
     });
 
+    // If task doesn't exist, it might already be deleted (race condition)
+    // Return success to prevent error messages
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      console.log(`[DELETE] Task ${req.params.id} not found - may already be deleted`);
+      return res.json({ message: 'Task already deleted or not found' });
     }
 
     const deleteSeries = req.query.deleteSeries === 'true';

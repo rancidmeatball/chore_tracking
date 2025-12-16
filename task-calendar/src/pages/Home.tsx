@@ -172,6 +172,9 @@ export default function Home() {
         
         // Refresh after revoke attempt
         await fetchChildren()
+        await fetchTasks() // Refresh tasks to update calendar
+        // Force calendar re-render
+        setSelectedDate(new Date(selectedDate))
         return
       }
       
@@ -208,6 +211,8 @@ export default function Home() {
                 alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
                 await fetchChildren() // Refresh to show new balance
                 await fetchTasks() // Refresh tasks to update calendar stars
+                // Force calendar re-render by updating selected date
+                setSelectedDate(new Date(selectedDate))
               } else {
                 const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
                 console.error('[COMPLETION] Error awarding tech time:', errorData)
@@ -271,6 +276,7 @@ export default function Home() {
         ? `/api/tasks/${taskId}?deleteSeries=true`
         : `/api/tasks/${taskId}`
       
+      // Prevent double deletion
       const response = await fetch(url, {
         method: 'DELETE',
       })
@@ -280,14 +286,19 @@ export default function Home() {
         if (result.deletedCount && result.deletedCount > 1) {
           console.log(`Deleted ${result.deletedCount} tasks from series`)
         }
+        // Refresh tasks and children to update UI
         await fetchTasks()
+        await fetchChildren()
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to delete task'}`)
+        // Don't show error if task was already deleted
+        if (error.error !== 'Task not found' && !error.message?.includes('already deleted')) {
+          alert(`Error: ${error.error || 'Failed to delete task'}`)
+        }
       }
     } catch (error) {
       console.error('Error deleting task:', error)
-      alert('Failed to delete task')
+      // Don't show alert on network errors if task might be deleted
     }
   }
 

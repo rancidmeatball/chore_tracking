@@ -239,7 +239,7 @@ function Calendar({
                   </span>
                 )}
               </div>
-              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto" style={{ maxHeight: '60px' }}>
+              <div className="space-y-0.5 sm:space-y-1 overflow-y-auto overflow-x-hidden" style={{ maxHeight: '80px', pointerEvents: 'auto' }}>
                 {dayTasks.map((task) => {
                   const bgColor = getTaskBgColor(task)
                   const textColor = getTaskColor(task)
@@ -248,6 +248,7 @@ function Calendar({
                     <div
                       key={task.id}
                       className="relative z-10 cursor-pointer"
+                      style={{ pointerEvents: 'auto', zIndex: 10 }}
                       onClick={(e) => {
                         e.stopPropagation()
                         const now = Date.now()
@@ -285,7 +286,11 @@ function Calendar({
                         ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
                         hover:opacity-90 active:opacity-80 transition-opacity
                       `}
-                      style={task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }}
+                      style={{
+                        ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
+                        pointerEvents: 'auto',
+                        zIndex: 10
+                      }}
                       title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
                     >
                       <div className="flex items-center gap-1">

@@ -936,7 +936,7 @@ router.post('/revoke-tech-time', async (req, res) => {
     }
 
     console.log('[REVOKE] childId:', childId, 'date:', date);
-    const checkDate = date ? getUtcDateOnly(date) : new Date();
+    const checkDate = date ? getUtcDateOnly(date) : getUtcDateOnly(new Date().toISOString());
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
     console.log('[REVOKE] Normalized checkDate:', checkDate.toISOString(), 'start:', start.toISOString());

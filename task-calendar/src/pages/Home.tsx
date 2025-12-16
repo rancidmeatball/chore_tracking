@@ -133,6 +133,8 @@ export default function Home() {
               if (revokeResponse.ok) {
                 const revokeData = await revokeResponse.json()
                 console.log('[COMPLETION] ✅ Tech time revoked successfully:', revokeData)
+                // Refresh children to get updated balance
+                await fetchChildren()
                 alert(`⏰ Tech time revoked from ${revokeData.childName || 'child'}. New balance: ${Math.round(revokeData.newBalance / 60 * 10) / 10} hours`)
               } else {
                 const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))

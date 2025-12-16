@@ -314,7 +314,7 @@ function Calendar({
             return selectedDateTasks.length
           })()})
         </h3>
-        <div className="space-y-2 overflow-y-auto overflow-x-hidden pr-2 relative" style={{ maxHeight: '400px', minHeight: '100px' }}>
+        <div className="space-y-2 overflow-y-auto overflow-x-hidden pr-2 relative" style={{ maxHeight: '400px', minHeight: '100px', pointerEvents: 'auto' }}>
           {(() => {
             const selectedDateTasks = getTasksForDate(selectedDate)
             if (selectedDateTasks.length === 0) {
@@ -339,7 +339,8 @@ function Calendar({
                   type="checkbox"
                   checked={task.completed}
                   onChange={(e) => onTaskComplete(task.id, e.target.checked)}
-                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation relative z-20"
+                  style={{ pointerEvents: 'auto' }}
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

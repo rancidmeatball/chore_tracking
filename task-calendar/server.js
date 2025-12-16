@@ -18,6 +18,12 @@ app.use(express.json());
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
+  // Log full URL with query string for check-daily-completion
+  if (req.path.includes('check-daily-completion')) {
+    console.log(`[MIDDLEWARE] Raw URL: ${req.url}`);
+    console.log(`[MIDDLEWARE] Original URL: ${req.originalUrl}`);
+    console.log(`[MIDDLEWARE] Query string: ${req.url.split('?')[1] || 'NONE'}`);
+  }
   next();
 });
 

@@ -207,6 +207,7 @@ export default function Home() {
                 console.log('[COMPLETION] Tech time awarded:', awardData)
                 alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
                 await fetchChildren() // Refresh to show new balance
+                await fetchTasks() // Refresh tasks to update calendar stars
               } else {
                 const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
                 console.error('[COMPLETION] Error awarding tech time:', errorData)

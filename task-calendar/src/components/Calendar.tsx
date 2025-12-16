@@ -333,14 +333,23 @@ function Calendar({
               <div
                 key={task.id}
                 className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg relative z-10"
-                style={task.completed ? {} : { backgroundColor: bgColor + '40', borderLeft: `4px solid ${bgColor}` }}
+                style={{ 
+                  ...(task.completed ? {} : { backgroundColor: bgColor + '40', borderLeft: `4px solid ${bgColor}` }),
+                  pointerEvents: 'auto',
+                  position: 'relative',
+                  zIndex: 10
+                }}
               >
                 <input
                   type="checkbox"
                   checked={task.completed}
-                  onChange={(e) => onTaskComplete(task.id, e.target.checked)}
-                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation relative z-20"
-                  style={{ pointerEvents: 'auto' }}
+                  onChange={(e) => {
+                    e.stopPropagation()
+                    onTaskComplete(task.id, e.target.checked)
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 rounded touch-manipulation relative"
+                  style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -365,15 +374,20 @@ function Calendar({
                     <p className="text-xs text-gray-700">Assigned to: {task.child.name}</p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" style={{ pointerEvents: 'auto', zIndex: 20, position: 'relative' }}>
                   <button
-                    onClick={() => onTaskEdit(task)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onTaskEdit(task)
+                    }}
                     className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    style={{ pointerEvents: 'auto' }}
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       // Check if this task is part of a recurring series
                       if (task.recurrenceTemplateId) {
                         const deleteChoice = confirm(
@@ -391,6 +405,7 @@ function Calendar({
                       }
                     }}
                     className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    style={{ pointerEvents: 'auto' }}
                   >
                     Delete
                   </button>

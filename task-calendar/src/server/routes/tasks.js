@@ -207,6 +207,7 @@ router.get('/check-daily-completion', async (req, res) => {
     console.log(`[CHECK-DAILY] ===== ENTRY POINT =====`);
     console.log(`[CHECK-DAILY] Request received at ${new Date().toISOString()}`);
     console.log(`[CHECK-DAILY] Query params:`, req.query);
+    console.log(`[CHECK-DAILY] Raw date param:`, req.query.date);
     
     const { startOfDay, endOfDay } = await import('date-fns');
     const dateParam = req.query.date;
@@ -214,7 +215,7 @@ router.get('/check-daily-completion', async (req, res) => {
     // If a date is provided, normalize it. If not, use "today" but strip time
     // so we consistently check a single calendar day.
     let checkDate;
-    if (dateParam) {
+    if (dateParam && dateParam !== 'undefined' && dateParam !== 'null') {
       // Frontend sent a date - normalize it to UTC midday
       console.log(`[CHECK-DAILY] Date parameter provided: ${dateParam}`);
       checkDate = getUtcDateOnly(dateParam);
@@ -224,6 +225,7 @@ router.get('/check-daily-completion', async (req, res) => {
       const now = new Date();
       checkDate = getUtcDateOnly(now.toISOString());
       console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
+      console.log(`[CHECK-DAILY] ⚠️ This may cause issues if tasks are on a different date!`);
     }
 
     console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);

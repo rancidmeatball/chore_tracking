@@ -260,7 +260,12 @@ export default function Home() {
         // Use the date from the response (which is the actual date checked), not taskDateIso
         // This ensures we use the correct date even if the query parameter wasn't passed
         // The response date is the date that was actually checked (using fallback if needed)
-        const awardDate = data.date ? data.date : taskDateIso
+        // IMPORTANT: Always use data.date if available, as it's the date that was actually checked
+        let awardDate = data.date
+        if (!awardDate) {
+          console.warn(`[COMPLETION] ⚠️ WARNING: Response missing date field, falling back to taskDateIso: ${taskDateIso}`)
+          awardDate = taskDateIso
+        }
         console.log(`[COMPLETION] Final award date: ${awardDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
         
         // Check for tech time rewards

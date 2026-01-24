@@ -255,18 +255,25 @@ export default function Home() {
         const data = await completionResponse.json()
         console.log('[COMPLETION] Daily completion data:', data)
         
+        // Use the date from the response (which is the actual date checked), not taskDateIso
+        // This ensures we use the correct date even if the query parameter wasn't passed
+        const awardDate = data.date || taskDateIso
+        console.log(`[COMPLETION] Using award date from response: ${awardDate} (taskDateIso was: ${taskDateIso})`)
+        
         // Check for tech time rewards
         if (data.techTimeRewards && data.techTimeRewards.length > 0) {
           for (const reward of data.techTimeRewards) {
             // Only award if not already awarded
             if (!reward.awarded) {
-              console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${taskDateIso}`)
+              console.log(`[COMPLETION] ===== CALLING AWARD ENDPOINT =====`)
+              console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${awardDate}`)
+              console.log(`[COMPLETION] Request body:`, { childId: reward.childId, date: awardDate })
               const awardResponse = await fetch('/api/tasks/award-tech-time', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                   childId: reward.childId,
-                  date: taskDateIso,
+                  date: awardDate,
                 }),
               })
               

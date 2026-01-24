@@ -254,11 +254,14 @@ export default function Home() {
       if (completionResponse.ok) {
         const data = await completionResponse.json()
         console.log('[COMPLETION] Daily completion data:', data)
+        console.log(`[COMPLETION] Response date field: ${data.date} (type: ${typeof data.date})`)
+        console.log(`[COMPLETION] taskDateIso: ${taskDateIso} (type: ${typeof taskDateIso})`)
         
         // Use the date from the response (which is the actual date checked), not taskDateIso
         // This ensures we use the correct date even if the query parameter wasn't passed
-        const awardDate = data.date || taskDateIso
-        console.log(`[COMPLETION] Using award date from response: ${awardDate} (taskDateIso was: ${taskDateIso})`)
+        // The response date is the date that was actually checked (using fallback if needed)
+        const awardDate = data.date ? data.date : taskDateIso
+        console.log(`[COMPLETION] Final award date: ${awardDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
         
         // Check for tech time rewards
         if (data.techTimeRewards && data.techTimeRewards.length > 0) {

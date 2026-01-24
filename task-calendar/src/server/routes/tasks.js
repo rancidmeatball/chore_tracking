@@ -217,20 +217,38 @@ router.get('/check-daily-completion', async (req, res) => {
     const { startOfDay, endOfDay } = await import('date-fns');
     const dateParam = req.query.date;
 
-    // If a date is provided, normalize it. If not, use "today" but strip time
-    // so we consistently check a single calendar day.
+    // If a date is provided, normalize it. If not, try to infer from recent tasks
     let checkDate;
-    if (dateParam && dateParam !== 'undefined' && dateParam !== 'null') {
+    if (dateParam && dateParam !== 'undefined' && dateParam !== 'null' && dateParam !== '') {
       // Frontend sent a date - normalize it to UTC midday
       console.log(`[CHECK-DAILY] Date parameter provided: ${dateParam}`);
       checkDate = getUtcDateOnly(dateParam);
       console.log(`[CHECK-DAILY] Normalized to: ${checkDate.toISOString()}`);
     } else {
-      // No date param (old frontend code) - use today at UTC midday
-      const now = new Date();
-      checkDate = getUtcDateOnly(now.toISOString());
-      console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided, using today: ${checkDate.toISOString()}`);
-      console.log(`[CHECK-DAILY] ⚠️ This may cause issues if tasks are on a different date!`);
+      // No date param - try to find the most recent task update to infer the date
+      console.log(`[CHECK-DAILY] ⚠️ WARNING: No date parameter provided`);
+      console.log(`[CHECK-DAILY] Attempting to infer date from most recently updated task...`);
+      
+      const recentTask = await prisma.task.findFirst({
+        where: {
+          completed: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+        take: 1,
+      });
+      
+      if (recentTask) {
+        const taskDate = new Date(recentTask.dueDate);
+        checkDate = getUtcDateOnly(taskDate.toISOString());
+        console.log(`[CHECK-DAILY] Using date from most recent task: ${checkDate.toISOString()} (task: ${recentTask.title})`);
+      } else {
+        // Fallback to today
+        const now = new Date();
+        checkDate = getUtcDateOnly(now.toISOString());
+        console.log(`[CHECK-DAILY] No recent tasks found, using today: ${checkDate.toISOString()}`);
+      }
     }
 
     console.log(`[CHECK-DAILY] Checking completion for date: ${checkDate.toISOString()}, param: ${dateParam || 'none (using today)'}`);

@@ -114,11 +114,13 @@ export default function Home() {
         }
         
         // Use URLSearchParams to ensure proper encoding
+        // IMPORTANT: Use relative URL to avoid CORS issues, but ensure query string is included
         const url = new URL('/api/tasks/check-daily-completion', window.location.origin)
         url.searchParams.set('date', taskDateIso)
         // Add timestamp to prevent caching
         url.searchParams.set('_t', Date.now().toString())
-        const completionUrl = url.toString()
+        // Use only the pathname + search to ensure query string is preserved
+        const completionUrl = url.pathname + url.search
         
         console.log(`[COMPLETION] ===== FETCHING REVOKE CHECK =====`)
         console.log(`[COMPLETION] taskDateIso: ${taskDateIso}`)
@@ -223,11 +225,13 @@ export default function Home() {
       }
       
       // Use URLSearchParams to ensure proper encoding
+      // IMPORTANT: Use relative URL to avoid CORS issues, but ensure query string is included
       const url = new URL('/api/tasks/check-daily-completion', window.location.origin)
       url.searchParams.set('date', taskDateIso)
       // Add timestamp to prevent caching
       url.searchParams.set('_t', Date.now().toString())
-      const completionUrl = url.toString()
+      // Use only the pathname + search to ensure query string is preserved
+      const completionUrl = url.pathname + url.search
       
       console.log(`[COMPLETION] ===== FETCHING CHECK-DAILY-COMPLETION =====`)
       console.log(`[COMPLETION] taskDateIso: ${taskDateIso}`)

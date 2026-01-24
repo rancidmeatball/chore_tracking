@@ -208,7 +208,9 @@ router.get('/check-daily-completion', async (req, res) => {
     console.log(`[CHECK-DAILY] Request received at ${new Date().toISOString()}`);
     console.log(`[CHECK-DAILY] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
     console.log(`[CHECK-DAILY] Request URL: ${req.url}`);
-    console.log(`[CHECK-DAILY] Query params:`, req.query);
+    console.log(`[CHECK-DAILY] Original URL: ${req.originalUrl}`);
+    console.log(`[CHECK-DAILY] Query string from URL: ${req.url.split('?')[1] || 'NONE'}`);
+    console.log(`[CHECK-DAILY] Query params object:`, req.query);
     console.log(`[CHECK-DAILY] Raw date param:`, req.query.date);
     console.log(`[CHECK-DAILY] All query keys:`, Object.keys(req.query));
     

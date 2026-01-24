@@ -116,6 +116,8 @@ export default function Home() {
         // Use URLSearchParams to ensure proper encoding
         const url = new URL('/api/tasks/check-daily-completion', window.location.origin)
         url.searchParams.set('date', taskDateIso)
+        // Add timestamp to prevent caching
+        url.searchParams.set('_t', Date.now().toString())
         const completionUrl = url.toString()
         
         console.log(`[COMPLETION] ===== FETCHING REVOKE CHECK =====`)
@@ -123,13 +125,15 @@ export default function Home() {
         console.log(`[COMPLETION] Full URL: ${completionUrl}`)
         console.log(`[COMPLETION] URL search params: ${url.searchParams.toString()}`)
         console.log(`[COMPLETION] URL.search: ${url.search}`)
+        console.log(`[COMPLETION] URL.href: ${url.href}`)
         
         const completionResponse = await fetch(completionUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
           },
-          cache: 'no-cache', // Prevent caching
+          cache: 'no-store', // Prevent caching
         })
         console.log(`[COMPLETION] Revoke check response status: ${completionResponse.status}`)
         if (completionResponse.ok) {
@@ -221,6 +225,8 @@ export default function Home() {
       // Use URLSearchParams to ensure proper encoding
       const url = new URL('/api/tasks/check-daily-completion', window.location.origin)
       url.searchParams.set('date', taskDateIso)
+      // Add timestamp to prevent caching
+      url.searchParams.set('_t', Date.now().toString())
       const completionUrl = url.toString()
       
       console.log(`[COMPLETION] ===== FETCHING CHECK-DAILY-COMPLETION =====`)
@@ -228,14 +234,16 @@ export default function Home() {
       console.log(`[COMPLETION] Full URL: ${completionUrl}`)
       console.log(`[COMPLETION] URL search params: ${url.searchParams.toString()}`)
       console.log(`[COMPLETION] URL.search: ${url.search}`)
+      console.log(`[COMPLETION] URL.href: ${url.href}`)
       
       // Use the full URL to ensure query params are sent
       const completionResponse = await fetch(completionUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
-        cache: 'no-cache', // Prevent caching
+        cache: 'no-store', // Prevent caching
       })
       console.log(`[COMPLETION] Response status: ${completionResponse.status}`)
       

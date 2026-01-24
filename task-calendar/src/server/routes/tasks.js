@@ -839,16 +839,21 @@ function getUtcDateOnly(dateString) {
 // POST /api/tasks/award-tech-time
 router.post('/award-tech-time', async (req, res) => {
   try {
+    console.log(`[TECH TIME] ===== AWARD ENTRY POINT =====`);
+    console.log(`[TECH TIME] Request body:`, req.body);
     const { startOfDay, endOfDay } = await import('date-fns');
     const { childId, date } = req.body;
 
     if (!childId) {
+      console.log(`[TECH TIME] ❌ Missing childId`);
       return res.status(400).json({ error: 'childId is required' });
     }
 
+    console.log(`[TECH TIME] childId: ${childId}, date: ${date}`);
     const checkDate = date ? getUtcDateOnly(date) : getUtcDateOnly(new Date().toISOString());
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
+    console.log(`[TECH TIME] checkDate: ${checkDate.toISOString()}, start: ${start.toISOString()}, end: ${end.toISOString()}`);
 
     const tasks = await prisma.task.findMany({
       where: {
@@ -863,6 +868,10 @@ router.post('/award-tech-time', async (req, res) => {
     const helpingFamilyTasks = tasks.filter(t => t.category === 'helping-family');
     const enrichmentTasks = tasks.filter(t => t.category === 'enrichment');
 
+    console.log(`[TECH TIME] Found ${tasks.length} tasks: ${helpingFamilyTasks.length} helping-family, ${enrichmentTasks.length} enrichment`);
+    console.log(`[TECH TIME] Helping-family completed: ${helpingFamilyTasks.filter(t => t.completed).length}/${helpingFamilyTasks.length}`);
+    console.log(`[TECH TIME] Enrichment completed: ${enrichmentTasks.filter(t => t.completed).length}/${enrichmentTasks.length}`);
+
     const hasBothCategories = helpingFamilyTasks.length > 0 && enrichmentTasks.length > 0;
     // A child gets the reward if they have at least ONE completed task in each category
     const bothComplete = 
@@ -870,7 +879,10 @@ router.post('/award-tech-time', async (req, res) => {
       helpingFamilyTasks.some(t => t.completed) &&
       enrichmentTasks.some(t => t.completed);
 
+    console.log(`[TECH TIME] hasBothCategories: ${hasBothCategories}, bothComplete: ${bothComplete}`);
+
     if (!bothComplete) {
+      console.log(`[TECH TIME] ❌ Both categories not complete, cannot award`);
       return res.status(400).json({ 
         error: 'Both categories must be completed to award tech time',
         helpingFamily: {
@@ -893,7 +905,10 @@ router.post('/award-tech-time', async (req, res) => {
       },
     });
 
+    console.log(`[TECH TIME] Existing award check: ${!!existingAward} for childId ${childId}, date ${start.toISOString()}`);
+
     if (existingAward) {
+      console.log(`[TECH TIME] ⚠️ Award already exists, cannot award again`);
       return res.status(400).json({ 
         error: 'Tech time already awarded for this date',
         message: `Tech time was already awarded on ${checkDate.toLocaleDateString()}`,
@@ -911,11 +926,16 @@ router.post('/award-tech-time', async (req, res) => {
     });
 
     if (!child) {
+      console.log(`[TECH TIME] ❌ Child not found: ${childId}`);
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    const newBalance = (child.timeBalance || 0) + 60;
+    console.log(`[TECH TIME] Current balance: ${child.timeBalance || 0} minutes`);
+    const previousBalance = child.timeBalance || 0;
+    const newBalance = previousBalance + 60;
+    console.log(`[TECH TIME] New balance will be: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
 
+    console.log(`[TECH TIME] Executing transaction to update balance and create award...`);
     await prisma.$transaction([
       prisma.child.update({
         where: { id: childId },
@@ -932,19 +952,23 @@ router.post('/award-tech-time', async (req, res) => {
       }),
     ]);
 
+    console.log(`[TECH TIME] ✅ Transaction completed successfully`);
     console.log(`[TECH TIME] ✅ Awarded 1 hour (60 min) to ${child.name} for completing both categories on ${checkDate.toLocaleDateString()}`);
+    console.log(`[TECH TIME] Previous balance: ${previousBalance} minutes`);
     console.log(`[TECH TIME] New balance: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
 
     res.json({
       success: true,
       message: `Awarded 1 hour of tech time to ${child.name}`,
       newBalance,
-      previousBalance: child.timeBalance || 0,
+      previousBalance,
       date: checkDate.toISOString(),
+      childName: child.name,
     });
   } catch (error) {
-    console.error('Error awarding tech time:', error);
-    res.status(500).json({ error: 'Failed to award tech time' });
+    console.error('[TECH TIME] ❌ Error awarding tech time:', error);
+    console.error('[TECH TIME] Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to award tech time', details: error.message });
   }
 });
 

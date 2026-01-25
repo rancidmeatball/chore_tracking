@@ -149,7 +149,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.62'
+  const version = '0.1.63'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
@@ -249,7 +249,7 @@ function Calendar({
               <div 
                 className="overflow-y-auto overflow-x-hidden" 
                 style={{ 
-                  maxHeight: '80px', 
+                  maxHeight: '160px', 
                   pointerEvents: 'auto', 
                   WebkitOverflowScrolling: 'touch',
                   position: 'relative',
@@ -265,7 +265,10 @@ function Calendar({
                     return a.title.localeCompare(b.title)
                   })
                   
-                  return sortedTasks.map((task, index) => {
+                  // Limit to 8 tasks maximum for scrolling
+                  const tasksToShow = sortedTasks.slice(0, 8)
+                  
+                  return tasksToShow.map((task, index) => {
                     const bgColor = getTaskBgColor(task)
                     const textColor = getTaskColor(task)
                     
@@ -332,6 +335,11 @@ function Calendar({
                     )
                   })
                 })()}
+                {sortedTasks.length > 8 && (
+                  <div className="text-[8px] text-gray-500 pt-0.5 border-t border-white">
+                    +{sortedTasks.length - 8} more
+                  </div>
+                )}
               </div>
             </div>
           )

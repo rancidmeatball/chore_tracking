@@ -493,6 +493,16 @@ export default function Home() {
 
         <ChildManager childrenList={children} onChildAdded={fetchChildren} />
 
+        <Calendar
+          tasks={tasks}
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+          onTaskComplete={handleTaskComplete}
+          onTaskEdit={handleEditTask}
+          onTaskDelete={handleTaskDelete}
+          children={children}
+        />
+
         <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
 
         <CompletionTracker key={`completion-${tasks.length}`} childrenList={children} />
@@ -514,16 +524,6 @@ export default function Home() {
             Manage Recurrence Templates
           </button>
         </div>
-
-        <Calendar
-          tasks={tasks}
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-          onTaskComplete={handleTaskComplete}
-          onTaskEdit={handleEditTask}
-          onTaskDelete={handleTaskDelete}
-          children={children}
-        />
 
         {showTaskForm && (
           <TaskForm

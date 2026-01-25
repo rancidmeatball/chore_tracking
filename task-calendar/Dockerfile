@@ -1,10 +1,10 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2026-01-25 - Force rebuild for version 0.1.55
-ARG CACHE_BUST=2026-01-25-06-00-v0.1.55
+# Cache bust: 2026-01-25 - Force rebuild for version 0.1.56
+ARG CACHE_BUST=2026-01-25-06-15-v0.1.56
 RUN echo "Cache bust: ${CACHE_BUST}" && \
-    echo "Building version 0.1.55 - CRITICAL FIX: Ensure dist directory persists in final image"
+    echo "Building version 0.1.56 - Simplify build steps to fix build failure"
 
 # Install Node.js and build dependencies
 RUN apk add --no-cache \
@@ -22,7 +22,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-ARG CACHE_BUST_COPY=2026-01-25-06-00-v0.1.55
+ARG CACHE_BUST_COPY=2026-01-25-06-15-v0.1.56
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -31,7 +31,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-ARG CACHE_BUST_NPM=2026-01-25-06-00-v0.1.55
+ARG CACHE_BUST_NPM=2026-01-25-06-15-v0.1.56
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version && \
@@ -48,7 +48,7 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-ARG CACHE_BUST_COPY_FILES=2026-01-25-06-00-v0.1.55
+ARG CACHE_BUST_COPY_FILES=2026-01-25-06-15-v0.1.56
 RUN echo "Copy cache bust: ${CACHE_BUST_COPY_FILES}"
 COPY . .
 
@@ -76,70 +76,45 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 
 # Build Vite frontend (NOT Next.js)
 # Cache bust timestamp - update this to force rebuild  
-ARG CACHE_BUST_BUILD=2026-01-25-06-00-v0.1.55-DIST-FIX
+ARG CACHE_BUST_BUILD=2026-01-25-06-15-v0.1.56-SIMPLIFIED
 ENV NODE_ENV=production
+
+# Clean previous builds
 RUN echo "=== FORCING FRONTEND REBUILD ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \
-    echo "Version: 0.1.55 - CRITICAL: dist directory must persist" && \
-    echo "Cache invalidation: v2-$(date +%s)" && \
-    echo "This is NOT a Next.js build - it's Vite!" && \
-    rm -rf dist node_modules/.vite 2>/dev/null || true && \
-    touch /tmp/build-timestamp-$(date +%s) && \
-    echo "Current directory contents:" && \
-    ls -la . | head -10 && \
-    echo "=== Running TypeScript check ===" && \
-    npx tsc --noEmit 2>&1 | tee /tmp/tsc.log; TSC_STATUS=$$? && \
-    if [ $$TSC_STATUS -ne 0 ]; then \
-        echo "=== TYPESCRIPT CHECK FAILED (exit code: $$TSC_STATUS) ===" && \
-        cat /tmp/tsc.log && \
-        exit 1; \
-    fi && \
-    echo "TypeScript check passed" && \
-    echo "=== Running npm run build ===" && \
-    npm run build 2>&1 | tee /tmp/build.log; BUILD_STATUS=$$? && \
-    if [ $$BUILD_STATUS -ne 0 ]; then \
-        echo "=== BUILD FAILED (exit code: $$BUILD_STATUS) ===" && \
-        cat /tmp/build.log && \
-        exit 1; \
-    fi && \
-    echo "=== BUILD OUTPUT ===" && \
-    cat /tmp/build.log && \
-    echo "=== Checking build result ===" && \
-    echo "Current working directory: $(pwd)" && \
-    echo "Listing current directory:" && \
-    ls -la . && \
+    echo "Version: 0.1.56 - Simplified build steps" && \
+    rm -rf dist node_modules/.vite 2>/dev/null || true
+
+# TypeScript check
+RUN echo "=== Running TypeScript check ===" && \
+    npx tsc --noEmit || (echo "TypeScript check failed!" && exit 1) && \
+    echo "TypeScript check passed"
+
+# Build frontend
+RUN echo "=== Running npm run build ===" && \
+    npm run build || (echo "Build failed!" && exit 1) && \
+    echo "Build completed"
+
+# Verify build output
+RUN echo "=== Verifying build output ===" && \
     if [ ! -d dist ]; then \
-        echo "ERROR: dist directory not found after build!" && \
-        echo "Build log (last 50 lines):" && \
-        tail -50 /tmp/build.log && \
-        echo "Checking if vite build created any output:" && \
-        find . -name "index.html" -o -name "dist" -type d 2>/dev/null | head -10 && \
+        echo "ERROR: dist directory not found!" && \
+        ls -la . && \
         exit 1; \
     fi && \
-    echo "Dist directory found, contents:" && \
-    ls -la dist/ && \
     if [ ! -f dist/index.html ]; then \
-        echo "ERROR: dist/index.html not found after build!" && \
-        echo "Dist directory contents:" && \
-        ls -la dist/ || echo "dist directory does not exist" && \
+        echo "ERROR: dist/index.html not found!" && \
+        ls -la dist/ && \
         exit 1; \
     fi && \
-    echo "=== BUILD SUCCEEDED ===" && \
-    echo "Dist directory contents:" && \
-    ls -la dist/ | head -10 && \
+    echo "✓ dist directory exists" && \
     echo "✓ dist/index.html exists" && \
-    echo "✓ Build output verified" && \
-    echo "=== VERIFYING VERSION IN BUILT FILES ===" && \
-    grep -r "0.1.55" dist/ || echo "WARNING: Version 0.1.55 not found in dist files" && \
-    echo "=== VERIFYING DELETE BUTTON CODE ===" && \
-    grep -r "DELETE.*child.name.toUpperCase" dist/ || echo "WARNING: Delete button code not found in dist files" && \
-    echo "=== FINAL VERIFICATION: Ensuring dist persists ===" && \
-    ls -la dist/ && \
-    echo "Dist directory size:" && \
-    du -sh dist/ && \
-    echo "=== Creating dist persistence marker ===" && \
-    touch dist/.docker-build-complete && \
-    echo "Build completed at: $(date)" > dist/.docker-build-complete
+    ls -la dist/ | head -10
+
+# Create persistence marker
+RUN echo "Build completed: $(date)" > dist/.build-complete && \
+    echo "Version: 0.1.56" >> dist/.build-complete && \
+    cat dist/.build-complete
 
 # Final verification that dist exists before moving on
 RUN echo "=== PRE-FINAL CHECK: Verifying dist still exists ===" && \
@@ -154,26 +129,6 @@ RUN echo "=== PRE-FINAL CHECK: Verifying dist still exists ===" && \
     echo "✓ Dist directory verified before final steps" && \
     ls -la dist/ | head -5
 
-# CRITICAL: Verify dist exists and create a marker file to ensure it persists
-RUN echo "=== FINAL DIST VERIFICATION ===" && \
-    if [ ! -d dist ]; then \
-        echo "CRITICAL ERROR: dist directory does not exist!" && \
-        echo "Current directory:" && pwd && \
-        echo "Directory contents:" && ls -la && \
-        exit 1; \
-    fi && \
-    if [ ! -f dist/index.html ]; then \
-        echo "CRITICAL ERROR: dist/index.html does not exist!" && \
-        echo "Dist contents:" && ls -la dist/ && \
-        exit 1; \
-    fi && \
-    echo "✓ Dist directory verified" && \
-    echo "✓ dist/index.html exists" && \
-    echo "Dist directory size:" && du -sh dist/ && \
-    echo "Creating persistence marker..." && \
-    echo "Build completed: $(date)" > dist/.build-complete && \
-    echo "Version: 0.1.55" >> dist/.build-complete && \
-    cat dist/.build-complete
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true

@@ -1,10 +1,10 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Cache bust: 2025-12-15 - Force rebuild for version 0.1.25
-ARG CACHE_BUST=2025-12-15-06-30-v0.1.25
+# Cache bust: 2026-01-25 - Force rebuild for version 0.1.54
+ARG CACHE_BUST=2026-01-25-05-45-v0.1.54
 RUN echo "Cache bust: ${CACHE_BUST}" && \
-    echo "Building version 0.1.25 - Fix revoke date normalization, fix clickability (pointer-events), ensure fetchChildren after revoke"
+    echo "Building version 0.1.54 - FORCE REBUILD: Delete button and version display MUST appear"
 
 # Install Node.js and build dependencies
 RUN apk add --no-cache \
@@ -22,7 +22,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-ARG CACHE_BUST_COPY=2026-01-25-05-15-v0.1.53
+ARG CACHE_BUST_COPY=2026-01-25-05-45-v0.1.54
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -31,7 +31,7 @@ RUN test -f package.json || (echo "ERROR: package.json not found!" && exit 1) &&
     test -f prisma/schema.prisma || (echo "ERROR: prisma/schema.prisma not found!" && exit 1)
 
 # Install dependencies
-ARG CACHE_BUST_NPM=2026-01-25-04-10-v0.1.47
+ARG CACHE_BUST_NPM=2026-01-25-05-45-v0.1.54
 RUN echo "Cache bust npm: ${CACHE_BUST_NPM}" && \
     echo "Node version:" && node --version && \
     echo "NPM version:" && npm --version && \
@@ -48,7 +48,7 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-ARG CACHE_BUST_COPY_FILES=2026-01-25-05-15-v0.1.53
+ARG CACHE_BUST_COPY_FILES=2026-01-25-05-45-v0.1.54
 RUN echo "Copy cache bust: ${CACHE_BUST_COPY_FILES}"
 COPY . .
 
@@ -76,12 +76,14 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 
 # Build Vite frontend (NOT Next.js)
 # Cache bust timestamp - update this to force rebuild  
-ARG CACHE_BUST_BUILD=2026-01-25-05-15-v0.1.53-complete
+ARG CACHE_BUST_BUILD=2026-01-25-05-45-v0.1.54-FORCE-REBUILD
 ENV NODE_ENV=production
-RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
+RUN echo "=== FORCING FRONTEND REBUILD ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \
+    echo "Version: 0.1.54 - Delete button and version MUST appear" && \
     echo "Cache invalidation: v2-$(date +%s)" && \
     echo "This is NOT a Next.js build - it's Vite!" && \
+    rm -rf dist node_modules/.vite 2>/dev/null || true && \
     touch /tmp/build-timestamp-$(date +%s) && \
     echo "Current directory contents:" && \
     ls -la . | head -10 && \
@@ -126,7 +128,11 @@ RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
     echo "Dist directory contents:" && \
     ls -la dist/ | head -10 && \
     echo "✓ dist/index.html exists" && \
-    echo "✓ Build output verified"
+    echo "✓ Build output verified" && \
+    echo "=== VERIFYING VERSION IN BUILT FILES ===" && \
+    grep -r "0.1.54" dist/ || echo "WARNING: Version 0.1.54 not found in dist files" && \
+    echo "=== VERIFYING DELETE BUTTON CODE ===" && \
+    grep -r "DELETE.*child.name.toUpperCase" dist/ || echo "WARNING: Delete button code not found in dist files"
 
 # Make scripts executable
 RUN chmod +x start.js init-db.js run.sh 2>/dev/null || true

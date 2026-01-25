@@ -141,23 +141,31 @@ export default function Home() {
         if (completionResponse.ok) {
           const data = await completionResponse.json()
           console.log('[COMPLETION] Daily completion check after uncheck:', data)
+          console.log('[COMPLETION] categoryBreakdown:', JSON.stringify(data.categoryBreakdown, null, 2))
           
           // Find this child in the category breakdown
           const childBreakdown = data.categoryBreakdown?.find((cb: any) => cb.childId === targetTask.childId)
+          console.log('[COMPLETION] Found childBreakdown:', childBreakdown)
           const stillHasBothComplete = childBreakdown?.bothComplete === true
           
           console.log('[COMPLETION] Child still has both categories complete:', stillHasBothComplete)
           
           // Only revoke if they no longer have both categories complete
           if (!stillHasBothComplete) {
+            // Use the date from the response (same as award logic)
+            const revokeDate = data.date || taskDateIso
+            console.log(`[COMPLETION] Using revoke date: ${revokeDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
+            
             try {
+              console.log('[COMPLETION] ===== CALLING REVOKE ENDPOINT =====')
               console.log('[COMPLETION] Calling /api/tasks/revoke-tech-time...')
+              console.log('[COMPLETION] Request body:', { childId: targetTask.childId, date: revokeDate })
               const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   childId: targetTask.childId,
-                  date: taskDateIso,
+                  date: revokeDate,
                 }),
               })
 

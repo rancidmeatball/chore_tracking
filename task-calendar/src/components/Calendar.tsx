@@ -152,12 +152,12 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.43'
+  const version = '0.1.44'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
-      <div className="flex justify-between items-center mb-2 gap-2 border-b border-gray-200 pb-2">
-        <div className="text-xs sm:text-sm text-gray-600 font-mono">
+      <div className="flex justify-between items-center mb-3 gap-2 border-b-2 border-gray-300 pb-2">
+        <div className="text-sm font-semibold text-gray-700 font-mono bg-gray-50 px-3 py-1 rounded">
           v{version} • {todayStr}
         </div>
       </div>

@@ -261,7 +261,7 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
         <button
           type="submit"
           disabled={isSaving}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="flex-[2.5] px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
@@ -287,7 +287,7 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
               alert('Failed to delete child')
             }
           }}
-          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 font-medium text-lg"
+          className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 font-medium text-lg"
           title="Delete this child and all their tasks"
         >
           🗑️

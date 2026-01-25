@@ -495,7 +495,7 @@ export default function Home() {
 
         <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
 
-        <CompletionTracker childrenList={children} />
+        <CompletionTracker key={`completion-${tasks.length}`} childrenList={children} />
 
         <div className="mb-6 flex gap-4">
           <button

@@ -149,7 +149,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.63'
+  const version = '0.1.64'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
@@ -268,78 +268,82 @@ function Calendar({
                   // Limit to 8 tasks maximum for scrolling
                   const tasksToShow = sortedTasks.slice(0, 8)
                   
-                  return tasksToShow.map((task, index) => {
-                    const bgColor = getTaskBgColor(task)
-                    const textColor = getTaskColor(task)
-                    
-                    return (
-                      <div
-                        key={task.id}
-                        className={`
-                          relative z-10 cursor-pointer text-[9px] p-0.5 rounded truncate group touch-manipulation
-                          ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
-                          hover:opacity-90 active:opacity-80 transition-opacity
-                          ${index > 0 ? 'border-t border-white' : ''}
-                        `}
-                        style={{
-                          ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
-                          pointerEvents: 'auto',
-                          zIndex: 10,
-                          lineHeight: '1.2',
-                          borderTopWidth: index > 0 ? '1px' : '0px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const now = Date.now()
-                          const lastClick = lastClickRef.current
-                          
-                          // Check if this is a double-click (same task, within 300ms)
-                          if (lastClick && lastClick.taskId === task.id && (now - lastClick.timestamp) < 300) {
-                            // This is a double-click - don't toggle completion
-                            lastClickRef.current = null
-                            return
-                          }
-                          
-                          // Store this click
-                          lastClickRef.current = { taskId: task.id, timestamp: now }
-                          
-                          // Delay the single-click action to allow for double-click detection
-                          setTimeout(() => {
-                            // Only execute if this is still the last click (not a double-click)
-                            if (lastClickRef.current && lastClickRef.current.taskId === task.id && (Date.now() - lastClickRef.current.timestamp) >= 300) {
-                              onTaskComplete(task.id, !task.completed)
+                  return (
+                    <>
+                      {tasksToShow.map((task, index) => {
+                        const bgColor = getTaskBgColor(task)
+                        const textColor = getTaskColor(task)
+                        
+                        return (
+                          <div
+                            key={task.id}
+                            className={`
+                              relative z-10 cursor-pointer text-[9px] p-0.5 rounded truncate group touch-manipulation
+                              ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
+                              hover:opacity-90 active:opacity-80 transition-opacity
+                              ${index > 0 ? 'border-t border-white' : ''}
+                            `}
+                            style={{
+                              ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
+                              pointerEvents: 'auto',
+                              zIndex: 10,
+                              lineHeight: '1.2',
+                              borderTopWidth: index > 0 ? '1px' : '0px'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const now = Date.now()
+                              const lastClick = lastClickRef.current
+                              
+                              // Check if this is a double-click (same task, within 300ms)
+                              if (lastClick && lastClick.taskId === task.id && (now - lastClick.timestamp) < 300) {
+                                // This is a double-click - don't toggle completion
+                                lastClickRef.current = null
+                                return
+                              }
+                              
+                              // Store this click
+                              lastClickRef.current = { taskId: task.id, timestamp: now }
+                              
+                              // Delay the single-click action to allow for double-click detection
+                              setTimeout(() => {
+                                // Only execute if this is still the last click (not a double-click)
+                                if (lastClickRef.current && lastClickRef.current.taskId === task.id && (Date.now() - lastClickRef.current.timestamp) >= 300) {
+                                  onTaskComplete(task.id, !task.completed)
+                                  lastClickRef.current = null
+                                }
+                              }, 300)
+                            }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation()
+                              e.preventDefault()
+                              // Clear the last click ref to prevent single-click action
                               lastClickRef.current = null
-                            }
-                          }, 300)
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          // Clear the last click ref to prevent single-click action
-                          lastClickRef.current = null
-                          // Double-click to edit
-                          onTaskEdit(task)
-                        }}
-                        title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
-                      >
-                        <div className="flex items-center gap-0.5">
-                          {task.completed && (
-                            <span className="text-green-700 font-bold flex-shrink-0 text-[8px]">✓</span>
-                          )}
-                          <span className="text-[7px] opacity-75 flex-shrink-0">
-                            {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
-                          </span>
-                          <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
+                              // Double-click to edit
+                              onTaskEdit(task)
+                            }}
+                            title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
+                          >
+                            <div className="flex items-center gap-0.5">
+                              {task.completed && (
+                                <span className="text-green-700 font-bold flex-shrink-0 text-[8px]">✓</span>
+                              )}
+                              <span className="text-[7px] opacity-75 flex-shrink-0">
+                                {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
+                              </span>
+                              <span className={task.completed ? 'line-through' : ''}>{task.title}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {sortedTasks.length > 8 && (
+                        <div className="text-[8px] text-gray-500 pt-0.5 border-t border-white">
+                          +{sortedTasks.length - 8} more
                         </div>
-                      </div>
-                    )
-                  })
+                      )}
+                    </>
+                  )
                 })()}
-                {sortedTasks.length > 8 && (
-                  <div className="text-[8px] text-gray-500 pt-0.5 border-t border-white">
-                    +{sortedTasks.length - 8} more
-                  </div>
-                )}
               </div>
             </div>
           )

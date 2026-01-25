@@ -191,6 +191,7 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
   const [color, setColor] = useState(child.color || '#3B82F6')
   const [inputBoolean, setInputBoolean] = useState(child.inputBoolean || '')
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -217,8 +218,46 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
     }
   }
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/children/${child.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        onUpdated()
+        alert('Child deleted successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error || 'Failed to delete child'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting child:', error)
+      alert('Failed to delete child')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="p-4 border border-gray-200 rounded-lg space-y-3">
+      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800">{child.name}</h3>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isSaving || isDeleting}
+          className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow"
+          title="Delete this child and all their tasks"
+        >
+          {isDeleting ? 'Deleting...' : '🗑️ Delete'}
+        </button>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-900 mb-1">Name</label>
         <input
@@ -255,10 +294,10 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
       </div>
       <button
         type="submit"
-        disabled={isSaving}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isSaving || isDeleting}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
       >
-        {isSaving ? 'Saving...' : 'Save'}
+        {isSaving ? 'Saving...' : 'Save Changes'}
       </button>
     </form>
   )

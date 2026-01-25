@@ -352,11 +352,11 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
           )}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-end">
         <button
           type="submit"
           disabled={isSaving || isDeleting}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {isSaving ? 'Saving...' : 'Save'}
         </button>
@@ -364,9 +364,10 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
           type="button"
           onClick={handleDelete}
           disabled={isSaving || isDeleting}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md"
+          title="Delete this child and all their tasks"
         >
-          {isDeleting ? 'Deleting...' : 'Delete'}
+          {isDeleting ? 'Deleting...' : '🗑️ Delete'}
         </button>
       </div>
     </form>

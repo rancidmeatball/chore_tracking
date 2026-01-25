@@ -149,7 +149,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.65'
+  const version = '0.1.66'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
@@ -210,14 +210,11 @@ function Calendar({
               key={dayKey}
               onClick={() => onDateSelect(day)}
               className={`
-                border-2 rounded-lg p-1 sm:p-2 cursor-pointer transition touch-manipulation
+                h-12 sm:h-16 md:h-24 border-2 rounded-lg p-1 sm:p-2 cursor-pointer transition touch-manipulation
                 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 active:bg-gray-100'}
                 ${!isCurrentMonth ? 'opacity-50' : ''}
               `}
               style={{ 
-                minHeight: '48px',
-                height: 'auto',
-                maxHeight: '200px',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'
@@ -257,7 +254,6 @@ function Calendar({
                 className="overflow-y-auto overflow-x-hidden flex-1" 
                 style={{ 
                   minHeight: 0,
-                  maxHeight: '150px', 
                   pointerEvents: 'auto', 
                   WebkitOverflowScrolling: 'touch',
                   position: 'relative',

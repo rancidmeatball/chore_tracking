@@ -14,19 +14,6 @@ export default function TimeTracker({ childrenList, onTimeUpdated }: TimeTracker
 
   const selectedChild = childrenList.find(c => c.id === selectedChildId)
 
-  const formatTime = (minutes: number): string => {
-    const hours = Math.floor(Math.abs(minutes) / 60)
-    const mins = Math.abs(minutes) % 60
-    const sign = minutes < 0 ? '-' : ''
-    if (hours === 0) {
-      return `${sign}${mins}m`
-    }
-    if (mins === 0) {
-      return `${sign}${hours}h`
-    }
-    return `${sign}${hours}h ${mins}m`
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedChildId) {
@@ -60,9 +47,49 @@ export default function TimeTracker({ childrenList, onTimeUpdated }: TimeTracker
     }
   }
 
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(Math.abs(minutes) / 60)
+    const mins = Math.abs(minutes) % 60
+    const sign = minutes < 0 ? '-' : ''
+    if (hours === 0) {
+      return `${sign}${mins}m`
+    }
+    if (mins === 0) {
+      return `${sign}${hours}h`
+    }
+    return `${sign}${hours}h ${mins}m`
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Time Tracker</h2>
+      
+      {childrenList.length > 0 && (
+        <div className="mb-6 pb-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">All Children&apos;s Time Balance</h3>
+          <div className="space-y-2">
+            {childrenList.map((child) => (
+              <div
+                key={child.id}
+                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  {child.color && (
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: child.color }}
+                    />
+                  )}
+                  <span className="font-medium text-gray-900">{child.name}</span>
+                </div>
+                <span className={`text-lg font-bold ${child.timeBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatTime(child.timeBalance)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

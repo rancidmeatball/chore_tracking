@@ -491,22 +491,6 @@ export default function Home() {
           </div>
         )}
 
-        <ChildManager childrenList={children} onChildAdded={fetchChildren} />
-
-        <Calendar
-          tasks={tasks}
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-          onTaskComplete={handleTaskComplete}
-          onTaskEdit={handleEditTask}
-          onTaskDelete={handleTaskDelete}
-          children={children}
-        />
-
-        <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
-
-        <CompletionTracker key={`completion-${tasks.length}`} childrenList={children} />
-
         <div className="mb-6 flex gap-4">
           <button
             onClick={() => {
@@ -524,6 +508,22 @@ export default function Home() {
             Manage Recurrence Templates
           </button>
         </div>
+
+        <Calendar
+          tasks={tasks}
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+          onTaskComplete={handleTaskComplete}
+          onTaskEdit={handleEditTask}
+          onTaskDelete={handleTaskDelete}
+          children={children}
+        />
+
+        <TimeTracker childrenList={children} onTimeUpdated={fetchChildren} />
+
+        <CompletionTracker key={`completion-${tasks.length}`} childrenList={children} />
+
+        <ChildManager childrenList={children} onChildAdded={fetchChildren} />
 
         {showTaskForm && (
           <TaskForm

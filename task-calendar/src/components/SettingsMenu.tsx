@@ -374,7 +374,7 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
       <div className="flex gap-2 items-end">
         <button
           type="submit"
-          disabled={isSaving || isDeleting}
+          disabled={isSaving}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {isSaving ? 'Saving...' : 'Save Changes'}

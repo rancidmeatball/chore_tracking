@@ -283,13 +283,19 @@ export default function Home() {
           for (const reward of data.techTimeRewards) {
             // Only award if not already awarded
             if (!reward.awarded) {
+              // Use the date from the reward object (which comes from the backend)
+              // This is the most reliable source since it's the date that was actually checked
+              const rewardDate = reward.date || data.date || awardDate
+              
               console.log(`[COMPLETION] ===== CALLING AWARD ENDPOINT =====`)
-              console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${awardDate}`)
+              console.log(`[COMPLETION] Awarding tech time to ${reward.childName}`)
+              console.log(`[COMPLETION] Date sources: reward.date=${reward.date}, data.date=${data.date}, awardDate=${awardDate}`)
+              console.log(`[COMPLETION] Using date: ${rewardDate}`)
               
               // Double-check the date before sending
               const requestBody = { 
                 childId: reward.childId,
-                date: awardDate,
+                date: rewardDate,
               }
               console.log(`[COMPLETION] Request body (before JSON.stringify):`, requestBody)
               console.log(`[COMPLETION] Request body (after JSON.stringify):`, JSON.stringify(requestBody))

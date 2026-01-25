@@ -347,6 +347,7 @@ router.get('/check-daily-completion', async (req, res) => {
           childId: childData.childId,
           childName: childData.childName,
           awarded: !!existingAward,
+          date: checkDate.toISOString(), // Include the date that was checked
         });
       } else {
         console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);

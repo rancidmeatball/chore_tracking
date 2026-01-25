@@ -168,57 +168,15 @@ export default function SettingsMenu({ childrenList = [], onChildUpdated, onCach
             </div>
             <div className="space-y-4">
               {childrenList && childrenList.length > 0 ? (
-                childrenList.map((child) => {
-                  console.log('[SETTINGS] Rendering child:', child.name, 'with delete button')
-                  return (
-                    <div key={child.id} className="border-4 border-red-500 rounded-lg p-3 mb-4 bg-red-50">
-                      {/* DELETE BUTTON - EXTREMELY PROMINENT */}
-                      <div className="mb-3 p-4 bg-red-600 rounded-lg shadow-xl border-4 border-red-800">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white text-lg font-bold">Delete {child.name}?</span>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              console.log('[SETTINGS] Delete button clicked for:', child.name)
-                              if (!confirm(`⚠️ WARNING: Are you sure you want to delete "${child.name}"? This will also delete ALL their tasks and cannot be undone!`)) {
-                                return
-                              }
-                              try {
-                                const response = await fetch(`/api/children/${child.id}`, {
-                                  method: 'DELETE',
-                                })
-                                if (response.ok) {
-                                  if (onChildUpdated) onChildUpdated()
-                                  alert('Child deleted successfully!')
-                                } else {
-                                  const error = await response.json()
-                                  alert(`Error: ${error.error || 'Failed to delete child'}`)
-                                }
-                              } catch (error) {
-                                console.error('Error deleting child:', error)
-                                alert('Failed to delete child')
-                              }
-                            }}
-                            className="px-6 py-3 bg-white text-red-600 text-lg font-extrabold rounded-lg hover:bg-red-50 active:bg-red-100 shadow-lg border-4 border-white"
-                            style={{ minWidth: '150px', fontSize: '18px' }}
-                            title="Delete this child and all their tasks"
-                          >
-                            🗑️ DELETE {child.name.toUpperCase()}
-                          </button>
-                        </div>
-                      </div>
-                      {/* Child Edit Form */}
-                      <div className="bg-white rounded-lg p-3 border-2 border-gray-300">
-                        <ChildEditForm
-                          child={child}
-                          onUpdated={() => {
-                            if (onChildUpdated) onChildUpdated()
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })
+                childrenList.map((child) => (
+                  <ChildEditForm
+                    key={child.id}
+                    child={child}
+                    onUpdated={() => {
+                      if (onChildUpdated) onChildUpdated()
+                    }}
+                  />
+                ))
               ) : (
                 <p className="text-gray-600 text-center py-4">No children added yet. Use "Add Child" button to add children.</p>
               )}
@@ -236,7 +194,6 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
   const [color, setColor] = useState(child.color || '#3B82F6')
   const [inputBoolean, setInputBoolean] = useState(child.inputBoolean || '')
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -341,13 +298,42 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
           />
         </div>
       </div>
-      <button
-        type="submit"
-        disabled={isSaving || isDeleting}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-      >
-        {isSaving ? 'Saving...' : 'Save Changes'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
+              return
+            }
+            try {
+              const response = await fetch(`/api/children/${child.id}`, {
+                method: 'DELETE',
+              })
+              if (response.ok) {
+                onUpdated()
+                alert('Child deleted successfully!')
+              } else {
+                const error = await response.json()
+                alert(`Error: ${error.error || 'Failed to delete child'}`)
+              }
+            } catch (error) {
+              console.error('Error deleting child:', error)
+              alert('Failed to delete child')
+            }
+          }}
+          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 font-medium text-lg"
+          title="Delete this child and all their tasks"
+        >
+          🗑️
+        </button>
+      </div>
     </form>
   )
 }

@@ -855,11 +855,48 @@ router.post('/award-tech-time', async (req, res) => {
       return res.status(400).json({ error: 'childId is required' });
     }
 
-    console.log(`[TECH TIME] childId: ${childId}, date: ${date}`);
-    const checkDate = date ? getUtcDateOnly(date) : getUtcDateOnly(new Date().toISOString());
+    console.log(`[TECH TIME] childId: ${childId}, date from request: ${date}`);
+    
+    // Check if the date looks like a current timestamp (likely wrong from frontend)
+    // If it's within the last hour, it's probably wrong - infer from most recent task instead
+    let checkDate;
+    if (date) {
+      const providedDate = new Date(date);
+      const now = new Date();
+      const hoursDiff = Math.abs(now - providedDate) / (1000 * 60 * 60);
+      
+      // If the date is within the last 2 hours, it's probably a current timestamp (wrong)
+      if (hoursDiff < 2) {
+        console.log(`[TECH TIME] ⚠️ Date looks like current timestamp (${hoursDiff.toFixed(2)} hours ago), inferring from most recent task...`);
+        // Find the most recently updated task for this child
+        const recentTask = await prisma.task.findFirst({
+          where: { childId },
+          orderBy: { updatedAt: 'desc' },
+        });
+        
+        if (recentTask) {
+          const taskDate = new Date(recentTask.dueDate);
+          const year = taskDate.getUTCFullYear();
+          const month = taskDate.getUTCMonth();
+          const day = taskDate.getUTCDate();
+          checkDate = new Date(Date.UTC(year, month, day, 12, 0, 0, 0));
+          console.log(`[TECH TIME] ✅ Using date from most recent task: ${checkDate.toISOString()} (task: ${recentTask.title})`);
+        } else {
+          console.log(`[TECH TIME] ⚠️ No recent task found, using provided date`);
+          checkDate = getUtcDateOnly(date);
+        }
+      } else {
+        checkDate = getUtcDateOnly(date);
+        console.log(`[TECH TIME] ✅ Using provided date: ${checkDate.toISOString()}`);
+      }
+    } else {
+      checkDate = getUtcDateOnly(new Date().toISOString());
+      console.log(`[TECH TIME] ⚠️ No date provided, using today`);
+    }
+    
     const start = startOfDay(checkDate);
     const end = endOfDay(checkDate);
-    console.log(`[TECH TIME] checkDate: ${checkDate.toISOString()}, start: ${start.toISOString()}, end: ${end.toISOString()}`);
+    console.log(`[TECH TIME] Final checkDate: ${checkDate.toISOString()}, start: ${start.toISOString()}, end: ${end.toISOString()}`);
 
     const tasks = await prisma.task.findMany({
       where: {

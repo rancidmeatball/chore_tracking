@@ -220,31 +220,6 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
-      return
-    }
-
-    setIsDeleting(true)
-    try {
-      const response = await fetch(`/api/children/${child.id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        onUpdated()
-        alert('Child deleted successfully!')
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to delete child'}`)
-      }
-    } catch (error) {
-      console.error('Error deleting child:', error)
-      alert('Failed to delete child')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
 
   // Log to verify component is rendering
   console.log('[SETTINGS] Rendering ChildEditForm for:', child.name, 'Delete button should be visible')

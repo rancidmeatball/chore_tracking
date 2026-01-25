@@ -404,6 +404,8 @@ router.get('/check-daily-completion', async (req, res) => {
         childData.enrichment.completed > 0;
       
       if (!bothComplete) {
+        console.log(`[CHECK-DAILY] Checking for auto-revoke: Child ${childData.childName} has bothComplete=false`);
+        console.log(`[CHECK-DAILY] Checking for award on date: ${start.toISOString()}`);
         // Check if an award exists for this child on this date
         const existingAward = await prisma.techTimeAward.findUnique({
           where: {
@@ -414,8 +416,10 @@ router.get('/check-daily-completion', async (req, res) => {
           },
         });
         
+        console.log(`[CHECK-DAILY] Award check result: ${existingAward ? 'FOUND' : 'NOT FOUND'}`);
         if (existingAward) {
           console.log(`[CHECK-DAILY] ⚠️ AUTO-REVOKE: Child ${childData.childName} has bothComplete=false but award exists, auto-revoking...`);
+          console.log(`[CHECK-DAILY] Award details:`, { id: existingAward.id, minutes: existingAward.minutes, awardDate: existingAward.awardDate.toISOString() });
           try {
             const child = await prisma.child.findUnique({
               where: { id: childData.childId },

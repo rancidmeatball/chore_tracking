@@ -281,6 +281,18 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border border-gray-200 rounded-lg space-y-3">
+      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800">{child.name}</h3>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isSaving || isDeleting}
+          className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow"
+          title="Delete this child and all their tasks"
+        >
+          {isDeleting ? 'Deleting...' : '🗑️ Delete'}
+        </button>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-900 mb-1">Name</label>
         <input
@@ -356,18 +368,9 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
         <button
           type="submit"
           disabled={isSaving || isDeleting}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isSaving || isDeleting}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md"
-          title="Delete this child and all their tasks"
-        >
-          {isDeleting ? 'Deleting...' : '🗑️ Delete'}
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
 import { Task } from '@/types'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface CalendarProps {
   tasks: Task[]
@@ -21,6 +22,7 @@ function Calendar({
   onTaskDelete,
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const isMobile = useIsMobile()
   // Track last click to handle double-click properly
   const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
 
@@ -149,8 +151,171 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.66'
+  const version = '0.1.67'
 
+  // Mobile view: List of upcoming tasks grouped by date
+  if (isMobile) {
+    // Get tasks for the next 14 days
+    const upcomingDays = Array.from({ length: 14 }, (_, i) => {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      return date
+    })
+
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-4">
+        <div className="flex justify-between items-center mb-4 border-b-2 border-gray-300 pb-2">
+          <div className="text-sm font-semibold text-gray-700 font-mono bg-gray-50 px-3 py-1 rounded">
+            v{version} • {todayStr}
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={prevMonth}
+            className="px-4 py-3 bg-blue-600 text-white rounded-lg active:bg-blue-800 font-semibold text-base touch-manipulation min-h-[44px]"
+            aria-label="Previous month"
+          >
+            ←
+          </button>
+          <h2 className="text-xl font-bold text-gray-800 text-center flex-1">
+            {monthYear}
+          </h2>
+          <button
+            onClick={nextMonth}
+            className="px-4 py-3 bg-blue-600 text-white rounded-lg active:bg-blue-800 font-semibold text-base touch-manipulation min-h-[44px]"
+            aria-label="Next month"
+          >
+            →
+          </button>
+        </div>
+
+        {/* Mobile: Week view with larger touch targets */}
+        <div className="mb-4">
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+              <div key={day} className="text-center text-xs font-semibold text-gray-800 py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {(() => {
+              const weekStart = startOfWeek(currentMonth, { weekStartsOn: 0 })
+              const weekEnd = endOfWeek(currentMonth, { weekStartsOn: 0 })
+              const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
+              
+              return weekDays.map((day) => {
+                const dayKey = format(day, 'yyyy-MM-dd')
+                const dayTasks = getTasksForDate(day)
+                const isSelected = isSameDay(day, selectedDate)
+                const isCurrentMonth = isSameMonth(day, currentMonth)
+                const dayNumber = day.getDate()
+                const isToday = isSameDay(day, today)
+                
+                return (
+                  <button
+                    key={dayKey}
+                    onClick={() => onDateSelect(day)}
+                    className={`
+                      min-h-[60px] border-2 rounded-lg p-2 transition touch-manipulation
+                      ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 active:bg-gray-100'}
+                      ${!isCurrentMonth ? 'opacity-50' : ''}
+                      ${isToday ? 'ring-2 ring-blue-300' : ''}
+                    `}
+                    style={{ 
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="text-sm font-semibold mb-1">
+                      {dayNumber}
+                    </div>
+                    {dayTasks.length > 0 && (
+                      <div className="text-xs text-gray-600">
+                        {dayTasks.filter(t => !t.completed).length}/{dayTasks.length}
+                      </div>
+                    )}
+                  </button>
+                )
+              })
+            })()}
+          </div>
+        </div>
+
+        {/* Mobile: Selected date tasks in large, touch-friendly list */}
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            {format(selectedDate, 'EEEE, MMMM d')}
+          </h3>
+          <div className="space-y-3">
+            {(() => {
+              const selectedDateTasks = getTasksForDate(selectedDate)
+              if (selectedDateTasks.length === 0) {
+                return <p className="text-gray-700 text-center py-4">No tasks for this date</p>
+              }
+              const sortedTasks = [...selectedDateTasks].sort((a, b) => {
+                if (a.completed !== b.completed) {
+                  return a.completed ? 1 : -1
+                }
+                return a.title.localeCompare(b.title)
+              })
+              
+              return sortedTasks.map((task) => {
+                const bgColor = getTaskBgColor(task)
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 p-4 rounded-lg border-2 min-h-[60px] touch-manipulation"
+                    style={{ 
+                      backgroundColor: task.completed ? '#f0f0f0' : bgColor + '20',
+                      borderColor: task.completed ? '#d0d0d0' : bgColor,
+                      borderLeftWidth: '6px'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        onTaskComplete(task.id, e.target.checked)
+                      }}
+                      className="w-6 h-6 text-blue-600 rounded touch-manipulation flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-lg">
+                          {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
+                        </span>
+                        <h4 className={`font-semibold text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                          {task.title}
+                        </h4>
+                      </div>
+                      {task.child && (
+                        <p className="text-sm text-gray-600">{task.child.name}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onTaskEdit(task)
+                      }}
+                      className="px-4 py-2 text-base bg-blue-100 text-blue-700 rounded active:bg-blue-200 touch-manipulation min-h-[44px] flex-shrink-0"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )
+              })
+            })()}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop view: Full calendar grid
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
       <div className="flex justify-between items-center mb-3 gap-2 border-b-2 border-gray-300 pb-2">
@@ -354,7 +519,7 @@ function Calendar({
         })}
       </div>
 
-      {/* Selected Date Tasks Detail */}
+      {/* Selected Date Tasks Detail - Desktop only */}
       <div className="mt-3 sm:mt-6 border-t pt-3 sm:pt-6">
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
           Tasks for {format(selectedDate, 'MMMM d, yyyy')} ({(() => {

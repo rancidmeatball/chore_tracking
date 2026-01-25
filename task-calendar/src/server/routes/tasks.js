@@ -393,6 +393,8 @@ router.get('/check-daily-completion', async (req, res) => {
     };
     
     console.log(`[CHECK-DAILY] Response techTimeRewards:`, JSON.stringify(responseData.techTimeRewards, null, 2));
+    console.log(`[CHECK-DAILY] Response categoryBreakdown:`, JSON.stringify(responseData.categoryBreakdown, null, 2));
+    console.log(`[CHECK-DAILY] Response date:`, responseData.date);
     res.json(responseData);
   } catch (error) {
     console.error('[CHECK-DAILY] Error checking daily completion:', error);

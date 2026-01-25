@@ -152,7 +152,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.44'
+  const version = '0.1.45'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">

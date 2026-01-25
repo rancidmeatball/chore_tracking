@@ -97,9 +97,11 @@ export default function Home() {
       // Only revoke if the child no longer has both categories complete
       if (!completed) {
         console.log('[COMPLETION] ===== TASK UNCOMPLETED =====')
+        console.log('[COMPLETION] ⚠️⚠️⚠️ TASK UNCOMPLETED - CHECKING FOR REVOKE ⚠️⚠️⚠️')
         console.log('[COMPLETION] Task uncompleted, checking if tech time should be revoked')
         console.log('[COMPLETION] childId:', targetTask.childId)
         console.log('[COMPLETION] date:', taskDateIso)
+        console.log('[COMPLETION] targetTask:', JSON.stringify({ id: targetTask.id, title: targetTask.title, childId: targetTask.childId, dueDate: targetTask.dueDate }))
         
         // Refresh tasks first to get current state
         await fetchTasks()
@@ -149,11 +151,16 @@ export default function Home() {
           const stillHasBothComplete = childBreakdown?.bothComplete === true
           
           console.log('[COMPLETION] Child still has both categories complete:', stillHasBothComplete)
+          console.log('[COMPLETION] categoryBreakdown length:', data.categoryBreakdown?.length || 0)
+          console.log('[COMPLETION] All categoryBreakdown children:', data.categoryBreakdown?.map((cb: any) => ({ childId: cb.childId, childName: cb.childName, bothComplete: cb.bothComplete })))
           
           // Only revoke if they no longer have both categories complete
-          if (!stillHasBothComplete) {
+          // Also check if childBreakdown exists - if not, they might have no tasks left, but we should still try to revoke if an award exists
+          if (!stillHasBothComplete || !childBreakdown) {
             // Use the date from the response (same as award logic)
             const revokeDate = data.date || taskDateIso
+            console.log(`[COMPLETION] ===== ATTEMPTING TO REVOKE =====`)
+            console.log(`[COMPLETION] stillHasBothComplete: ${stillHasBothComplete}, childBreakdown exists: ${!!childBreakdown}`)
             console.log(`[COMPLETION] Using revoke date: ${revokeDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
             
             try {

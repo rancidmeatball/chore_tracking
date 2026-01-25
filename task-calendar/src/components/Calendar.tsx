@@ -151,7 +151,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.68'
+  const version = '0.1.69'
 
   // Mobile view: Week view with large touch-friendly task list
   if (isMobile) {
@@ -183,38 +183,33 @@ function Calendar({
           </button>
         </div>
 
-        {/* Mobile: Week view with larger touch targets - show week containing selected date */}
+        {/* Mobile: 3-day view with today in the middle */}
         <div className="mb-4">
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-              <div key={day} className="text-center text-xs font-semibold text-gray-800 py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-3 gap-2">
             {(() => {
-              // Show the week containing the selected date
-              const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 })
-              const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 })
-              const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
+              // Show 3 days: yesterday, today, tomorrow (or adjust based on selected date)
+              const baseDate = isSameDay(selectedDate, today) ? today : selectedDate
+              const threeDays = [
+                new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() - 1),
+                baseDate,
+                new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1)
+              ]
               
-              return weekDays.map((day) => {
+              return threeDays.map((day) => {
                 const dayKey = format(day, 'yyyy-MM-dd')
                 const dayTasks = getTasksForDate(day)
                 const isSelected = isSameDay(day, selectedDate)
-                const isCurrentMonth = isSameMonth(day, currentMonth)
-                const dayNumber = day.getDate()
                 const isToday = isSameDay(day, today)
+                const dayNumber = day.getDate()
+                const dayName = format(day, 'EEE')
                 
                 return (
                   <button
                     key={dayKey}
                     onClick={() => onDateSelect(day)}
                     className={`
-                      min-h-[60px] border-2 rounded-lg p-2 transition touch-manipulation
+                      min-h-[80px] border-2 rounded-lg p-3 transition touch-manipulation
                       ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 active:bg-gray-100'}
-                      ${!isCurrentMonth ? 'opacity-50' : ''}
                       ${isToday ? 'ring-2 ring-blue-300' : ''}
                     `}
                     style={{ 
@@ -223,12 +218,20 @@ function Calendar({
                       overflow: 'hidden'
                     }}
                   >
-                    <div className="text-sm font-semibold mb-1">
+                    <div className="text-xs text-gray-600 mb-1">
+                      {dayName}
+                    </div>
+                    <div className="text-lg font-bold mb-1">
                       {dayNumber}
                     </div>
                     {dayTasks.length > 0 && (
-                      <div className="text-xs text-gray-600">
+                      <div className="text-sm text-gray-700 font-semibold">
                         {dayTasks.filter(t => !t.completed).length}/{dayTasks.length}
+                      </div>
+                    )}
+                    {isToday && (
+                      <div className="text-xs text-blue-600 font-semibold mt-1">
+                        Today
                       </div>
                     )}
                   </button>
@@ -241,7 +244,7 @@ function Calendar({
         {/* Mobile: Selected date tasks in large, touch-friendly list */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            {format(selectedDate, 'EEEE, MMMM d')}
+            {format(selectedDate, 'EEEE, MMM d')}
           </h3>
           <div className="space-y-3">
             {(() => {

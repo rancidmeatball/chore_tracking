@@ -151,17 +151,10 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.67'
+  const version = '0.1.68'
 
-  // Mobile view: List of upcoming tasks grouped by date
+  // Mobile view: Week view with large touch-friendly task list
   if (isMobile) {
-    // Get tasks for the next 14 days
-    const upcomingDays = Array.from({ length: 14 }, (_, i) => {
-      const date = new Date(today)
-      date.setDate(today.getDate() + i)
-      return date
-    })
-
     return (
       <div className="bg-white rounded-lg shadow-lg p-4">
         <div className="flex justify-between items-center mb-4 border-b-2 border-gray-300 pb-2">

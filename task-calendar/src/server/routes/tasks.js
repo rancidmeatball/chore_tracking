@@ -392,6 +392,61 @@ router.get('/check-daily-completion', async (req, res) => {
       })),
     };
     
+    // Auto-revoke tech time if bothComplete is false but an award exists
+    // This is a server-side workaround in case the frontend doesn't call revoke
+    for (const childData of Object.values(tasksByChild)) {
+      const hasHelpingFamily = childData.helpingFamily.total > 0;
+      const hasEnrichment = childData.enrichment.total > 0;
+      const bothComplete = 
+        hasHelpingFamily && 
+        hasEnrichment && 
+        childData.helpingFamily.completed > 0 &&
+        childData.enrichment.completed > 0;
+      
+      if (!bothComplete) {
+        // Check if an award exists for this child on this date
+        const existingAward = await prisma.techTimeAward.findUnique({
+          where: {
+            childId_awardDate: {
+              childId: childData.childId,
+              awardDate: start,
+            },
+          },
+        });
+        
+        if (existingAward) {
+          console.log(`[CHECK-DAILY] ⚠️ AUTO-REVOKE: Child ${childData.childName} has bothComplete=false but award exists, auto-revoking...`);
+          try {
+            const child = await prisma.child.findUnique({
+              where: { id: childData.childId },
+              select: { timeBalance: true, name: true },
+            });
+            
+            if (child) {
+              const previousBalance = child.timeBalance || 0;
+              const newBalance = Math.max(0, previousBalance - (existingAward.minutes || 60));
+              
+              await prisma.$transaction([
+                prisma.child.update({
+                  where: { id: childData.childId },
+                  data: {
+                    timeBalance: newBalance,
+                  },
+                }),
+                prisma.techTimeAward.delete({
+                  where: { id: existingAward.id },
+                }),
+              ]);
+              
+              console.log(`[CHECK-DAILY] ✅ AUTO-REVOKE: Revoked ${existingAward.minutes || 60} minutes from ${child.name}. New balance: ${newBalance} minutes`);
+            }
+          } catch (autoRevokeErr) {
+            console.error(`[CHECK-DAILY] ❌ AUTO-REVOKE ERROR:`, autoRevokeErr);
+          }
+        }
+      }
+    }
+    
     console.log(`[CHECK-DAILY] Response techTimeRewards:`, JSON.stringify(responseData.techTimeRewards, null, 2));
     console.log(`[CHECK-DAILY] Response categoryBreakdown:`, JSON.stringify(responseData.categoryBreakdown, null, 2));
     console.log(`[CHECK-DAILY] Response date:`, responseData.date);

@@ -244,18 +244,22 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
     }
   }
 
+  // Log to verify component is rendering
+  console.log('[SETTINGS] Rendering ChildEditForm for:', child.name, 'Delete button should be visible')
+  
   return (
-    <form onSubmit={handleSubmit} className="p-4 border border-gray-200 rounded-lg space-y-3">
-      <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">{child.name}</h3>
+    <form onSubmit={handleSubmit} className="p-4 border-2 border-gray-300 rounded-lg space-y-3 bg-gray-50">
+      <div className="flex justify-between items-center mb-3 pb-3 border-b-2 border-red-300 bg-red-50 px-3 py-2 rounded">
+        <h3 className="text-xl font-bold text-gray-900">{child.name}</h3>
         <button
           type="button"
           onClick={handleDelete}
           disabled={isSaving || isDeleting}
-          className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow"
+          className="px-4 py-2 bg-red-600 text-white text-base font-bold rounded-lg hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg border-2 border-red-800"
           title="Delete this child and all their tasks"
+          style={{ minWidth: '100px' }}
         >
-          {isDeleting ? 'Deleting...' : '🗑️ Delete'}
+          {isDeleting ? 'Deleting...' : '🗑️ DELETE'}
         </button>
       </div>
       <div>

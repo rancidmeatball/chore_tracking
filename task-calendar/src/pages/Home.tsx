@@ -261,12 +261,22 @@ export default function Home() {
         // This ensures we use the correct date even if the query parameter wasn't passed
         // The response date is the date that was actually checked (using fallback if needed)
         // IMPORTANT: Always use data.date if available, as it's the date that was actually checked
-        let awardDate = data.date
-        if (!awardDate) {
-          console.warn(`[COMPLETION] ⚠️ WARNING: Response missing date field, falling back to taskDateIso: ${taskDateIso}`)
+        let awardDate: string | undefined = undefined
+        
+        if (data && typeof data === 'object' && 'date' in data && typeof data.date === 'string') {
+          awardDate = data.date
+          console.log(`[COMPLETION] ✅ Using date from response: ${awardDate}`)
+        } else {
+          console.error(`[COMPLETION] ❌ ERROR: data.date is missing or invalid!`)
+          console.error(`[COMPLETION] data object:`, JSON.stringify(data, null, 2))
+          console.error(`[COMPLETION] data.date value:`, data.date)
+          console.error(`[COMPLETION] data.date type:`, typeof data.date)
+          console.warn(`[COMPLETION] ⚠️ WARNING: Falling back to taskDateIso: ${taskDateIso}`)
           awardDate = taskDateIso
         }
-        console.log(`[COMPLETION] Final award date: ${awardDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
+        
+        console.log(`[COMPLETION] Final award date: ${awardDate}`)
+        console.log(`[COMPLETION] Award date type: ${typeof awardDate}, value: ${awardDate}`)
         
         // Check for tech time rewards
         if (data.techTimeRewards && data.techTimeRewards.length > 0) {
@@ -275,14 +285,19 @@ export default function Home() {
             if (!reward.awarded) {
               console.log(`[COMPLETION] ===== CALLING AWARD ENDPOINT =====`)
               console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${awardDate}`)
-              console.log(`[COMPLETION] Request body:`, { childId: reward.childId, date: awardDate })
+              
+              // Double-check the date before sending
+              const requestBody = { 
+                childId: reward.childId,
+                date: awardDate,
+              }
+              console.log(`[COMPLETION] Request body (before JSON.stringify):`, requestBody)
+              console.log(`[COMPLETION] Request body (after JSON.stringify):`, JSON.stringify(requestBody))
+              
               const awardResponse = await fetch('/api/tasks/award-tech-time', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  childId: reward.childId,
-                  date: awardDate,
-                }),
+                body: JSON.stringify(requestBody),
               })
               
               if (awardResponse.ok) {

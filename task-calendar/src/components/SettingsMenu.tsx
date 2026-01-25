@@ -162,48 +162,60 @@ export default function SettingsMenu({ childrenList = [], onChildUpdated, onCach
                 ×
               </button>
             </div>
+            {console.log('[SETTINGS] Manage Children modal is open, childrenList:', childrenList?.length, 'children')}
             <div className="space-y-4">
               {childrenList && childrenList.length > 0 ? (
-                childrenList.map((child) => (
-                  <div key={child.id} className="border-2 border-gray-300 rounded-lg p-2">
-                    <div className="flex justify-between items-center mb-2 pb-2 border-b-2 border-red-400 bg-red-100 px-3 py-2 rounded">
-                      <h3 className="text-xl font-bold text-gray-900">{child.name}</h3>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
-                            return
-                          }
-                          try {
-                            const response = await fetch(`/api/children/${child.id}`, {
-                              method: 'DELETE',
-                            })
-                            if (response.ok) {
-                              if (onChildUpdated) onChildUpdated()
-                              alert('Child deleted successfully!')
-                            } else {
-                              const error = await response.json()
-                              alert(`Error: ${error.error || 'Failed to delete child'}`)
-                            }
-                          } catch (error) {
-                            console.error('Error deleting child:', error)
-                            alert('Failed to delete child')
-                          }
-                        }}
-                        className="px-4 py-2 bg-red-600 text-white text-base font-bold rounded-lg hover:bg-red-700 active:bg-red-800 shadow-lg border-2 border-red-800"
-                        title="Delete this child and all their tasks"
-                      >
-                        🗑️ DELETE
-                      </button>
+                childrenList.map((child) => {
+                  console.log('[SETTINGS] Rendering child:', child.name, 'with delete button')
+                  return (
+                    <div key={child.id} className="border-4 border-red-500 rounded-lg p-3 mb-4 bg-red-50">
+                      {/* DELETE BUTTON - EXTREMELY PROMINENT */}
+                      <div className="mb-3 p-4 bg-red-600 rounded-lg shadow-xl border-4 border-red-800">
+                        <div className="flex justify-between items-center">
+                          <span className="text-white text-lg font-bold">Delete {child.name}?</span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              console.log('[SETTINGS] Delete button clicked for:', child.name)
+                              if (!confirm(`⚠️ WARNING: Are you sure you want to delete "${child.name}"? This will also delete ALL their tasks and cannot be undone!`)) {
+                                return
+                              }
+                              try {
+                                const response = await fetch(`/api/children/${child.id}`, {
+                                  method: 'DELETE',
+                                })
+                                if (response.ok) {
+                                  if (onChildUpdated) onChildUpdated()
+                                  alert('Child deleted successfully!')
+                                } else {
+                                  const error = await response.json()
+                                  alert(`Error: ${error.error || 'Failed to delete child'}`)
+                                }
+                              } catch (error) {
+                                console.error('Error deleting child:', error)
+                                alert('Failed to delete child')
+                              }
+                            }}
+                            className="px-6 py-3 bg-white text-red-600 text-lg font-extrabold rounded-lg hover:bg-red-50 active:bg-red-100 shadow-lg border-4 border-white"
+                            style={{ minWidth: '150px', fontSize: '18px' }}
+                            title="Delete this child and all their tasks"
+                          >
+                            🗑️ DELETE {child.name.toUpperCase()}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Child Edit Form */}
+                      <div className="bg-white rounded-lg p-3 border-2 border-gray-300">
+                        <ChildEditForm
+                          child={child}
+                          onUpdated={() => {
+                            if (onChildUpdated) onChildUpdated()
+                          }}
+                        />
+                      </div>
                     </div>
-                    <ChildEditForm
-                      child={child}
-                      onUpdated={() => {
-                        if (onChildUpdated) onChildUpdated()
-                      }}
-                    />
-                  </div>
-                ))
+                  )
+                })
               ) : (
                 <p className="text-gray-600 text-center py-4">No children added yet. Use "Add Child" button to add children.</p>
               )}

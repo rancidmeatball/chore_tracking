@@ -22,7 +22,7 @@ RUN node --version && npm --version
 WORKDIR /app
 
 # Copy package files first for better caching
-ARG CACHE_BUST_COPY=2026-01-25-05-00-v0.1.52
+ARG CACHE_BUST_COPY=2026-01-25-05-15-v0.1.53
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -48,7 +48,7 @@ RUN echo "Verifying Prisma installation..." && \
     npx prisma --version || (echo "Prisma not found!" && exit 1)
 
 # Copy all other files needed for build
-ARG CACHE_BUST_COPY_FILES=2026-01-25-05-00-v0.1.52
+ARG CACHE_BUST_COPY_FILES=2026-01-25-05-15-v0.1.53
 RUN echo "Copy cache bust: ${CACHE_BUST_COPY_FILES}"
 COPY . .
 
@@ -76,7 +76,7 @@ RUN if [ ! -d node_modules/.prisma/client ]; then \
 
 # Build Vite frontend (NOT Next.js)
 # Cache bust timestamp - update this to force rebuild  
-ARG CACHE_BUST_BUILD=2026-01-25-05-00-v0.1.52-complete
+ARG CACHE_BUST_BUILD=2026-01-25-05-15-v0.1.53-complete
 ENV NODE_ENV=production
 RUN echo "=== Building Vite frontend (migrated from Next.js) ===" && \
     echo "Build cache bust: ${CACHE_BUST_BUILD}" && \

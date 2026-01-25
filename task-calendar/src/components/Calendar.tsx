@@ -149,7 +149,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.61'
+  const version = '0.1.62'
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6">
@@ -214,6 +214,7 @@ function Calendar({
                 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 active:bg-gray-100'}
                 ${!isCurrentMonth ? 'opacity-50' : ''}
               `}
+              style={{ overflow: 'hidden' }}
             >
               <div className="flex justify-between items-start mb-0.5 sm:mb-1">
                 <div className="flex items-center gap-1">
@@ -245,7 +246,16 @@ function Calendar({
                   </span>
                 )}
               </div>
-              <div className="space-y-0 overflow-y-auto overflow-x-hidden" style={{ maxHeight: '80px', pointerEvents: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <div 
+                className="overflow-y-auto overflow-x-hidden" 
+                style={{ 
+                  maxHeight: '80px', 
+                  pointerEvents: 'auto', 
+                  WebkitOverflowScrolling: 'touch',
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              >
                 {(() => {
                   // Sort tasks: incomplete first, then completed at bottom, both by title
                   const sortedTasks = [...dayTasks].sort((a, b) => {
@@ -255,7 +265,7 @@ function Calendar({
                     return a.title.localeCompare(b.title)
                   })
                   
-                  return sortedTasks.map((task) => {
+                  return sortedTasks.map((task, index) => {
                     const bgColor = getTaskBgColor(task)
                     const textColor = getTaskColor(task)
                     
@@ -266,12 +276,14 @@ function Calendar({
                           relative z-10 cursor-pointer text-[9px] p-0.5 rounded truncate group touch-manipulation
                           ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
                           hover:opacity-90 active:opacity-80 transition-opacity
+                          ${index > 0 ? 'border-t border-white' : ''}
                         `}
                         style={{
                           ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
                           pointerEvents: 'auto',
                           zIndex: 10,
-                          lineHeight: '1.2'
+                          lineHeight: '1.2',
+                          borderTopWidth: index > 0 ? '1px' : '0px'
                         }}
                         onClick={(e) => {
                           e.stopPropagation()

@@ -19,13 +19,10 @@ function Calendar({
   onTaskComplete,
   onTaskEdit,
   onTaskDelete,
-  children = [],
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   // Track last click to handle double-click properly
   const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
-  // Track days with tech time awards (both categories completed)
-  const [techTimeDays, setTechTimeDays] = useState<Set<string>>(new Set())
 
   // Memoize month calculations
   const { daysInMonth, emptyDays, monthYear } = useMemo(() => {
@@ -256,8 +253,17 @@ function Calendar({
                   return (
                     <div
                       key={task.id}
-                      className="relative z-10 cursor-pointer"
-                      style={{ pointerEvents: 'auto', zIndex: 10 }}
+                      className={`
+                        relative z-10 cursor-pointer text-[9px] p-0.5 rounded truncate group touch-manipulation
+                        ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
+                        hover:opacity-90 active:opacity-80 transition-opacity
+                      `}
+                      style={{
+                        ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
+                        pointerEvents: 'auto',
+                        zIndex: 10,
+                        lineHeight: '1.2'
+                      }}
                       onClick={(e) => {
                         e.stopPropagation()
                         const now = Date.now()
@@ -289,17 +295,6 @@ function Calendar({
                         lastClickRef.current = null
                         // Double-click to edit
                         onTaskEdit(task)
-                      }}
-                      className={`
-                        text-[9px] p-0.5 rounded truncate cursor-pointer relative group touch-manipulation
-                        ${task.completed ? 'bg-green-200 text-green-800 line-through opacity-75' : ''}
-                        hover:opacity-90 active:opacity-80 transition-opacity
-                      `}
-                      style={{
-                        ...(task.completed ? {} : { backgroundColor: bgColor, color: textColor.includes('white') ? 'white' : 'rgb(17, 24, 39)' }),
-                        pointerEvents: 'auto',
-                        zIndex: 10,
-                        lineHeight: '1.2'
                       }}
                       title={`${task.title} - Click to ${task.completed ? 'uncomplete' : 'complete'}, double-click to edit`}
                     >

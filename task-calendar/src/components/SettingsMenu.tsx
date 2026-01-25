@@ -234,7 +234,6 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
   const [color, setColor] = useState(child.color || '#3B82F6')
   const [inputBoolean, setInputBoolean] = useState(child.inputBoolean || '')
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [inputBooleanOptions, setInputBooleanOptions] = useState<Array<{ entity_id: string; name: string; state: string }>>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isLoadingEntities, setIsLoadingEntities] = useState(false)
@@ -298,31 +297,6 @@ function ChildEditForm({ child, onUpdated }: { child: Child; onUpdated: () => vo
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
-      return
-    }
-
-    setIsDeleting(true)
-    try {
-      const response = await fetch(`/api/children/${child.id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        onUpdated()
-        alert('Child deleted successfully!')
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to delete child'}`)
-      }
-    } catch (error) {
-      console.error('Error deleting child:', error)
-      alert('Failed to delete child')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
 
   return (
     <form onSubmit={handleSubmit} className="p-2 space-y-3">

@@ -343,11 +343,13 @@ router.get('/check-daily-completion', async (req, res) => {
 
         console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName} (awardDate: ${start.toISOString()})`);
 
+        const rewardDate = checkDate.toISOString();
+        console.log(`[CHECK-DAILY] Adding tech time reward for ${childData.childName} with date: ${rewardDate}`);
         techTimeRewards.push({
           childId: childData.childId,
           childName: childData.childName,
           awarded: !!existingAward,
-          date: checkDate.toISOString(), // Include the date that was checked
+          date: rewardDate, // Include the date that was checked
         });
       } else {
         console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);
@@ -370,7 +372,7 @@ router.get('/check-daily-completion', async (req, res) => {
       });
     }
 
-    res.json({
+    const responseData = {
       date: checkDate.toISOString(),
       totalTasks,
       completedTasks,
@@ -388,7 +390,10 @@ router.get('/check-daily-completion', async (req, res) => {
           child.helpingFamily.completed > 0 &&
           child.enrichment.completed > 0,
       })),
-    });
+    };
+    
+    console.log(`[CHECK-DAILY] Response techTimeRewards:`, JSON.stringify(responseData.techTimeRewards, null, 2));
+    res.json(responseData);
   } catch (error) {
     console.error('[CHECK-DAILY] Error checking daily completion:', error);
     res.status(500).json({ error: 'Failed to check daily completion' });

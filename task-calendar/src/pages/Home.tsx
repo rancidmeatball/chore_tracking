@@ -285,12 +285,24 @@ export default function Home() {
             if (!reward.awarded) {
               // Use the date from the reward object (which comes from the backend)
               // This is the most reliable source since it's the date that was actually checked
-              const rewardDate = reward.date || data.date || awardDate
+              let rewardDate: string | undefined = undefined
+              
+              if (reward.date && typeof reward.date === 'string') {
+                rewardDate = reward.date
+                console.log(`[COMPLETION] ✅ Using reward.date: ${rewardDate}`)
+              } else if (data.date && typeof data.date === 'string') {
+                rewardDate = data.date
+                console.warn(`[COMPLETION] ⚠️ reward.date missing, using data.date: ${rewardDate}`)
+              } else {
+                console.error(`[COMPLETION] ❌ ERROR: No valid date found! reward.date=${reward.date}, data.date=${data.date}`)
+                console.error(`[COMPLETION] Full reward object:`, JSON.stringify(reward, null, 2))
+                console.error(`[COMPLETION] Full data object:`, JSON.stringify(data, null, 2))
+                alert(`Error: Could not determine date for tech time award. Please check console for details.`)
+                continue // Skip this reward
+              }
               
               console.log(`[COMPLETION] ===== CALLING AWARD ENDPOINT =====`)
-              console.log(`[COMPLETION] Awarding tech time to ${reward.childName}`)
-              console.log(`[COMPLETION] Date sources: reward.date=${reward.date}, data.date=${data.date}, awardDate=${awardDate}`)
-              console.log(`[COMPLETION] Using date: ${rewardDate}`)
+              console.log(`[COMPLETION] Awarding tech time to ${reward.childName} for date ${rewardDate}`)
               
               // Double-check the date before sending
               const requestBody = { 

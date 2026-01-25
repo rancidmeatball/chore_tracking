@@ -190,7 +190,7 @@ function Calendar({
           </button>
         </div>
 
-        {/* Mobile: Week view with larger touch targets */}
+        {/* Mobile: Week view with larger touch targets - show week containing selected date */}
         <div className="mb-4">
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
@@ -201,8 +201,9 @@ function Calendar({
           </div>
           <div className="grid grid-cols-7 gap-1">
             {(() => {
-              const weekStart = startOfWeek(currentMonth, { weekStartsOn: 0 })
-              const weekEnd = endOfWeek(currentMonth, { weekStartsOn: 0 })
+              // Show the week containing the selected date
+              const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 })
+              const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 })
               const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
               
               return weekDays.map((day) => {

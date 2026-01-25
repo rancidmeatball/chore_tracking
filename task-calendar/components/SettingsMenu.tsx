@@ -167,13 +167,44 @@ export default function SettingsMenu({ childrenList = [], onChildUpdated, onCach
             <div className="space-y-4">
               {childrenList && childrenList.length > 0 ? (
                 childrenList.map((child) => (
-                  <ChildEditForm
-                    key={child.id}
-                    child={child}
-                    onUpdated={() => {
-                      if (onChildUpdated) onChildUpdated()
-                    }}
-                  />
+                  <div key={child.id} className="border-2 border-gray-300 rounded-lg p-2">
+                    <div className="flex justify-between items-center mb-2 pb-2 border-b-2 border-red-400 bg-red-100 px-3 py-2 rounded">
+                      <h3 className="text-xl font-bold text-gray-900">{child.name}</h3>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Are you sure you want to delete "${child.name}"? This will also delete all their tasks and cannot be undone.`)) {
+                            return
+                          }
+                          try {
+                            const response = await fetch(`/api/children/${child.id}`, {
+                              method: 'DELETE',
+                            })
+                            if (response.ok) {
+                              if (onChildUpdated) onChildUpdated()
+                              alert('Child deleted successfully!')
+                            } else {
+                              const error = await response.json()
+                              alert(`Error: ${error.error || 'Failed to delete child'}`)
+                            }
+                          } catch (error) {
+                            console.error('Error deleting child:', error)
+                            alert('Failed to delete child')
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white text-base font-bold rounded-lg hover:bg-red-700 active:bg-red-800 shadow-lg border-2 border-red-800"
+                        title="Delete this child and all their tasks"
+                      >
+                        🗑️ DELETE
+                      </button>
+                    </div>
+                    <ChildEditForm
+                      child={child}
+                      onUpdated={() => {
+                        if (onChildUpdated) onChildUpdated()
+                      }}
+                    />
+                  </div>
                 ))
               ) : (
                 <p className="text-gray-600 text-center py-4">No children added yet. Use "Add Child" button to add children.</p>

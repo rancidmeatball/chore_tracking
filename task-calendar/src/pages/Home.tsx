@@ -4,6 +4,7 @@ import TaskForm from '@/components/TaskForm'
 import RecurrenceTemplateManager from '@/components/RecurrenceTemplateManager'
 import ChildManager from '@/components/ChildManager'
 import TimeTracker from '@/components/TimeTracker'
+import ClaimTimeModal from '@/components/ClaimTimeModal'
 import SettingsMenu from '@/components/SettingsMenu'
 import CompletionTracker from '@/components/CompletionTracker'
 import { Task, Child } from '@/types'
@@ -14,6 +15,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [showRecurrenceManager, setShowRecurrenceManager] = useState(false)
+  const [showClaimTimeModal, setShowClaimTimeModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -491,7 +493,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mb-6 flex gap-4">
+        <div className="mb-6 flex flex-wrap gap-3">
           <button
             onClick={() => {
               setSelectedTask(null)
@@ -500,6 +502,15 @@ export default function Home() {
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             Add New Task
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowClaimTimeModal(true)}
+            disabled={!children.length}
+            title={!children.length ? 'Add a child first (see below)' : 'Log tech time used and reduce banked balance'}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Claim time reward
           </button>
           <button
             onClick={() => setShowRecurrenceManager(true)}
@@ -535,6 +546,15 @@ export default function Home() {
               setSelectedTask(null)
             }}
             onDelete={handleTaskDelete}
+          />
+        )}
+
+        {showClaimTimeModal && (
+          <ClaimTimeModal
+            isOpen={showClaimTimeModal}
+            onClose={() => setShowClaimTimeModal(false)}
+            childrenList={children}
+            onClaimed={fetchChildren}
           />
         )}
 

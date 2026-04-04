@@ -151,7 +151,7 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.69'
+  const version = '0.1.71'
 
   // Mobile view: Week view with large touch-friendly task list
   if (isMobile) {

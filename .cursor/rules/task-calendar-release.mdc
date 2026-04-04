@@ -1,0 +1,19 @@
+---
+description: After task-calendar code changes, bump app version and push to GitHub
+globs: task-calendar/**
+alwaysApply: false
+---
+
+# Task Calendar release workflow
+
+When you finish meaningful changes under `task-calendar/` (features, fixes, UI):
+
+1. **Bump the app version** (patch +1, e.g. `0.1.70` → `0.1.71`) in:
+   - `task-calendar/src/components/Calendar.tsx` (`version` constant)
+   - `task-calendar/config.yaml` and `task-calendar/config.json`
+   - `task-calendar/Dockerfile` (all `0.1.xx` / cache-bust strings)
+   - Run `cd task-calendar && npm version <new> --no-git-tag-version` so `package.json` and `package-lock.json` match.
+
+2. **Rebuild** `task-calendar/dist/`: `cd task-calendar && npm run build`.
+
+3. **Commit and push** to `origin` (`main`): include source, config, Dockerfile, and updated `dist/`. Do not commit `node_modules` churn.

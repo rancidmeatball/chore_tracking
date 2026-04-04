@@ -17,3 +17,5 @@ When you finish meaningful changes under `task-calendar/` (features, fixes, UI):
 2. **Rebuild** `task-calendar/dist/`: `cd task-calendar && npm run build`.
 
 3. **Commit and push** to `origin` (`main`): include source, config, Dockerfile, and updated `dist/`. Do not commit `node_modules` churn.
+
+`tailwind.config.ts` **`content`** must include `./src/**/*` (and `./index.html`) so classes used under `src/` are not purged from the production CSS.

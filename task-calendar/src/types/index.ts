@@ -8,6 +8,14 @@ export interface Child {
   updatedAt: string
 }
 
+export interface TimeClaim {
+  id: string
+  childId: string
+  minutes: number
+  note: string | null
+  createdAt: string
+}
+
 export interface RecurrenceTemplate {
   id: string
   name: string

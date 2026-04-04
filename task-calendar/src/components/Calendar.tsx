@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 import { useIsMobile } from '@/hooks/useIsMobile'
 

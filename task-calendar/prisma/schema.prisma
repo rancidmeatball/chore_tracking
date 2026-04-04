@@ -22,6 +22,19 @@ model Child {
   tasks               Task[]
   recurrenceTemplates RecurrenceTemplate[]
   techTimeAwards      TechTimeAward[]
+  timeClaims          TimeClaim[]
+}
+
+model TimeClaim {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  minutes   Int // Minutes of tech time used (deducted from balance)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([childId])
+  @@index([createdAt])
 }
 
 model RecurrenceTemplate {

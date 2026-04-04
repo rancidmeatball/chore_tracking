@@ -139,4 +139,87 @@ router.put('/:id/time', async (req, res) => {
   }
 });
 
+// GET /api/children/:id/time-claims
+router.get('/:id/time-claims', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 40, 100);
+
+    const child = await prisma.child.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!child) {
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const claims = await prisma.timeClaim.findMany({
+      where: { childId: id },
+      orderBy: { createdAt: 'desc' },
+      take: Number.isFinite(limit) && limit > 0 ? limit : 40,
+    });
+
+    res.json(claims);
+  } catch (error) {
+    console.error('Error fetching time claims:', error);
+    res.status(500).json({ error: 'Failed to fetch time claims' });
+  }
+});
+
+// POST /api/children/:id/time-claims — log tech time used and deduct from balance
+router.post('/:id/time-claims', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { minutes, note } = req.body;
+
+    if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) {
+      return res.status(400).json({ error: 'Minutes must be a positive number' });
+    }
+    if (!Number.isInteger(minutes)) {
+      return res.status(400).json({ error: 'Minutes must be a whole number' });
+    }
+    if (note !== undefined && note !== null && typeof note !== 'string') {
+      return res.status(400).json({ error: 'Note must be a string' });
+    }
+    const trimmedNote = typeof note === 'string' ? note.trim().slice(0, 500) : null;
+    const noteValue = trimmedNote && trimmedNote.length > 0 ? trimmedNote : null;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const child = await tx.child.findUnique({
+        where: { id },
+        select: { id: true, timeBalance: true },
+      });
+      if (!child) {
+        throw Object.assign(new Error('NOT_FOUND'), { code: 'NOT_FOUND' });
+      }
+
+      const currentBalance = child.timeBalance ?? 0;
+      const newBalance = currentBalance - minutes;
+
+      const claim = await tx.timeClaim.create({
+        data: {
+          childId: id,
+          minutes,
+          note: noteValue,
+        },
+      });
+
+      const updatedChild = await tx.child.update({
+        where: { id },
+        data: { timeBalance: newBalance },
+      });
+
+      return { claim, child: updatedChild };
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    if (error?.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Child not found' });
+    }
+    console.error('Error recording time claim:', error);
+    res.status(500).json({ error: 'Failed to record time claim' });
+  }
+});
+
 export default router;

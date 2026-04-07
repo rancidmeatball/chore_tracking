@@ -3,6 +3,79 @@ import { prisma } from '../../../lib/prisma.js';
 
 const router = express.Router();
 
+/** Minutes granted per category per day (helping + enrichment can each earn separately). */
+const HALF_AWARD_MINUTES = 30;
+const AWARD_CATEGORY_HELPING = 'helping-family';
+const AWARD_CATEGORY_ENRICHMENT = 'enrichment';
+const AWARD_CATEGORY_LEGACY = 'legacy';
+
+async function findTechAward(childId, awardDateStart, awardCategory) {
+  return prisma.techTimeAward.findUnique({
+    where: {
+      childId_awardDate_awardCategory: {
+        childId,
+        awardDate: awardDateStart,
+        awardCategory,
+      },
+    },
+  });
+}
+
+/** Remove awards that no longer match completed work (split categories + legacy combined rows). */
+async function revokeIneligibleAwardsForChild(childData, start, end) {
+  const childId = childData.childId;
+  const hasH = childData.helpingFamily.total > 0;
+  const hasE = childData.enrichment.total > 0;
+  const helpingEligible = hasH && childData.helpingFamily.completed > 0;
+  const enrichmentEligible = hasE && childData.enrichment.completed > 0;
+  const bothComplete =
+    hasH && hasE && helpingEligible && enrichmentEligible;
+
+  const awards = await prisma.techTimeAward.findMany({
+    where: {
+      childId,
+      awardDate: { gte: start, lte: end },
+    },
+  });
+
+  for (const award of awards) {
+    let shouldRevoke = false;
+    if (award.awardCategory === AWARD_CATEGORY_LEGACY) {
+      shouldRevoke = !bothComplete;
+    } else if (award.awardCategory === AWARD_CATEGORY_HELPING) {
+      shouldRevoke = !helpingEligible;
+    } else if (award.awardCategory === AWARD_CATEGORY_ENRICHMENT) {
+      shouldRevoke = !enrichmentEligible;
+    }
+
+    if (!shouldRevoke) continue;
+
+    const child = await prisma.child.findUnique({
+      where: { id: childId },
+      select: { timeBalance: true, name: true },
+    });
+    if (!child) continue;
+
+    const previousBalance = child.timeBalance || 0;
+    const mins = award.minutes || HALF_AWARD_MINUTES;
+    const newBalance = Math.max(0, previousBalance - mins);
+
+    await prisma.$transaction([
+      prisma.child.update({
+        where: { id: childId },
+        data: { timeBalance: newBalance },
+      }),
+      prisma.techTimeAward.delete({
+        where: { id: award.id },
+      }),
+    ]);
+
+    console.log(
+      `[AWARD-SYNC] Revoked ${mins} min (${award.awardCategory}) from ${child.name}. Balance ${previousBalance} → ${newBalance}`,
+    );
+  }
+}
+
 // GET /api/tasks
 router.get('/', async (req, res) => {
   try {
@@ -320,39 +393,50 @@ router.get('/check-daily-completion', async (req, res) => {
     for (const childData of Object.values(tasksByChild)) {
       const hasHelpingFamily = childData.helpingFamily.total > 0;
       const hasEnrichment = childData.enrichment.total > 0;
-      // A child gets the reward if they have at least ONE completed task in each category
-      const bothComplete = 
-        hasHelpingFamily && 
-        hasEnrichment && 
-        childData.helpingFamily.completed > 0 &&
-        childData.enrichment.completed > 0;
+      const helpingEligible =
+        hasHelpingFamily && childData.helpingFamily.completed > 0;
+      const enrichmentEligible =
+        hasEnrichment && childData.enrichment.completed > 0;
+      const bothComplete =
+        hasHelpingFamily &&
+        hasEnrichment &&
+        helpingEligible &&
+        enrichmentEligible;
 
-      console.log(`[CHECK-DAILY] Child ${childData.childName}: hasHelpingFamily=${hasHelpingFamily} (${childData.helpingFamily.completed}/${childData.helpingFamily.total}), hasEnrichment=${hasEnrichment} (${childData.enrichment.completed}/${childData.enrichment.total}), bothComplete=${bothComplete}`);
+      const legacyAward = await findTechAward(
+        childData.childId,
+        start,
+        AWARD_CATEGORY_LEGACY,
+      );
+      const helpAward = await findTechAward(
+        childData.childId,
+        start,
+        AWARD_CATEGORY_HELPING,
+      );
+      const enrichAward = await findTechAward(
+        childData.childId,
+        start,
+        AWARD_CATEGORY_ENRICHMENT,
+      );
 
-      if (bothComplete) {
-        console.log(`[CHECK-DAILY] ✅ Child ${childData.childName} has both categories complete!`);
-        // Check if tech time was already awarded for this date
-        const existingAward = await prisma.techTimeAward.findUnique({
-          where: {
-            childId_awardDate: {
-              childId: childData.childId,
-              awardDate: start,
-            },
-          },
-        });
+      const needHelp =
+        helpingEligible && !helpAward && !legacyAward;
+      const needEnrich =
+        enrichmentEligible && !enrichAward && !legacyAward;
+      const hasPendingAward = needHelp || needEnrich;
 
-        console.log(`[CHECK-DAILY] Tech time award exists: ${!!existingAward} for ${childData.childName} (awardDate: ${start.toISOString()})`);
+      console.log(
+        `[CHECK-DAILY] Child ${childData.childName}: helping ${childData.helpingFamily.completed}/${childData.helpingFamily.total} (eligible=${helpingEligible}), enrichment ${childData.enrichment.completed}/${childData.enrichment.total} (eligible=${enrichmentEligible}), bothComplete=${bothComplete}, pendingAward=${hasPendingAward}`,
+      );
 
+      if (hasPendingAward) {
         const rewardDate = checkDate.toISOString();
-        console.log(`[CHECK-DAILY] Adding tech time reward for ${childData.childName} with date: ${rewardDate}`);
         techTimeRewards.push({
           childId: childData.childId,
           childName: childData.childName,
-          awarded: !!existingAward,
-          date: rewardDate, // Include the date that was checked
+          awarded: false,
+          date: rewardDate,
         });
-      } else {
-        console.log(`[CHECK-DAILY] ❌ Child ${childData.childName} does NOT have both categories complete`);
       }
     }
 
@@ -379,75 +463,29 @@ router.get('/check-daily-completion', async (req, res) => {
       allComplete,
       techTimeRewards,
       childCompletions,
-      categoryBreakdown: Object.values(tasksByChild).map(child => ({
+      categoryBreakdown: Object.values(tasksByChild).map((child) => ({
         childId: child.childId,
         childName: child.childName,
         helpingFamily: child.helpingFamily,
         enrichment: child.enrichment,
-        bothComplete: 
-          child.helpingFamily.total > 0 && 
-          child.enrichment.total > 0 && 
+        helpingCategoryComplete:
+          child.helpingFamily.total > 0 && child.helpingFamily.completed > 0,
+        enrichmentCategoryComplete:
+          child.enrichment.total > 0 && child.enrichment.completed > 0,
+        bothComplete:
+          child.helpingFamily.total > 0 &&
+          child.enrichment.total > 0 &&
           child.helpingFamily.completed > 0 &&
           child.enrichment.completed > 0,
       })),
     };
-    
-    // Auto-revoke tech time if bothComplete is false but an award exists
-    // This is a server-side workaround in case the frontend doesn't call revoke
+
+    // Auto-revoke awards that no longer match completion (per category + legacy)
     for (const childData of Object.values(tasksByChild)) {
-      const hasHelpingFamily = childData.helpingFamily.total > 0;
-      const hasEnrichment = childData.enrichment.total > 0;
-      const bothComplete = 
-        hasHelpingFamily && 
-        hasEnrichment && 
-        childData.helpingFamily.completed > 0 &&
-        childData.enrichment.completed > 0;
-      
-      if (!bothComplete) {
-        console.log(`[CHECK-DAILY] Checking for auto-revoke: Child ${childData.childName} has bothComplete=false`);
-        console.log(`[CHECK-DAILY] Checking for award on date: ${start.toISOString()}`);
-        // Check if an award exists for this child on this date
-        const existingAward = await prisma.techTimeAward.findUnique({
-          where: {
-            childId_awardDate: {
-              childId: childData.childId,
-              awardDate: start,
-            },
-          },
-        });
-        
-        console.log(`[CHECK-DAILY] Award check result: ${existingAward ? 'FOUND' : 'NOT FOUND'}`);
-        if (existingAward) {
-          console.log(`[CHECK-DAILY] ⚠️ AUTO-REVOKE: Child ${childData.childName} has bothComplete=false but award exists, auto-revoking...`);
-          console.log(`[CHECK-DAILY] Award details:`, { id: existingAward.id, minutes: existingAward.minutes, awardDate: existingAward.awardDate.toISOString() });
-          try {
-            const child = await prisma.child.findUnique({
-              where: { id: childData.childId },
-              select: { timeBalance: true, name: true },
-            });
-            
-            if (child) {
-              const previousBalance = child.timeBalance || 0;
-              const newBalance = Math.max(0, previousBalance - (existingAward.minutes || 60));
-              
-              await prisma.$transaction([
-                prisma.child.update({
-                  where: { id: childData.childId },
-                  data: {
-                    timeBalance: newBalance,
-                  },
-                }),
-                prisma.techTimeAward.delete({
-                  where: { id: existingAward.id },
-                }),
-              ]);
-              
-              console.log(`[CHECK-DAILY] ✅ AUTO-REVOKE: Revoked ${existingAward.minutes || 60} minutes from ${child.name}. New balance: ${newBalance} minutes`);
-            }
-          } catch (autoRevokeErr) {
-            console.error(`[CHECK-DAILY] ❌ AUTO-REVOKE ERROR:`, autoRevokeErr);
-          }
-        }
+      try {
+        await revokeIneligibleAwardsForChild(childData, start, end);
+      } catch (autoRevokeErr) {
+        console.error(`[CHECK-DAILY] ❌ AUTO-REVOKE ERROR:`, autoRevokeErr);
       }
     }
     
@@ -976,51 +1014,46 @@ router.post('/award-tech-time', async (req, res) => {
     console.log(`[TECH TIME] Helping-family completed: ${helpingFamilyTasks.filter(t => t.completed).length}/${helpingFamilyTasks.length}`);
     console.log(`[TECH TIME] Enrichment completed: ${enrichmentTasks.filter(t => t.completed).length}/${enrichmentTasks.length}`);
 
-    const hasBothCategories = helpingFamilyTasks.length > 0 && enrichmentTasks.length > 0;
-    // A child gets the reward if they have at least ONE completed task in each category
-    const bothComplete = 
-      hasBothCategories &&
-      helpingFamilyTasks.some(t => t.completed) &&
-      enrichmentTasks.some(t => t.completed);
+    const hasH = helpingFamilyTasks.length > 0;
+    const hasE = enrichmentTasks.length > 0;
+    const helpingEligible =
+      hasH && helpingFamilyTasks.some((t) => t.completed);
+    const enrichmentEligible =
+      hasE && enrichmentTasks.some((t) => t.completed);
 
-    console.log(`[TECH TIME] hasBothCategories: ${hasBothCategories}, bothComplete: ${bothComplete}`);
+    const legacyAward = await findTechAward(childId, start, AWARD_CATEGORY_LEGACY);
+    const helpAward = await findTechAward(childId, start, AWARD_CATEGORY_HELPING);
+    const enrichAward = await findTechAward(childId, start, AWARD_CATEGORY_ENRICHMENT);
 
-    if (!bothComplete) {
-      console.log(`[TECH TIME] ❌ Both categories not complete, cannot award`);
-      return res.status(400).json({ 
-        error: 'Both categories must be completed to award tech time',
+    console.log(
+      `[TECH TIME] eligible helping=${helpingEligible}, enrichment=${enrichmentEligible}, legacy=${!!legacyAward}`,
+    );
+
+    const categoriesToGrant = [];
+    if (!legacyAward) {
+      if (helpingEligible && !helpAward) {
+        categoriesToGrant.push(AWARD_CATEGORY_HELPING);
+      }
+      if (enrichmentEligible && !enrichAward) {
+        categoriesToGrant.push(AWARD_CATEGORY_ENRICHMENT);
+      }
+    }
+
+    if (categoriesToGrant.length === 0) {
+      console.log(`[TECH TIME] ❌ No category awards pending for this date`);
+      return res.status(400).json({
+        error: 'No tech time to award for this date',
         helpingFamily: {
           total: helpingFamilyTasks.length,
-          completed: helpingFamilyTasks.filter(t => t.completed).length,
+          completed: helpingFamilyTasks.filter((t) => t.completed).length,
         },
         enrichment: {
           total: enrichmentTasks.length,
-          completed: enrichmentTasks.filter(t => t.completed).length,
+          completed: enrichmentTasks.filter((t) => t.completed).length,
         },
-      });
-    }
-
-    const existingAward = await prisma.techTimeAward.findUnique({
-      where: {
-        childId_awardDate: {
-          childId,
-          awardDate: start,
-        },
-      },
-    });
-
-    console.log(`[TECH TIME] Existing award check: ${!!existingAward} for childId ${childId}, date ${start.toISOString()}`);
-
-    if (existingAward) {
-      console.log(`[TECH TIME] ⚠️ Award already exists, cannot award again`);
-      return res.status(400).json({ 
-        error: 'Tech time already awarded for this date',
-        message: `Tech time was already awarded on ${checkDate.toLocaleDateString()}`,
-        existingAward: {
-          id: existingAward.id,
-          awardDate: existingAward.awardDate,
-          minutes: existingAward.minutes,
-        },
+        helpingEligible,
+        enrichmentEligible,
+        legacyExists: !!legacyAward,
       });
     }
 
@@ -1034,38 +1067,46 @@ router.post('/award-tech-time', async (req, res) => {
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    console.log(`[TECH TIME] Current balance: ${child.timeBalance || 0} minutes`);
     const previousBalance = child.timeBalance || 0;
-    const newBalance = previousBalance + 60;
-    console.log(`[TECH TIME] New balance will be: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
+    const totalDelta = categoriesToGrant.length * HALF_AWARD_MINUTES;
+    const newBalance = previousBalance + totalDelta;
 
-    console.log(`[TECH TIME] Executing transaction to update balance and create award...`);
-    await prisma.$transaction([
+    const txOps = [
       prisma.child.update({
         where: { id: childId },
-        data: {
-          timeBalance: newBalance,
-        },
+        data: { timeBalance: newBalance },
       }),
-      prisma.techTimeAward.create({
-        data: {
-          childId,
-          awardDate: start,
-          minutes: 60,
-        },
-      }),
-    ]);
+      ...categoriesToGrant.map((awardCategory) =>
+        prisma.techTimeAward.create({
+          data: {
+            childId,
+            awardDate: start,
+            minutes: HALF_AWARD_MINUTES,
+            awardCategory,
+          },
+        }),
+      ),
+    ];
 
-    console.log(`[TECH TIME] ✅ Transaction completed successfully`);
-    console.log(`[TECH TIME] ✅ Awarded 1 hour (60 min) to ${child.name} for completing both categories on ${checkDate.toLocaleDateString()}`);
-    console.log(`[TECH TIME] Previous balance: ${previousBalance} minutes`);
-    console.log(`[TECH TIME] New balance: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
+    await prisma.$transaction(txOps);
+
+    const awards = categoriesToGrant.map((c) => ({
+      category: c,
+      minutes: HALF_AWARD_MINUTES,
+    }));
+
+    console.log(
+      `[TECH TIME] ✅ Awarded ${totalDelta} min to ${child.name}:`,
+      awards,
+    );
 
     res.json({
       success: true,
-      message: `Awarded 1 hour of tech time to ${child.name}`,
+      message: `Awarded ${totalDelta} minutes of tech time to ${child.name}`,
       newBalance,
       previousBalance,
+      minutesAdded: totalDelta,
+      awards,
       date: checkDate.toISOString(),
       childName: child.name,
     });
@@ -1134,65 +1175,60 @@ router.post('/revoke-tech-time', async (req, res) => {
     const end = endOfDay(checkDate);
     console.log(`[REVOKE] Final checkDate: ${checkDate.toISOString()}, start: ${start.toISOString()}, end: ${end.toISOString()}`);
 
-    const existingAward = await prisma.techTimeAward.findUnique({
+    const tasksForDay = await prisma.task.findMany({
       where: {
-        childId_awardDate: {
-          childId,
-          awardDate: start,
-        },
+        childId,
+        dueDate: { gte: start, lte: end },
+      },
+      include: {
+        child: { select: { name: true } },
       },
     });
 
-    console.log('[REVOKE] Existing award found:', !!existingAward);
-    if (existingAward) {
-      console.log('[REVOKE] Award details:', {
-        id: existingAward.id,
-        childId: existingAward.childId,
-        awardDate: existingAward.awardDate.toISOString(),
-        minutes: existingAward.minutes,
+    if (tasksForDay.length === 0) {
+      return res.status(400).json({
+        error: 'No tasks for this date',
+        message: 'Cannot sync awards without tasks on that day',
       });
     }
 
-    if (!existingAward) {
-      console.log('[REVOKE] ⚠️ No tech time award found for childId:', childId, 'date:', start.toISOString());
-      return res.status(400).json({
-        error: 'No tech time award found for this date',
-        message: `No tech time was awarded to this child on ${checkDate.toLocaleDateString()}`,
-      });
+    const childData = {
+      childId,
+      childName: tasksForDay[0].child.name,
+      helpingFamily: { total: 0, completed: 0 },
+      enrichment: { total: 0, completed: 0 },
+    };
+    for (const t of tasksForDay) {
+      if (t.category === 'helping-family') {
+        childData.helpingFamily.total++;
+        if (t.completed) childData.helpingFamily.completed++;
+      } else if (t.category === 'enrichment') {
+        childData.enrichment.total++;
+        if (t.completed) childData.enrichment.completed++;
+      }
     }
+
+    const before = await prisma.child.findUnique({
+      where: { id: childId },
+      select: { timeBalance: true, name: true },
+    });
+    if (!before) {
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    await revokeIneligibleAwardsForChild(childData, start, end);
 
     const child = await prisma.child.findUnique({
       where: { id: childId },
       select: { timeBalance: true, name: true },
     });
 
-    if (!child) {
-      return res.status(404).json({ error: 'Child not found' });
-    }
-
-    const previousBalance = child.timeBalance || 0;
-    const newBalance = Math.max(0, previousBalance - (existingAward.minutes || 60));
-
-    await prisma.$transaction([
-      prisma.child.update({
-        where: { id: childId },
-        data: {
-          timeBalance: newBalance,
-        },
-      }),
-      prisma.techTimeAward.delete({
-        where: { id: existingAward.id },
-      }),
-    ]);
-
-    console.log(`[TECH TIME] ❌ Revoked ${existingAward.minutes || 60} minutes from ${child.name} for ${checkDate.toLocaleDateString()}`);
-    console.log(`[TECH TIME] New balance: ${newBalance} minutes (${Math.round(newBalance / 60 * 10) / 10} hours)`);
-
     res.json({
       success: true,
-      message: `Revoked ${existingAward.minutes || 60} minutes of tech time from ${child.name}`,
-      newBalance,
-      previousBalance,
+      message: 'Synced tech time awards for this date',
+      newBalance: child.timeBalance,
+      previousBalance: before.timeBalance,
+      childName: child.name,
       date: checkDate.toISOString(),
     });
   } catch (error) {

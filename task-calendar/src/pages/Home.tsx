@@ -150,51 +150,40 @@ export default function Home() {
           // Find this child in the category breakdown
           const childBreakdown = data.categoryBreakdown?.find((cb: any) => cb.childId === targetTask.childId)
           console.log('[COMPLETION] Found childBreakdown:', childBreakdown)
-          const stillHasBothComplete = childBreakdown?.bothComplete === true
-          
-          console.log('[COMPLETION] Child still has both categories complete:', stillHasBothComplete)
-          console.log('[COMPLETION] categoryBreakdown length:', data.categoryBreakdown?.length || 0)
-          console.log('[COMPLETION] All categoryBreakdown children:', data.categoryBreakdown?.map((cb: any) => ({ childId: cb.childId, childName: cb.childName, bothComplete: cb.bothComplete })))
-          
-          // Only revoke if they no longer have both categories complete
-          // Also check if childBreakdown exists - if not, they might have no tasks left, but we should still try to revoke if an award exists
-          if (!stillHasBothComplete || !childBreakdown) {
-            // Use the date from the response (same as award logic)
-            const revokeDate = data.date || taskDateIso
-            console.log(`[COMPLETION] ===== ATTEMPTING TO REVOKE =====`)
-            console.log(`[COMPLETION] stillHasBothComplete: ${stillHasBothComplete}, childBreakdown exists: ${!!childBreakdown}`)
-            console.log(`[COMPLETION] Using revoke date: ${revokeDate} (from response: ${!!data.date}, from taskDateIso: ${!data.date})`)
-            
-            try {
-              console.log('[COMPLETION] ===== CALLING REVOKE ENDPOINT =====')
-              console.log('[COMPLETION] Calling /api/tasks/revoke-tech-time...')
-              console.log('[COMPLETION] Request body:', { childId: targetTask.childId, date: revokeDate })
-              const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  childId: targetTask.childId,
-                  date: revokeDate,
-                }),
-              })
 
-              console.log('[COMPLETION] Revoke response status:', revokeResponse.status, revokeResponse.ok)
-              if (revokeResponse.ok) {
-                const revokeData = await revokeResponse.json()
-                console.log('[COMPLETION] ✅ Tech time revoked successfully:', revokeData)
-                // Refresh children to get updated balance
-                await fetchChildren()
-                alert(`⏰ Tech time revoked from ${revokeData.childName || 'child'}. New balance: ${Math.round(revokeData.newBalance / 60 * 10) / 10} hours`)
-              } else {
-                const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
-                // It's okay if there's nothing to revoke; just log it.
-                console.log('[COMPLETION] ⚠️ No tech time to revoke or revoke failed:', revokeError)
+          const revokeDate = data.date || taskDateIso
+          console.log(`[COMPLETION] ===== SYNC AWARDS (revoke partials if needed) =====`)
+          try {
+            const revokeResponse = await fetch('/api/tasks/revoke-tech-time', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                childId: targetTask.childId,
+                date: revokeDate,
+              }),
+            })
+
+            if (revokeResponse.ok) {
+              const revokeData = await revokeResponse.json()
+              console.log('[COMPLETION] Award sync after uncheck:', revokeData)
+              await fetchChildren()
+              const prev = revokeData.previousBalance ?? 0
+              const next = revokeData.newBalance ?? prev
+              if (prev !== next) {
+                alert(
+                  `⏰ Tech time updated for ${revokeData.childName || 'child'}. Balance: ${Math.round((next / 60) * 10) / 10} hours`,
+                )
               }
-            } catch (revokeErr) {
-              console.error('[COMPLETION] ❌ Error revoking tech time:', revokeErr)
+            } else {
+              const revokeError = await revokeResponse.json().catch(() => ({ error: 'Unknown error' }))
+              console.log('[COMPLETION] Award sync skipped:', revokeError)
             }
+          } catch (revokeErr) {
+            console.error('[COMPLETION] Error syncing tech time awards:', revokeErr)
+          }
 
-            // Also turn OFF the child's input_boolean if configured
+          const stillHasBothComplete = childBreakdown?.bothComplete === true
+          if (!stillHasBothComplete || !childBreakdown) {
             const child = children.find((c) => c.id === targetTask.childId)
             if (child?.inputBoolean) {
               try {
@@ -214,8 +203,6 @@ export default function Home() {
                 console.error('[COMPLETION] Error calling reset-child for Home Assistant:', resetErr)
               }
             }
-          } else {
-            console.log('[COMPLETION] Child still has both categories complete, no revocation needed')
           }
         }
         
@@ -338,7 +325,15 @@ export default function Home() {
               if (awardResponse.ok) {
                 const awardData = await awardResponse.json()
                 console.log('[COMPLETION] Tech time awarded:', awardData)
-                alert(`🎉 ${reward.childName} completed both categories! Awarded 1 hour of tech time!`)
+                const mins = awardData.minutesAdded ?? 60
+                const parts =
+                  awardData.awards?.map((a: { category: string; minutes: number }) =>
+                    a.category === 'helping-family'
+                      ? `${a.minutes}m family`
+                      : `${a.minutes}m enrichment`,
+                  ) ?? []
+                const detail = parts.length ? ` (${parts.join(' + ')})` : ''
+                alert(`🎉 ${reward.childName} earned tech time! +${mins} min${detail}`)
                 await fetchChildren() // Refresh to show new balance
                 await fetchTasks() // Refresh tasks to update calendar stars
                 // Force calendar re-render by updating selected date
@@ -346,13 +341,13 @@ export default function Home() {
               } else {
                 const errorData = await awardResponse.json().catch(() => ({ error: 'Unknown error' }))
                 console.error('[COMPLETION] Error awarding tech time:', errorData)
-                // Only show error if it's not \"already awarded\"
-                if (!errorData.error?.includes('already awarded')) {
-                  alert(`Error awarding tech time: ${errorData.error || 'Unknown error'}`)
+                const err = errorData.error || ''
+                const benign =
+                  /already awarded|No tech time to award/i.test(err)
+                if (!benign) {
+                  alert(`Error awarding tech time: ${err || 'Unknown error'}`)
                 }
               }
-            } else {
-              console.log(`[COMPLETION] Tech time already awarded to ${reward.childName} for this date`)
             }
           }
         }
@@ -452,7 +447,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50">
+    <main className="min-h-[100dvh] min-h-screen bg-gray-50 p-2 sm:p-4 md:p-8 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.5rem,env(safe-area-inset-right,0px))]">
       <div className="max-w-7xl mx-auto">
         <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
@@ -493,13 +488,13 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           <button
             onClick={() => {
               setSelectedTask(null)
               setShowTaskForm(true)
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition touch-manipulation text-left sm:text-center"
           >
             Add New Task
           </button>
@@ -508,13 +503,13 @@ export default function Home() {
             onClick={() => setShowClaimTimeModal(true)}
             disabled={!children.length}
             title={!children.length ? 'Add a child first (see below)' : 'Log tech time used and reduce banked balance'}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-left sm:text-center"
           >
             Claim time reward
           </button>
           <button
             onClick={() => setShowRecurrenceManager(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition touch-manipulation text-left sm:text-center"
           >
             Manage Recurrence Templates
           </button>

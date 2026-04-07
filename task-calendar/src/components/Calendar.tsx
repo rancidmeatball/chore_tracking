@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns'
 import { Task } from '@/types'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -22,7 +22,25 @@ function Calendar({
   onTaskDelete,
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [mobileDayExpanded, setMobileDayExpanded] = useState(false)
   const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (!isMobile || !mobileDayExpanded) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [isMobile, mobileDayExpanded])
+
+  useEffect(() => {
+    if (!isMobile) setMobileDayExpanded(false)
+  }, [isMobile])
+
+  useEffect(() => {
+    setMobileDayExpanded(false)
+  }, [currentMonth])
   // Track last click to handle double-click properly
   const lastClickRef = useRef<{ taskId: string; timestamp: number } | null>(null)
 
@@ -151,7 +169,94 @@ function Calendar({
 
   const today = new Date()
   const todayStr = format(today, 'MMM d, yyyy')
-  const version = '0.1.73'
+  const version = '0.1.74'
+
+  const renderMobileTaskListForDay = (day: Date) => {
+    const dayTasks = getTasksForDate(day)
+    if (dayTasks.length === 0) {
+      return (
+        <p className="text-gray-700 text-center py-8 text-base">No tasks for this date</p>
+      )
+    }
+    const sortedTasks = [...dayTasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1
+      return a.title.localeCompare(b.title)
+    })
+    return (
+      <div className="space-y-3 w-full max-w-none">
+        {sortedTasks.map((task) => {
+          const bgColor = getTaskBgColor(task)
+          return (
+            <div
+              key={task.id}
+              className="flex w-full max-w-none flex-col gap-3 rounded-lg border-2 p-4 touch-manipulation"
+              style={{
+                backgroundColor: task.completed ? '#f0f0f0' : bgColor + '20',
+                borderColor: task.completed ? '#d0d0d0' : bgColor,
+                borderLeftWidth: '6px',
+              }}
+            >
+              <div className="flex w-full items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={(e) => {
+                    e.stopPropagation()
+                    onTaskComplete(task.id, e.target.checked)
+                  }}
+                  className="h-6 w-6 flex-shrink-0 touch-manipulation rounded text-blue-600"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="text-lg">
+                      {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
+                    </span>
+                    <h4
+                      className={`text-base font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+                    >
+                      {task.title}
+                    </h4>
+                  </div>
+                  {task.child && <p className="text-sm text-gray-600">{task.child.name}</p>}
+                </div>
+              </div>
+              <div className="flex w-full flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onTaskEdit(task)
+                  }}
+                  className="min-h-[44px] touch-manipulation rounded bg-blue-100 px-4 py-2 text-base text-blue-700 active:bg-blue-200"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (task.recurrenceTemplateId) {
+                      const deleteChoice = confirm(
+                        `"${task.title}" is part of a recurring series.\n\n` +
+                          `Click OK to delete ALL future tasks in this series (starting from this date).\n` +
+                          `Click Cancel to delete just this one task.`,
+                      )
+                      onTaskDelete(task.id, deleteChoice)
+                    } else if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+                      onTaskDelete(task.id, false)
+                    }
+                  }}
+                  className="min-h-[44px] touch-manipulation rounded bg-red-100 px-4 py-2 text-base text-red-700 active:bg-red-200"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   // Mobile view: Week view with large touch-friendly task list
   if (isMobile) {
@@ -206,7 +311,11 @@ function Calendar({
                 return (
                   <button
                     key={dayKey}
-                    onClick={() => onDateSelect(day)}
+                    type="button"
+                    onClick={() => {
+                      onDateSelect(day)
+                      setMobileDayExpanded(true)
+                    }}
                     className={`
                       min-h-[80px] border-2 rounded-lg p-3 transition touch-manipulation
                       ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 active:bg-gray-100'}
@@ -241,73 +350,37 @@ function Calendar({
           </div>
         </div>
 
-        {/* Mobile: Selected date tasks in large, touch-friendly list */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            {format(selectedDate, 'EEEE, MMM d')}
-          </h3>
-          <div className="space-y-3">
-            {(() => {
-              const selectedDateTasks = getTasksForDate(selectedDate)
-              if (selectedDateTasks.length === 0) {
-                return <p className="text-gray-700 text-center py-4">No tasks for this date</p>
-              }
-              const sortedTasks = [...selectedDateTasks].sort((a, b) => {
-                if (a.completed !== b.completed) {
-                  return a.completed ? 1 : -1
-                }
-                return a.title.localeCompare(b.title)
-              })
-              
-              return sortedTasks.map((task) => {
-                const bgColor = getTaskBgColor(task)
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-3 p-4 rounded-lg border-2 min-h-[60px] touch-manipulation"
-                    style={{ 
-                      backgroundColor: task.completed ? '#f0f0f0' : bgColor + '20',
-                      borderColor: task.completed ? '#d0d0d0' : bgColor,
-                      borderLeftWidth: '6px'
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={(e) => {
-                        e.stopPropagation()
-                        onTaskComplete(task.id, e.target.checked)
-                      }}
-                      className="w-6 h-6 text-blue-600 rounded touch-manipulation flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-lg">
-                          {task.category === 'helping-family' ? '👨‍👩‍👧' : '📚'}
-                        </span>
-                        <h4 className={`font-semibold text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                          {task.title}
-                        </h4>
-                      </div>
-                      {task.child && (
-                        <p className="text-sm text-gray-600">{task.child.name}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onTaskEdit(task)
-                      }}
-                      className="px-4 py-2 text-base bg-blue-100 text-blue-700 rounded active:bg-blue-200 touch-manipulation min-h-[44px] flex-shrink-0"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                )
-              })
-            })()}
+        <p className="text-sm text-gray-600 text-center mt-2">
+          Tap a day to open full-width task list
+        </p>
+
+        {mobileDayExpanded && (
+          <div
+            className="fixed inset-0 z-[100] flex flex-col bg-white"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Tasks for ${format(selectedDate, 'MMMM d, yyyy')}`}
+          >
+            <div className="flex flex-shrink-0 items-center border-b border-gray-200 bg-white py-3 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
+              <button
+                type="button"
+                onClick={() => setMobileDayExpanded(false)}
+                className="min-h-[44px] touch-manipulation rounded-lg border border-gray-300 px-3 py-2 text-base font-semibold text-gray-800 active:bg-gray-100"
+              >
+                ← Back
+              </button>
+              <h2 className="min-w-0 flex-1 truncate px-2 text-center text-lg font-bold text-gray-900">
+                {format(selectedDate, 'EEEE, MMM d')}
+              </h2>
+            </div>
+            <div
+              className="min-w-0 w-full flex-1 overflow-x-hidden overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {renderMobileTaskListForDay(selectedDate)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     )
   }
